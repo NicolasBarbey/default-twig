@@ -902,20 +902,21 @@ td.bo-datatable__details-col {
 
 // Pagination
 .pagination {
-    .page-link {
-        color: var(--bs-secondary);
-        border-color: $card-border-color;
+    --bs-pagination-color: #{$secondary};
+    --bs-pagination-border-color: #{$card-border-color};
+    --bs-pagination-hover-color: #{$btn-brand-dark};
+    --bs-pagination-hover-bg: #{rgba($primary, .08)};
+    --bs-pagination-hover-border-color: #{$card-border-color};
+    --bs-pagination-focus-color: #{$btn-brand-dark};
+    --bs-pagination-focus-bg: #{rgba($primary, .08)};
+    --bs-pagination-active-color: #{$btn-brand-label};
+    --bs-pagination-active-bg: #{$btn-brand-surface};
+    --bs-pagination-active-border-color: #{$btn-brand-border};
+}
 
-        &:hover {
-            background-color: rgba(242, 96, 65, .08);
-            color: var(--bs-primary);
-        }
-    }
-
-    .page-item.active .page-link {
-        background-color: var(--bs-primary);
-        border-color: var(--bs-primary);
-    }
+.page-link:focus-visible {
+    outline: 2px solid #{$btn-brand};
+    outline-offset: 2px;
 }
 
 // Auth screens (login / lost password / create password)
