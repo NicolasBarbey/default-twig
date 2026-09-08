@@ -27,6 +27,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilterPresenter;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilters;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerListRowPresenter;
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\StateChoiceProvider;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
@@ -44,11 +45,11 @@ use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Domain\Customer\Service\CustomerTitleService;
 use Thelia\Mailer\MailerFactory;
 use Thelia\Model\ConfigQuery;
-use Thelia\Model\CountryQuery;
 use Thelia\Model\Customer;
 use Thelia\Model\CustomerQuery;
 use Thelia\Model\Event\CustomerEvent;
 use Thelia\Model\LangQuery;
+use Thelia\Model\Order;
 use Thelia\Model\OrderQuery;
 use Thelia\Tools\Password;
 use Twig\Environment;
@@ -83,6 +84,7 @@ final class CustomerController
         private readonly CustomerListRowPresenter $rowPresenter,
         private readonly OrderRepository $orderRepository,
         private readonly StateChoiceProvider $stateChoices,
+        private readonly CountryStateProvider $countryStates,
         private readonly MailerFactory $mailer,
     ) {
     }
@@ -477,8 +479,13 @@ final class CustomerController
      */
     private function customerOrdersPage(int $customerId, int $page, int $perPage): array
     {
+        $orders = $this->orderRepository->findByCustomerPage($customerId, $page, $perPage);
+        $amounts = $this->orderRepository->findTotalAmountByOrder(
+            array_map(static fn (Order $order): int => (int) $order->getId(), iterator_to_array($orders)),
+        );
+
         $rows = [];
-        foreach ($this->orderRepository->findByCustomerPage($customerId, $page, $perPage) as $order) {
+        foreach ($orders as $order) {
             $status = $order->getOrderStatus();
             $currency = $order->getCurrency();
             $rows[] = [
@@ -487,7 +494,7 @@ final class CustomerController
                 'created_at' => $order->getCreatedAt(),
                 'status_title' => $status !== null ? (string) $status->getTitle() : '',
                 'status_color' => $status !== null ? (string) $status->getColor() : '#6c757d',
-                'amount' => (float) $order->getTotalAmount(),
+                'amount' => $amounts[(int) $order->getId()] ?? (float) $order->getTotalAmount(),
                 'currency_symbol' => $currency !== null ? (string) $currency->getSymbol() : '',
                 'edit_url' => $this->urls->generate('admin.order.update.view', ['order_id' => (int) $order->getId()]),
             ];
@@ -556,13 +563,11 @@ final class CustomerController
     private function countryChoices(string $locale): array
     {
         $choices = [];
-        foreach (CountryQuery::create()->find() as $country) {
-            $country->setLocale($locale);
-            $title = $country->getTitle();
-            if (!\is_string($title) || $title === '') {
+        foreach ($this->countryStates->countries($locale) as $country) {
+            if ($country['title'] === '') {
                 continue;
             }
-            $choices[$title] = (int) $country->getId();
+            $choices[$country['title']] = $country['id'];
         }
         ksort($choices);
 

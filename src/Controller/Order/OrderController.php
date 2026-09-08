@@ -17,12 +17,14 @@ namespace BackOfficeDefaultTwigBundle\Controller\Order;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderDetailContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderFilterPresenter;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderFilters;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderListRowPresenter;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderRoundingRule;
 use BackOfficeDefaultTwigBundle\Service\Pdf\OrderPdfRenderer;
+use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -70,6 +72,7 @@ final class OrderController
         private readonly OrderRepository $orderRepository,
         private readonly OrderListRowPresenter $rowPresenter,
         private readonly OrderFilterPresenter $filterPresenter,
+        private readonly CountryStateProvider $countryStates,
     ) {
     }
 
@@ -86,13 +89,8 @@ final class OrderController
 
         $paginated = $this->orderRepository->findPaginated($filters, $page, self::PAGE_SIZE);
 
-        $rows = [];
-        foreach ($paginated['rows'] as $order) {
-            $rows[] = $this->rowPresenter->present($order, $locale);
-        }
-
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
-            'rows' => $rows,
+            'rows' => $this->rowPresenter->presentAll($paginated['rows'], $locale),
             'total' => $paginated['total'],
             'pages' => $paginated['lastPage'],
             'current_page' => min($page, $paginated['lastPage']),
@@ -484,7 +482,12 @@ final class OrderController
     private function customerTitleChoices(string $locale): array
     {
         $items = [];
-        foreach (CustomerTitleQuery::create()->orderByPosition()->find() as $title) {
+        $titles = CustomerTitleQuery::create()
+            ->orderByPosition()
+            ->joinWithI18n($locale, Criteria::LEFT_JOIN)
+            ->find();
+
+        foreach ($titles as $title) {
             $title->setLocale($locale);
             $items[] = ['id' => (int) $title->getId(), 'title' => (string) $title->getLong()];
         }
@@ -497,11 +500,10 @@ final class OrderController
      */
     private function countryChoices(string $locale): array
     {
-        $items = [];
-        foreach (CountryQuery::create()->filterByVisible(1)->find() as $country) {
-            $country->setLocale($locale);
-            $items[] = ['id' => (int) $country->getId(), 'title' => (string) $country->getTitle()];
-        }
+        $items = array_map(
+            static fn (array $country): array => ['id' => $country['id'], 'title' => $country['title']],
+            $this->countryStates->visibleCountries($locale),
+        );
 
         usort($items, static fn (array $a, array $b): int => strcoll($a['title'], $b['title']));
 
@@ -513,17 +515,7 @@ final class OrderController
      */
     private function stateChoices(string $locale): array
     {
-        $items = [];
-        foreach (StateQuery::create()->filterByVisible(1)->orderByCountryId()->find() as $state) {
-            $state->setLocale($locale);
-            $items[] = [
-                'id' => (int) $state->getId(),
-                'country_id' => (int) $state->getCountryId(),
-                'title' => (string) $state->getTitle(),
-            ];
-        }
-
-        return $items;
+        return $this->countryStates->visibleStates($locale);
     }
 
     /**

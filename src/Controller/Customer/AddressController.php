@@ -20,6 +20,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormErrorRenderer;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormValidator;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\StateChoiceProvider;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
@@ -37,7 +38,6 @@ use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Domain\Customer\Service\CustomerTitleService;
 use Thelia\Model\Address;
 use Thelia\Model\AddressQuery;
-use Thelia\Model\CountryQuery;
 use Thelia\Model\CustomerQuery;
 use Thelia\Model\Event\AddressEvent;
 use Twig\Environment;
@@ -64,6 +64,7 @@ final class AddressController
         private readonly TranslatorInterface $translator,
         private readonly CustomerTitleService $titleService,
         private readonly StateChoiceProvider $stateChoices,
+        private readonly CountryStateProvider $countryStates,
     ) {
     }
 
@@ -300,12 +301,11 @@ final class AddressController
     private function countryChoices(): array
     {
         $choices = [];
-        foreach (CountryQuery::create()->find() as $country) {
-            $title = $country->getTitle();
-            if (!\is_string($title) || $title === '') {
+        foreach ($this->countryStates->countries() as $country) {
+            if ($country['title'] === '') {
                 continue;
             }
-            $choices[$title] = (int) $country->getId();
+            $choices[$country['title']] = $country['id'];
         }
         ksort($choices);
 

@@ -17,6 +17,7 @@ namespace BackOfficeDefaultTwigBundle\Controller\Configuration;
 use BackOfficeDefaultTwigBundle\Form\Configuration\AreaType;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\ListSort;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Propel\Runtime\ActiveQuery\Criteria;
@@ -60,6 +61,7 @@ final class AreaController
         private readonly UrlGeneratorInterface $urls,
         private readonly TranslatorInterface $translator,
         private readonly EventDispatcherInterface $events,
+        private readonly CountryStateProvider $countryStates,
     ) {
     }
 
@@ -296,17 +298,17 @@ final class AreaController
 
     private function describeAssignment(int $countryId, ?int $stateId): string
     {
-        $country = CountryQuery::create()->findPk($countryId);
-        if ($country === null) {
+        $locale = $this->defaultLocale();
+        $countryTitles = $this->countryStates->countryTitles($locale);
+        if (!isset($countryTitles[$countryId])) {
             return '';
         }
-        $country->setLocale($this->defaultLocale());
-        $label = (string) $country->getTitle();
+
+        $label = $countryTitles[$countryId];
         if ($stateId !== null) {
-            $state = \Thelia\Model\StateQuery::create()->findPk($stateId);
-            if ($state !== null) {
-                $state->setLocale($this->defaultLocale());
-                $label .= ' - '.(string) $state->getTitle();
+            $stateTitles = $this->countryStates->stateTitles($locale);
+            if (isset($stateTitles[$stateId])) {
+                $label .= ' - '.$stateTitles[$stateId];
             }
         }
 
@@ -337,12 +339,12 @@ final class AreaController
         $countries = [];
         $countryAreas = CountryAreaQuery::create()->filterByAreaId($id)->limit(6)->find();
         $more = max(0, CountryAreaQuery::create()->filterByAreaId($id)->count() - $countryAreas->count());
+        $countryTitles = $this->countryStates->countryTitles($locale);
         foreach ($countryAreas as $countryArea) {
             \assert($countryArea instanceof CountryArea);
-            $country = CountryQuery::create()->findPk((int) $countryArea->getCountryId());
-            if ($country !== null) {
-                $country->setLocale($locale);
-                $countries[] = (string) $country->getTitle();
+            $countryId = (int) $countryArea->getCountryId();
+            if (isset($countryTitles[$countryId])) {
+                $countries[] = $countryTitles[$countryId];
             }
         }
 

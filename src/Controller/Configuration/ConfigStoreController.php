@@ -19,6 +19,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormErrorRenderer;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormValidator;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
@@ -33,7 +34,6 @@ use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Domain\Checkout\Enum\GuestCheckoutMode;
 use Thelia\Model\ConfigQuery;
-use Thelia\Model\CountryQuery;
 use Twig\Environment;
 
 #[Route('/admin/configuration/store', name: 'admin.configuration.store.')]
@@ -58,6 +58,7 @@ final class ConfigStoreController
         private readonly FormFactoryInterface $formFactory,
         private readonly UrlGeneratorInterface $urls,
         private readonly TranslatorInterface $translator,
+        private readonly CountryStateProvider $countryStates,
     ) {
     }
 
@@ -155,16 +156,13 @@ final class ConfigStoreController
     private function countryChoices(string $locale): array
     {
         $choices = [];
-        $countries = CountryQuery::create()->find();
 
-        foreach ($countries as $country) {
-            $country->setLocale($locale);
-            $title = $country->getTitle();
-            if (!\is_string($title) || $title === '') {
+        foreach ($this->countryStates->countries($locale) as $country) {
+            if ($country['title'] === '') {
                 continue;
             }
 
-            $choices[$title] = (int) $country->getId();
+            $choices[$country['title']] = $country['id'];
         }
 
         ksort($choices);

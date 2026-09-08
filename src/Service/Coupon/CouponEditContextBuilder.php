@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Coupon;
 
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Condition\ConditionCollection;
@@ -21,7 +22,6 @@ use Thelia\Condition\Implementation\ConditionInterface;
 use Thelia\Domain\Promotion\Coupon\CouponFactory;
 use Thelia\Domain\Promotion\Coupon\Service\CouponManager;
 use Thelia\Domain\Promotion\Coupon\Type\CouponInterface;
-use Thelia\Model\CountryQuery;
 use Thelia\Model\Coupon;
 use Thelia\Model\CouponCountry;
 use Thelia\Model\CouponModule;
@@ -38,6 +38,7 @@ final readonly class CouponEditContextBuilder
         private CouponFactory $couponFactory,
         private CouponInputsRenderer $inputsRenderer,
         private TranslatorInterface $translator,
+        private CountryStateProvider $countryStates,
     ) {
     }
 
@@ -224,8 +225,8 @@ final readonly class CouponEditContextBuilder
     private function countryChoices(): array
     {
         $items = [['value' => 0, 'label' => $this->translator->trans('All countries')]];
-        foreach (CountryQuery::create()->find() as $country) {
-            $items[] = ['value' => (int) $country->getId(), 'label' => (string) $country->getTitle()];
+        foreach ($this->countryStates->countries() as $country) {
+            $items[] = ['value' => $country['id'], 'label' => $country['title']];
         }
 
         usort($items, static fn ($a, $b) => strcmp($a['label'], $b['label']));

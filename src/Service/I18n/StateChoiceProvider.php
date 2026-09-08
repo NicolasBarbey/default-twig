@@ -14,26 +14,23 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\I18n;
 
-use Thelia\Model\StateQuery;
-
+/**
+ * The states a customer may pick, grouped by country and alphabetical inside a
+ * country. Reading them is the shared provider's job; ordering them for a select
+ * element is this one's.
+ */
 final readonly class StateChoiceProvider
 {
+    public function __construct(private CountryStateProvider $countryStates)
+    {
+    }
+
     /**
      * @return list<array{id: int, country_id: int, title: string}>
      */
     public function forLocale(?string $locale = null): array
     {
-        $states = [];
-        foreach (StateQuery::create()->filterByVisible(1)->orderByCountryId()->find() as $state) {
-            if ($locale !== null) {
-                $state->setLocale($locale);
-            }
-            $states[] = [
-                'id' => (int) $state->getId(),
-                'country_id' => (int) $state->getCountryId(),
-                'title' => (string) $state->getTitle(),
-            ];
-        }
+        $states = $this->countryStates->visibleStates($locale);
 
         $collator = class_exists(\Collator::class) ? new \Collator($locale ?? 'fr_FR') : null;
 

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Coupon;
 
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,7 +32,6 @@ use Thelia\Condition\Implementation\MatchForTotalAmount;
 use Thelia\Condition\Implementation\MatchForXArticles;
 use Thelia\Condition\Implementation\StartDate;
 use Thelia\Model\CategoryQuery;
-use Thelia\Model\CountryQuery;
 use Thelia\Model\CurrencyQuery;
 use Thelia\Model\CustomerQuery;
 use Thelia\Model\LangQuery;
@@ -49,6 +49,7 @@ final readonly class CouponConditionsRenderer
     public function __construct(
         private Environment $twig,
         private TranslatorInterface $translator,
+        private CountryStateProvider $countryStates,
         #[Autowire(service: 'thelia.condition.factory')]
         private ConditionFactory $conditionFactory,
         #[Autowire(service: 'service_container')]
@@ -266,12 +267,10 @@ final readonly class CouponConditionsRenderer
     /** @return list<array{id: int, label: string}> */
     private function countryChoices(string $locale): array
     {
-        $rows = CountryQuery::create()->filterByVisible(1)->find();
-        $choices = [];
-        foreach ($rows as $country) {
-            $country->setLocale($locale);
-            $choices[] = ['id' => (int) $country->getId(), 'label' => (string) $country->getTitle()];
-        }
+        $choices = array_map(
+            static fn (array $country): array => ['id' => $country['id'], 'label' => $country['title']],
+            $this->countryStates->visibleCountries($locale),
+        );
 
         usort($choices, static fn (array $a, array $b): int => strcasecmp($a['label'], $b['label']));
 

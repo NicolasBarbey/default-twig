@@ -26,6 +26,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Core\Security\SecurityContext;
+use Thelia\Model\Order;
 use Thelia\Model\OrderQuery;
 
 /**
@@ -116,12 +117,17 @@ final readonly class DashboardStatsProvider
             );
         }
 
+        $recentOrders = $canViewOrders ? $this->loadRecentOrders() : [];
+
         return new DashboardData(
             range: $range,
             kpis: $kpis,
             chart: $canViewOrders ? $this->orders->getDailyBuckets($range) : ['labels' => [], 'revenue' => []],
             statusBreakdown: $canViewOrders ? $this->orders->getStatusBreakdown($locale) : [],
-            recentOrders: $canViewOrders ? $this->loadRecentOrders() : [],
+            recentOrders: $recentOrders,
+            recentOrderAmounts: $this->orders->findTotalAmountByOrder(
+                array_map(static fn (Order $order): int => (int) $order->getId(), $recentOrders),
+            ),
             // Top sellers expose order amounts, so they follow the orders resource.
             topProducts: $canViewOrders ? $this->products->findTopSellers($range, self::TOP_PRODUCTS_LIMIT, $locale) : [],
             lowStockProducts: $canViewProducts ? $this->products->findLowStock(self::LOW_STOCK_THRESHOLD, self::LOW_STOCK_LIMIT, $locale) : [],
@@ -143,7 +149,7 @@ final readonly class DashboardStatsProvider
     }
 
     /**
-     * @return list<\Thelia\Model\Order>
+     * @return list<Order>
      */
     private function loadRecentOrders(): array
     {

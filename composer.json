@@ -32,6 +32,11 @@
             "BackOfficeDefaultTwigBundle\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "BackOfficeDefaultTwigBundle\\Tests\\": "tests/"
+        }
+    },
     "extra": {
         "installer-name": "default-twig"
     }

@@ -88,7 +88,7 @@ final readonly class ProductRepository
                 JOIN `order` o ON o.id = op.order_id
                 WHERE o.created_at BETWEEN :from AND :to
                 GROUP BY op.product_ref
-                ORDER BY quantity_sum DESC
+                ORDER BY quantity_sum DESC, op.product_ref ASC
                 LIMIT '.max(1, $limit);
 
         $statement = Propel::getConnection()->prepare($sql);
@@ -106,6 +106,7 @@ final readonly class ProductRepository
         /** @var ObjectCollection<int, Product> $products */
         $products = ProductQuery::create()
             ->filterByRef($refs, Criteria::IN)
+            ->joinWithI18n($locale, Criteria::LEFT_JOIN)
             ->find();
 
         $byRef = [];
@@ -138,7 +139,14 @@ final readonly class ProductRepository
         $collection = ProductSaleElementsQuery::create()
             ->filterByQuantity($threshold, Criteria::LESS_EQUAL)
             ->orderByQuantity(Criteria::ASC)
+            // Several combinations sitting on the same quantity is the normal case;
+            // without a tie-break the shop sees a different list on every refresh.
+            ->orderById(Criteria::ASC)
             ->limit($limit)
+            ->joinWithProduct()
+            ->useProductQuery()
+                ->joinWithI18n($locale, Criteria::LEFT_JOIN)
+            ->endUse()
             ->find();
 
         $list = array_values(iterator_to_array($collection));

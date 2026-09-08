@@ -32,7 +32,7 @@ final readonly class ModuleCapabilityChecker
 
     public function isHookable(Module $module): bool
     {
-        return $this->modules->countHooksForModule((int) $module->getId()) > 0;
+        return ($this->modules->countHooksByModule()[(int) $module->getId()] ?? 0) > 0;
     }
 
     public function isConfigurable(Module $module): bool
@@ -41,12 +41,9 @@ final readonly class ModuleCapabilityChecker
             return false;
         }
 
-        $configurationHooks = $this->modules->countActiveConfigurationHooksForModule(
-            (int) $module->getId(),
-            TemplateDefinition::BACK_OFFICE,
-        );
+        $configurationHooks = $this->modules->countActiveConfigurationHooksByModule(TemplateDefinition::BACK_OFFICE);
 
-        if ($configurationHooks > 0) {
+        if (($configurationHooks[(int) $module->getId()] ?? 0) > 0) {
             return true;
         }
 

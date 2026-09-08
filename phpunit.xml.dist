@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Test suite of the back-office default-twig template.
+
+     The template is a Thelia theme: its classes only run inside a Thelia
+     project, against an installed database. The suite therefore runs from the
+     root of a Thelia project that has this template installed, and reuses that
+     project's autoloader, kernel and prepared test database:
+
+         php bin/test-prepare
+         ./vendor/bin/phpunit -c templates/backOffice/default-twig/phpunit.xml.dist
+
+     Paths are relative to this file, which sits at
+     templates/backOffice/default-twig inside the project. -->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="../../../bin/.phpunit/phpunit.xsd"
+         backupGlobals="false"
+         colors="true"
+         bootstrap="tests/bootstrap.php"
+         cacheDirectory="../../../var/cache-ci/.phpunit.botwig.cache"
+>
+    <php>
+        <ini name="error_reporting" value="-1" />
+        <server name="SHELL_VERBOSITY" value="-1" />
+        <server name="KERNEL_CLASS" value="App\Kernel" />
+        <server name="SYMFONY_DEPRECATIONS_HELPER" value="weak" />
+        <server name="APP_ENV" value="test" force="true" />
+        <server name="APP_DEBUG" value="0" force="true" />
+        <env name="APP_SECRET" value="287f2178af9e0c250e8219a9df833504"/>
+    </php>
+
+    <testsuites>
+        <testsuite name="backoffice-default-twig">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

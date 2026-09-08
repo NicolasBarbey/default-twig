@@ -14,11 +14,13 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Order;
 
+use BackOfficeDefaultTwigBundle\Repository\ModuleRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
+use Thelia\Model\Module;
 use Thelia\Model\Order;
 use Thelia\Model\OrderStatusQuery;
 
@@ -42,13 +44,53 @@ final readonly class OrderListRowPresenter
         private UrlGeneratorInterface $urls,
         private TranslatorInterface $translator,
         private OrderRepository $orderRepository,
+        private ModuleRepository $moduleRepository,
     ) {
     }
 
     /**
+     * A whole page of order rows, reading per-page figures once instead of once per
+     * row: the number of lines, the amount, and the module titles. A list of 25
+     * orders used to spend 25 count queries, 25 total queries and a title query per
+     * distinct module on top of the page itself.
+     *
+     * @param iterable<Order> $orders
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function presentAll(iterable $orders, string $locale): array
+    {
+        $page = [];
+        $orderIds = [];
+        foreach ($orders as $order) {
+            $page[] = $order;
+            $orderIds[] = (int) $order->getId();
+        }
+
+        if ($page === []) {
+            return [];
+        }
+
+        $itemCounts = $this->orderRepository->countItemsByOrder($orderIds);
+        $totals = $this->orderRepository->findTotalAmountByOrder($orderIds);
+        $moduleTitles = $this->moduleRepository->findLocalizedTitles($locale);
+
+        $rows = [];
+        foreach ($page as $order) {
+            $rows[] = $this->present($order, $locale, $itemCounts, $totals, $moduleTitles);
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @param array<int, int>     $itemCounts   number of lines per order id, when the caller has them
+     * @param array<int, float>   $totals       amount per order id, when the caller has them
+     * @param array<int, ?string> $moduleTitles module titles per module id, when the caller has them
+     *
      * @return array<string, mixed>
      */
-    public function present(Order $order, string $locale): array
+    public function present(Order $order, string $locale, array $itemCounts = [], array $totals = [], array $moduleTitles = []): array
     {
         $orderId = (int) $order->getId();
         $status = OrderStatusQuery::create()->findPk((int) $order->getStatusId());
@@ -56,12 +98,18 @@ final readonly class OrderListRowPresenter
 
         // The module is gone once it has been deleted; the order then names it with the title
         // it froze at that moment.
-        $paymentModule = $order->getModuleRelatedByPaymentModuleId();
-        $paymentModule?->setLocale($locale);
-        $paymentTitle = $paymentModule?->getTitle() ?? $order->getPaymentModuleTitle();
-        $deliveryModule = $order->getModuleRelatedByDeliveryModuleId();
-        $deliveryModule?->setLocale($locale);
-        $deliveryTitle = $deliveryModule?->getTitle() ?? $order->getDeliveryModuleTitle();
+        $paymentTitle = $this->moduleTitle(
+            $order->getPaymentModuleId(),
+            $moduleTitles,
+            $locale,
+            $order->getModuleRelatedByPaymentModuleId(...),
+        ) ?? $order->getPaymentModuleTitle();
+        $deliveryTitle = $this->moduleTitle(
+            $order->getDeliveryModuleId(),
+            $moduleTitles,
+            $locale,
+            $order->getModuleRelatedByDeliveryModuleId(...),
+        ) ?? $order->getDeliveryModuleTitle();
 
         $isUrgent = $this->isUrgent($order, $status?->getCode());
         $cancelStatus = OrderStatusQuery::getCancelledStatus();
@@ -80,10 +128,10 @@ final readonly class OrderListRowPresenter
             'status_code' => (string) ($status?->getCode() ?? ''),
             'status_color' => (string) ($status?->getColor() ?: self::FALLBACK_STATUS_COLOR),
             'customer_html' => $this->renderCustomer($order),
-            'items_html' => $this->renderItems($orderId),
+            'items_html' => $this->renderItems($orderId, $itemCounts),
             'payment_html' => $this->renderModule($paymentTitle, 'bi-credit-card'),
             'delivery_html' => $this->renderDelivery($order, $deliveryTitle),
-            'amount' => $this->formatAmount($order),
+            'amount' => $this->formatAmount($order, $totals),
             'date_html' => $this->renderDate($order),
             'is_urgent' => $isUrgent,
             '_row_class' => $isUrgent ? 'bo-order-row--urgent' : '',
@@ -133,9 +181,14 @@ final readonly class OrderListRowPresenter
         );
     }
 
-    private function renderItems(int $orderId): string
+    /**
+     * @param array<int, int> $itemCounts
+     */
+    private function renderItems(int $orderId, array $itemCounts): string
     {
-        $count = $this->orderRepository->countItemsForOrder($orderId);
+        $count = \array_key_exists($orderId, $itemCounts)
+            ? $itemCounts[$orderId]
+            : $this->orderRepository->countItemsForOrder($orderId);
         $label = $this->translator->trans(
             $count === 1 ? '%count% article' : '%count% articles',
             ['%count%' => $count],
@@ -235,12 +288,37 @@ final readonly class OrderListRowPresenter
         return $flag.' ';
     }
 
-    private function formatAmount(Order $order): string
+    /**
+     * @param array<int, float> $totals
+     */
+    private function formatAmount(Order $order, array $totals): string
     {
-        $total = number_format((float) $order->getTotalAmount(), 2, ',', ' ');
+        $amount = $totals[(int) $order->getId()] ?? (float) $order->getTotalAmount();
+        $total = number_format($amount, 2, ',', ' ');
         $symbol = (string) ($order->getCurrency() ? $order->getCurrency()->getSymbol() : '');
 
         return $symbol === '' ? $total : $total.' '.$symbol;
+    }
+
+    /**
+     * The title the module carries today, or null when the module is gone or has no
+     * title in this locale. A caller presenting a whole page hands over the titles
+     * it read in one query; a caller presenting a single order lets the order walk
+     * to its module, which the list query has already joined in.
+     *
+     * @param array<int, ?string> $moduleTitles
+     * @param callable(): ?Module $readModule
+     */
+    private function moduleTitle(?int $moduleId, array $moduleTitles, string $locale, callable $readModule): ?string
+    {
+        if ($moduleId !== null && \array_key_exists($moduleId, $moduleTitles)) {
+            return $moduleTitles[$moduleId];
+        }
+
+        $module = $readModule();
+        $module?->setLocale($locale);
+
+        return $module?->getTitle();
     }
 
     private function isUrgent(Order $order, ?string $statusCode): bool

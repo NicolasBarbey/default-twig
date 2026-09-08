@@ -128,7 +128,7 @@
                                     <span class="text-muted ms-2">{{ order.customer.firstname }} {{ order.customer.lastname }}</span>
                                 {% endif %}
                             </div>
-                            <span class="badge text-bg-light">{{ order.totalAmount|number_format(2, ',', ' ') }}&nbsp;{{ order.currency.symbol }}</span>
+                            <span class="badge text-bg-light">{{ (data.recentOrderAmounts[order.id] ?? 0)|number_format(2, ',', ' ') }}&nbsp;{{ order.currency.symbol }}</span>
                         </li>
                     {% else %}
                         <li class="list-group-item text-muted text-center">{{ 'No recent order'|trans }}</li>

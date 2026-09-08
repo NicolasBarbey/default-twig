@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Controller\Configuration;
 
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -29,7 +30,6 @@ use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Model\AreaDeliveryModuleQuery;
 use Thelia\Model\AreaQuery;
 use Thelia\Model\CountryAreaQuery;
-use Thelia\Model\CountryQuery;
 use Thelia\Model\LangQuery;
 use Thelia\Model\ModuleQuery;
 use Thelia\Module\BaseModule;
@@ -51,6 +51,7 @@ final class ShippingZoneController
         private readonly UrlGeneratorInterface $urls,
         private readonly EventDispatcherInterface $events,
         private readonly TokenProvider $tokens,
+        private readonly CountryStateProvider $countryStates,
     ) {
     }
 
@@ -184,12 +185,13 @@ final class ShippingZoneController
 
     private function describeCountries(int $areaId, string $locale): string
     {
+        $countryTitles = $this->countryStates->countryTitles($locale);
+
         $titles = [];
         foreach (CountryAreaQuery::create()->filterByAreaId($areaId)->find() as $countryArea) {
-            $country = CountryQuery::create()->findPk((int) $countryArea->getCountryId());
-            if ($country !== null) {
-                $country->setLocale($locale);
-                $titles[] = (string) $country->getTitle();
+            $countryId = (int) $countryArea->getCountryId();
+            if (isset($countryTitles[$countryId])) {
+                $titles[] = $countryTitles[$countryId];
             }
         }
 

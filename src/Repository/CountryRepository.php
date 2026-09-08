@@ -14,12 +14,14 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Repository;
 
-use Propel\Runtime\ActiveQuery\Criteria;
-use Thelia\Model\Country;
-use Thelia\Model\CountryQuery;
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 
 final readonly class CountryRepository
 {
+    public function __construct(private CountryStateProvider $countryStates)
+    {
+    }
+
     /**
      * @param list<int> $ids
      *
@@ -31,20 +33,12 @@ final readonly class CountryRepository
             return [];
         }
 
-        $countries = CountryQuery::create()
-            ->filterById($ids, Criteria::IN)
-            ->find();
+        $wanted = array_fill_keys($ids, true);
 
-        $items = [];
-        foreach ($countries as $country) {
-            \assert($country instanceof Country);
-            $country->setLocale($locale);
-            $items[] = [
-                'id' => (int) $country->getId(),
-                'title' => (string) $country->getTitle(),
-                'iso' => (string) $country->getIsoalpha2(),
-            ];
-        }
+        $items = array_values(array_filter(
+            $this->countryStates->countries($locale),
+            static fn (array $country): bool => isset($wanted[$country['id']]),
+        ));
 
         usort($items, static fn (array $a, array $b): int => strcmp($a['title'], $b['title']));
 

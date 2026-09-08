@@ -417,6 +417,32 @@ final readonly class OrderFilters
      */
     public static function totalAmountSqlExpression(): string
     {
+        // GREATEST mirrors the clamp in Order::getTotalAmount(): a discount larger
+        // than the items it applies to brings the order down to zero, never below,
+        // and postage is added after the clamp.
+        return '(
+            GREATEST('.self::taxedItemsTotalSqlExpression().' - '.OrderTableMap::COL_DISCOUNT.', 0)
+            + '.OrderTableMap::COL_POSTAGE.'
+        )';
+    }
+
+    /**
+     * The taxed total of the order lines, the figure Order::getTotalAmount() reads
+     * back as total_taxed_price before it takes the discount off and adds the
+     * postage. Exposed so the order list can read it for a whole page of orders in
+     * one query and finish the sum the way the model finishes it, to the cent.
+     *
+     * Which rounding rule applies is a per-order question — see OrderRoundingRule —
+     * so the expression carries the answer as a CASE on the order id: orders below
+     * one of the two pivots keep the rule they were invoiced with, and the rest
+     * follow the rule the shop runs today. A shop that never switched has no pivot
+     * to honour, so it gets a single formula, the historical one.
+     *
+     * An order with no line sums to NULL, which COALESCE turns into the zero the
+     * model reads it as.
+     */
+    public static function taxedItemsTotalSqlExpression(): string
+    {
         $legacyPivot = OrderRoundingRule::legacyPivot();
         $sumOfRoundingsPivot = OrderRoundingRule::sumOfRoundingsPivot();
         $roundsLineTotals = OrderRoundingRule::RoundingOfSums === OrderRoundingRule::shopRule();
@@ -439,13 +465,7 @@ final readonly class OrderFilters
             ? $currentRule
             : 'CASE '.implode(' ', $frozenBranches).' ELSE '.$currentRule.' END';
 
-        // GREATEST mirrors the clamp in Order::getTotalAmount(): a discount larger
-        // than the items it applies to brings the order down to zero, never below,
-        // and postage is added after the clamp.
-        return '(
-            GREATEST(COALESCE('.$itemsTotal.', 0) - '.OrderTableMap::COL_DISCOUNT.', 0)
-            + '.OrderTableMap::COL_POSTAGE.'
-        )';
+        return 'COALESCE('.$itemsTotal.', 0)';
     }
 
     /**
