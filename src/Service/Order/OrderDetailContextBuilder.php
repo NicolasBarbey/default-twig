@@ -17,6 +17,7 @@ namespace BackOfficeDefaultTwigBundle\Service\Order;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Model\ModuleQuery;
 use Thelia\Model\Order;
+use Thelia\Model\OrderConsent;
 use Thelia\Model\OrderCoupon;
 use Thelia\Model\OrderStatusQuery;
 
@@ -110,6 +111,21 @@ final readonly class OrderDetailContextBuilder
         $invoiceDate = $order->getInvoiceDate();
         $invoiceDateString = $invoiceDate instanceof \DateTimeInterface ? $invoiceDate->format(\DATE_ATOM) : null;
 
+        $consents = [];
+        foreach ($order->getOrderConsents() as $orderConsent) {
+            \assert($orderConsent instanceof OrderConsent);
+            // The moment the box was answered, which precedes the order: created_at
+            // here is the instant the proof was written down, inside the order
+            // transaction, and saying "accepted on" about it would be a small lie.
+            $answeredAt = $orderConsent->getAnsweredAt() ?? $orderConsent->getCreatedAt();
+            $consents[] = [
+                'title' => (string) $orderConsent->getTitle(),
+                'description' => (string) $orderConsent->getDescription(),
+                'accepted' => $orderConsent->isAccepted(),
+                'answered_at' => $answeredAt instanceof \DateTimeInterface ? $answeredAt->format(\DATE_ATOM) : null,
+            ];
+        }
+
         return [
             'totals' => [
                 'subtotal_ht' => $subtotalHt,
@@ -146,6 +162,7 @@ final readonly class OrderDetailContextBuilder
                 'delivery_ref' => (string) $order->getDeliveryRef(),
             ],
             'coupons' => $coupons,
+            'consents' => $consents,
             'cancel_status_id' => $cancelStatusId,
             'is_canceled' => $cancelStatusId > 0 && (int) $order->getStatusId() === $cancelStatusId,
             'currency' => [
