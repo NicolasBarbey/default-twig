@@ -20,14 +20,14 @@
     {# Only these curated status words are translated; technical values (versions, paths, sql_mode, ...) are shown verbatim. #}
     {% set translatableValues = ['Yes', 'No', 'Writable', 'Not writable', 'Unavailable', 'Not computed'] %}
 
-    <div class="container-fluid" data-testid="system-information-page" data-controller="bo-copy-to-clipboard">
+    <div class="container-fluid" data-testid="system-information-page" data-controller="bo-copy-to-clipboard"
+         data-bo-copy-to-clipboard-copied-label-value="{{ 'Copied'|trans }}">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
             <h1 class="h3 mb-0">{{ 'System information'|trans }}</h1>
             <button type="button"
                     class="btn btn-outline-primary"
                     data-testid="system-information-copy"
-                    data-action="bo-copy-to-clipboard#copy"
-                    data-bo-copy-to-clipboard-copied-label-value="{{ 'Copied'|trans }}">
+                    data-action="bo-copy-to-clipboard#copy">
                 <i class="bi bi-clipboard" aria-hidden="true"></i> {{ 'Copy the summary'|trans }}
             </button>
         </div>

@@ -4,7 +4,9 @@
 <hr>
 
 {# Free product offered to the customer #}
-<div class="row mb-3" data-controller="bo-coupon-product-picker">
+<div class="row mb-3" data-controller="bo-coupon-product-picker"
+     data-bo-coupon-product-picker-data-value="{{ products_by_category|default({})|json_encode|e('html_attr') }}"
+     data-bo-coupon-product-picker-initial-product-value="{{ offered_product_id|default('') }}">
     <div class="col-md-6">
         <label for="coupon-offered-category" class="form-label">{{ 'Offered category'|trans }}</label>
         <select id="coupon-offered-category" class="form-select" name="coupon_specific[offered_category_id]"
@@ -21,8 +23,6 @@
         <label for="coupon-offered-product" class="form-label">{{ 'Offered product'|trans }}</label>
         <select id="coupon-offered-product" class="form-select" name="coupon_specific[offered_product_id]"
                 data-bo-coupon-product-picker-target="product"
-                data-bo-coupon-product-picker-data-value="{{ products_by_category|default({})|json_encode|e('html_attr') }}"
-                data-bo-coupon-product-picker-initial-product-value="{{ offered_product_id|default('') }}"
                 data-testid="coupon-free-product-product">
             <option value="">- {{ 'Select a product'|trans }} -</option>
         </select>
