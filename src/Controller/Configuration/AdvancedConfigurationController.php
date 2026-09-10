@@ -130,8 +130,15 @@ final class AdvancedConfigurationController
         }
     }
 
+    /**
+     * The document root is `public/` since Thelia 3, and THELIA_WEB_DIR is what
+     * the core itself clears. Pointing at the `web/` of Thelia 2 emptied a
+     * directory that does not exist, and the screen still reported a success.
+     */
     private function webDir(): string
     {
-        return $this->projectDir.\DIRECTORY_SEPARATOR.'web'.\DIRECTORY_SEPARATOR;
+        return \defined('THELIA_WEB_DIR')
+            ? THELIA_WEB_DIR
+            : $this->projectDir.\DIRECTORY_SEPARATOR.'public'.\DIRECTORY_SEPARATOR;
     }
 }
