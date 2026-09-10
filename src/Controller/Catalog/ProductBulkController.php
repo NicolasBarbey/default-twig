@@ -26,9 +26,11 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
-use Thelia\Tools\TokenProvider;
 use Thelia\Model\Product;
+use Thelia\Model\ProductAssociationType;
+use Thelia\Model\ProductAssociationTypeQuery;
 use Thelia\Model\ProductQuery;
+use Thelia\Tools\TokenProvider;
 
 /**
  * Bulk edits on the catalog list: one selection, one action, applied through the
@@ -148,6 +150,9 @@ final class ProductBulkController
     {
         $summary = [];
 
+        $typeCode = (string) $request->request->get('association_type', '');
+        $typeCode = '' === $typeCode ? ProductAssociationType::CODE_ACCESSORY : $typeCode;
+
         $map = [
             'content' => [
                 'add' => fn (array $ids): int => $this->bulk->addContents($products, $ids),
@@ -155,11 +160,12 @@ final class ProductBulkController
                 'addLabel' => '%count% associated contents added',
                 'removeLabel' => '%count% associated contents removed',
             ],
-            'accessory' => [
-                'add' => fn (array $ids): int => $this->bulk->addAccessories($products, $ids),
-                'remove' => fn (array $ids): int => $this->bulk->removeAccessories($products, $ids),
-                'addLabel' => '%count% accessories added',
-                'removeLabel' => '%count% accessories removed',
+            'association' => [
+                'add' => fn (array $ids): int => $this->bulk->addAssociations($products, $ids, $typeCode),
+                'remove' => fn (array $ids): int => $this->bulk->removeAssociations($products, $ids, $typeCode),
+                'addLabel' => '%count% relations added to %type%',
+                'removeLabel' => '%count% relations removed from %type%',
+                'labelParameters' => ['%type%' => $this->associationTypeLabel($typeCode, $request->getLocale())],
             ],
             'category' => [
                 'add' => fn (array $ids): int => $this->bulk->addCategories($products, $ids),
@@ -172,16 +178,38 @@ final class ProductBulkController
         foreach ($map as $kind => $handlers) {
             foreach (['add', 'remove'] as $mode) {
                 $ids = $this->intList($request->request->all($kind.'_'.$mode.'_ids'));
+
+                // The accessory field names the screens used before types existed.
+                if ($ids === [] && 'association' === $kind) {
+                    $ids = $this->intList($request->request->all('accessory_'.$mode.'_ids'));
+                }
+
                 if ($ids === []) {
                     continue;
                 }
 
                 $count = $handlers[$mode]($ids);
-                $summary[] = $this->translator->trans($handlers[$mode.'Label'], ['%count%' => $count]);
+                $summary[] = $this->translator->trans(
+                    $handlers[$mode.'Label'],
+                    ['%count%' => $count] + ($handlers['labelParameters'] ?? []),
+                );
             }
         }
 
         return $summary;
+    }
+
+    private function associationTypeLabel(string $typeCode, string $locale): string
+    {
+        $type = ProductAssociationTypeQuery::create()->filterByCode($typeCode)->findOne();
+
+        if (null === $type) {
+            return $typeCode;
+        }
+
+        $type->setLocale($locale);
+
+        return (string) $type->getTitle();
     }
 
     /**

@@ -14,7 +14,9 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Catalog;
 
+use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Thelia\Model\Accessory;
 use Thelia\Model\AccessoryQuery;
 use Thelia\Model\Category;
 use Thelia\Model\CategoryQuery;
@@ -23,6 +25,8 @@ use Thelia\Model\Folder;
 use Thelia\Model\FolderQuery;
 use Thelia\Model\Product;
 use Thelia\Model\ProductAssociatedContentQuery;
+use Thelia\Model\ProductAssociationType;
+use Thelia\Model\ProductAssociationTypeQuery;
 use Thelia\Model\ProductCategoryQuery;
 use Thelia\Model\ProductQuery;
 use Thelia\Tools\TokenProvider;
@@ -38,7 +42,7 @@ final readonly class ProductRelationsContext
     /**
      * @return array<string, mixed>
      */
-    public function build(Product $product, string $locale): array
+    public function build(Product $product, string $locale, string $uiLocale): array
     {
         $defaultCategoryId = (int) $product->getDefaultCategoryId();
         $additionalCategories = $this->additionalCategories($product, $locale, $defaultCategoryId);
@@ -49,15 +53,13 @@ final readonly class ProductRelationsContext
             'product' => $product,
             'default_category_id' => $defaultCategoryId,
             'folder_tree' => $this->folderTree($locale),
-            'category_tree_for_accessory' => $this->categoryTree($locale),
+            'category_tree_for_relations' => $this->categoryTree($locale),
             'category_tree_for_additional' => $this->categoryTree($locale, excluded: $excludedFromTree),
             'assigned_contents' => $this->assignedContents($product, $locale),
-            'assigned_accessories' => $this->assignedAccessories($product, $locale),
+            'relation_blocks' => $this->relationBlocks($product, $locale, $uiLocale),
             'additional_categories' => $additionalCategories,
             'available_related_content_url' => $this->urls->generate('admin.product.available-related-content', ['productId' => (int) $product->getId(), 'folderId' => 0, '_format' => 'json']),
-            'available_accessories_url' => $this->urls->generate('admin.product.accessories-content', ['productId' => (int) $product->getId(), 'categoryId' => 0, '_format' => 'json']),
             'update_content_position_url' => $this->urls->generate('admin.product.update-content-position'),
-            'update_accessory_position_url' => $this->urls->generate('admin.product.update-accessory-position'),
             'token' => $this->tokens->assignToken(),
         ];
     }
@@ -140,31 +142,116 @@ final readonly class ProductRelationsContext
     }
 
     /**
-     * @return list<array{id: int, accessory_id: int, title: string, position: int}>
+     * One block per visible type, in the order the merchant gave the types.
+     *
+     * Three queries whatever the number of blocks: the types, every relation of the
+     * product whatever its type, and the associated products in one go. Reading each
+     * block on its own would multiply both the relation query and the N+1 the previous
+     * accessory-only read already had.
+     *
+     * @return list<array{type_code: string, title: string, description: string|null, reciprocal: bool, id_prefix: string, add_url: string, delete_url: string, available_url: string, position_url: string, header_hook: string, row_hook: string, rows: list<array{id: int, associated_product_id: int, title: string, position: int}>}>
      */
-    private function assignedAccessories(Product $product, string $locale): array
+    private function relationBlocks(Product $product, string $locale, string $uiLocale): array
     {
-        $assignments = AccessoryQuery::create()
+        $types = ProductAssociationTypeQuery::create()
+            ->filterByVisible(1)
+            ->orderByPosition()
+            ->find();
+
+        if (0 === $types->count()) {
+            return [];
+        }
+
+        $relations = AccessoryQuery::create()
             ->filterByProductId((int) $product->getId())
             ->orderByPosition()
             ->find();
 
-        $items = [];
-        foreach ($assignments as $assignment) {
-            $accessory = ProductQuery::create()->findPk((int) $assignment->getAccessory());
-            if ($accessory === null) {
+        $associatedTitles = $this->associatedProductTitles($relations, $locale);
+
+        $rowsByType = [];
+        foreach ($relations as $relation) {
+            \assert($relation instanceof Accessory);
+            $associatedProductId = (int) $relation->getAccessory();
+
+            if (!isset($associatedTitles[$associatedProductId])) {
                 continue;
             }
-            $accessory->setLocale($locale);
-            $items[] = [
-                'id' => (int) $assignment->getId(),
-                'accessory_id' => (int) $accessory->getId(),
-                'title' => (string) $accessory->getTitle(),
-                'position' => (int) $assignment->getPosition(),
+
+            $rowsByType[(int) $relation->getTypeId()][] = [
+                'id' => (int) $relation->getId(),
+                'associated_product_id' => $associatedProductId,
+                'title' => $associatedTitles[$associatedProductId],
+                'position' => (int) $relation->getPosition(),
             ];
         }
 
-        return $items;
+        $productId = (int) $product->getId();
+        $blocks = [];
+
+        foreach ($types as $type) {
+            \assert($type instanceof ProductAssociationType);
+            $type->setLocale($uiLocale);
+            $code = (string) $type->getCode();
+            $isAccessory = ProductAssociationType::CODE_ACCESSORY === $code;
+
+            $blocks[] = [
+                'type_code' => $code,
+                'title' => (string) $type->getTitle(),
+                'description' => $type->getDescription(),
+                'reciprocal' => $type->isReciprocal(),
+                'id_prefix' => 'product-relation-'.str_replace('_', '-', $code),
+                'add_url' => $this->urls->generate('admin.products.associations.add'),
+                'delete_url' => $this->urls->generate('admin.products.associations.delete'),
+                'available_url' => $this->urls->generate('admin.product.associations-content', [
+                    'productId' => $productId,
+                    'typeCode' => $code,
+                    'categoryId' => 0,
+                    '_format' => 'json',
+                ]),
+                'position_url' => $this->urls->generate('admin.product.update-association-position'),
+                // Modules hooked on the accessory table keep the names they were written
+                // against; the types this release adds get their own.
+                'header_hook' => $isAccessory ? 'product.accessories-table-header' : 'product.associations-table-header',
+                'row_hook' => $isAccessory ? 'product.accessories-table-row' : 'product.associations-table-row',
+                'rows' => $rowsByType[(int) $type->getId()] ?? [],
+            ];
+        }
+
+        return $blocks;
+    }
+
+    /**
+     * @param iterable<mixed> $relations
+     *
+     * @return array<int, string>
+     */
+    private function associatedProductTitles(iterable $relations, string $locale): array
+    {
+        $ids = [];
+        foreach ($relations as $relation) {
+            \assert($relation instanceof Accessory);
+            $ids[] = (int) $relation->getAccessory();
+        }
+
+        $ids = array_values(array_unique($ids));
+
+        if ([] === $ids) {
+            return [];
+        }
+
+        $titles = [];
+        $products = ProductQuery::create()
+            ->filterById($ids, Criteria::IN)
+            ->find();
+
+        foreach ($products as $associated) {
+            \assert($associated instanceof Product);
+            $associated->setLocale($locale);
+            $titles[(int) $associated->getId()] = (string) $associated->getTitle();
+        }
+
+        return $titles;
     }
 
     /**

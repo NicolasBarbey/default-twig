@@ -15,10 +15,10 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Service\Catalog;
 
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-use Thelia\Core\Event\Product\ProductAddAccessoryEvent;
+use Thelia\Core\Event\Product\ProductAddAssociationEvent;
 use Thelia\Core\Event\Product\ProductAddCategoryEvent;
 use Thelia\Core\Event\Product\ProductAddContentEvent;
-use Thelia\Core\Event\Product\ProductDeleteAccessoryEvent;
+use Thelia\Core\Event\Product\ProductDeleteAssociationEvent;
 use Thelia\Core\Event\Product\ProductDeleteCategoryEvent;
 use Thelia\Core\Event\Product\ProductDeleteContentEvent;
 use Thelia\Core\Event\Product\ProductDeleteEvent;
@@ -28,6 +28,7 @@ use Thelia\Core\Event\Product\ProductUpdateEvent;
 use Thelia\Core\Event\TheliaEvents;
 use Thelia\Model\CurrencyQuery;
 use Thelia\Model\Product;
+use Thelia\Model\ProductAssociationType;
 
 /**
  * Applies one edit to a set of products by dispatching the same events the
@@ -130,24 +131,46 @@ final readonly class ProductBulkAction
     }
 
     /**
+     * Kept for compatibility: relates under the accessory type.
+     *
      * @param list<Product> $products
      * @param list<int>     $accessoryIds
      */
     public function addAccessories(array $products, array $accessoryIds): int
     {
-        return $this->relate($products, $accessoryIds, static fn (Product $product, int $id): array => [
-            new ProductAddAccessoryEvent($product, $id), TheliaEvents::PRODUCT_ADD_ACCESSORY,
-        ], skipSelf: true);
+        return $this->addAssociations($products, $accessoryIds, ProductAssociationType::CODE_ACCESSORY);
     }
 
     /**
+     * Kept for compatibility: unrelates under the accessory type.
+     *
      * @param list<Product> $products
      * @param list<int>     $accessoryIds
      */
     public function removeAccessories(array $products, array $accessoryIds): int
     {
-        return $this->relate($products, $accessoryIds, static fn (Product $product, int $id): array => [
-            new ProductDeleteAccessoryEvent($product, $id), TheliaEvents::PRODUCT_REMOVE_ACCESSORY,
+        return $this->removeAssociations($products, $accessoryIds, ProductAssociationType::CODE_ACCESSORY);
+    }
+
+    /**
+     * @param list<Product> $products
+     * @param list<int>     $associatedProductIds
+     */
+    public function addAssociations(array $products, array $associatedProductIds, string $typeCode): int
+    {
+        return $this->relate($products, $associatedProductIds, static fn (Product $product, int $id): array => [
+            new ProductAddAssociationEvent($product, $id, $typeCode), TheliaEvents::PRODUCT_ADD_ASSOCIATION,
+        ], skipSelf: true);
+    }
+
+    /**
+     * @param list<Product> $products
+     * @param list<int>     $associatedProductIds
+     */
+    public function removeAssociations(array $products, array $associatedProductIds, string $typeCode): int
+    {
+        return $this->relate($products, $associatedProductIds, static fn (Product $product, int $id): array => [
+            new ProductDeleteAssociationEvent($product, $id, $typeCode), TheliaEvents::PRODUCT_REMOVE_ASSOCIATION,
         ], skipSelf: true);
     }
 
@@ -191,7 +214,7 @@ final readonly class ProductBulkAction
      * PRODUCT_UPDATE overwrites every editable field, so each event is rehydrated
      * from the product itself and only the targeted field is changed.
      *
-     * @param list<Product>                  $products
+     * @param list<Product>                      $products
      * @param callable(ProductUpdateEvent): void $mutate
      */
     private function updateEach(array $products, string $locale, callable $mutate): int
@@ -223,8 +246,8 @@ final readonly class ProductBulkAction
     }
 
     /**
-     * @param list<Product>                          $products
-     * @param list<int>                              $relatedIds
+     * @param list<Product>                                       $products
+     * @param list<int>                                           $relatedIds
      * @param callable(Product, int): array{0: object, 1: string} $factory
      */
     private function relate(array $products, array $relatedIds, callable $factory, bool $skipSelf = false): int

@@ -398,17 +398,26 @@
                                         {% endfor %}
                                     </select>
                                 </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="bulk-association-type">{{ 'Relation type'|trans }}</label>
+                                    <select id="bulk-association-type" name="association_type" class="form-select" data-testid="product-bulk-association-type">
+                                        {% for type in bulk_association_types %}
+                                            <option value="{{ type.code }}">{{ type.title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">{{ 'The two lists below add to, and remove from, this block of the product sheet.'|trans }}</div>
+                                </div>
                                 <div class="col-md-6">
-                                    <label class="form-label" for="bulk-accessory-add">{{ 'Add accessories'|trans }}</label>
-                                    <select id="bulk-accessory-add" name="accessory_add_ids[]" class="form-select" multiple size="5" data-testid="product-bulk-accessory-add">
+                                    <label class="form-label" for="bulk-association-add">{{ 'Add related products'|trans }}</label>
+                                    <select id="bulk-association-add" name="association_add_ids[]" class="form-select" multiple size="5" data-testid="product-bulk-association-add">
                                         {% for option in bulk_products %}
                                             <option value="{{ option.id }}">{{ option.title }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label" for="bulk-accessory-remove">{{ 'Remove accessories'|trans }}</label>
-                                    <select id="bulk-accessory-remove" name="accessory_remove_ids[]" class="form-select" multiple size="5" data-testid="product-bulk-accessory-remove">
+                                    <label class="form-label" for="bulk-association-remove">{{ 'Remove related products'|trans }}</label>
+                                    <select id="bulk-association-remove" name="association_remove_ids[]" class="form-select" multiple size="5" data-testid="product-bulk-association-remove">
                                         {% for option in bulk_products %}
                                             <option value="{{ option.id }}">{{ option.title }}</option>
                                         {% endfor %}

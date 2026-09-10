@@ -1,0 +1,83 @@
+<div class="col-lg-6">
+    <div class="card shadow-sm border-0 h-100">
+        <div class="card-body"
+             data-controller="bo-category-product-picker"
+             data-bo-category-product-picker-url-template-value="{{ relation.available_url }}">
+            <h2 class="h5 mb-1">{{ relation.title }}</h2>
+            <p class="text-muted">{{ relation.description ?? '' }}</p>
+
+            {% if category_tree_for_relations|length > 0 %}
+                <form method="post" action="{{ relation.add_url }}" class="mb-3" data-testid="{{ relation.id_prefix }}-form">
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <input type="hidden" name="type_code" value="{{ relation.type_code }}">
+                    <input type="hidden" name="current_tab" value="related">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <div class="mb-2">
+                        <label for="{{ relation.id_prefix }}-category-id" class="form-label">{{ 'Category'|trans }}</label>
+                        <select id="{{ relation.id_prefix }}-category-id" name="relation_category_id" class="form-select"
+                                data-bo-category-product-picker-target="category"
+                                data-action="change->bo-category-product-picker#categoryChanged">
+                            <option value="">{{ 'Select a category...'|trans }}</option>
+                            {% for category in category_tree_for_relations %}
+                                <option value="{{ category.id }}" style="padding-left: {{ 3 + category.level * 20 }}px">{{ category.title }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">{{ 'Select a category to get its products'|trans }}</small>
+                    </div>
+                    <div data-bo-category-product-picker-target="picker" class="d-none">
+                        <label for="{{ relation.id_prefix }}-product-id" class="form-label">{{ 'Product'|trans }}</label>
+                        <div class="input-group">
+                            <select id="{{ relation.id_prefix }}-product-id" name="associated_product_id" class="form-select" required
+                                    data-bo-category-product-picker-target="product">
+                                <option value="">{{ 'Select a product...'|trans }}</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary" data-testid="{{ relation.id_prefix }}-add">
+                                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">{{ 'Select a product and click + to add it to this block'|trans }}</small>
+                    </div>
+                    <div data-bo-category-product-picker-target="empty" class="d-none alert alert-info mt-2 mb-0">{{ 'No available product in this category'|trans }}</div>
+                </form>
+            {% else %}
+                <div class="alert alert-info">{{ 'No categories found'|trans }}</div>
+            {% endif %}
+
+            {% set relation_rows = [] %}
+            {% for row in relation.rows %}
+                {% set relation_rows = relation_rows|merge([{
+                    'id': row.id,
+                    'associated_product_id': row.associated_product_id,
+                    'title': row.title,
+                    'position': row.position,
+                    '_actions': [
+                        row_action('delete', 'Remove'|trans, null, '#' ~ relation.id_prefix ~ '-delete', 'UPDATE', 'admin.product', { 'associated-product-id': row.associated_product_id }),
+                    ],
+                }]) %}
+            {% endfor %}
+
+            {{ component('BoDataTable', {
+                id: relation.id_prefix,
+                columns: [
+                    column('associated_product_id', 'ID'|trans, hideBelow: 'md'),
+                    column('title', 'Related product'|trans),
+                    column('position', 'Position'|trans, 'center', hideBelow: 'lg'),
+                    column_actions(),
+                ],
+                rows: relation_rows,
+                emptyMessage: 'This product has no relation of this type'|trans,
+                tbodyAttributes: {
+                    'data-controller': 'bo-sortable',
+                    'data-bo-sortable-url-value': relation.position_url ~ '?product_id=' ~ product.id ~ '&current_tab=related&mode=1',
+                    'data-bo-sortable-token-value': token,
+                    'data-bo-sortable-param-name-value': 'association_id',
+                },
+                extraColumnsHeaderHook: relation.header_hook,
+                headerHookContext: { product_id: product.id, type_code: relation.type_code },
+                extraColumnsHook: relation.row_hook,
+                rowHookContext: { product_id: product.id, type_code: relation.type_code },
+                rowHookArgs: { accessory_id: 'associated_product_id' },
+            }) }}
+        </div>
+    </div>
+</div>

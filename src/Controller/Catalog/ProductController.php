@@ -21,14 +21,14 @@ use BackOfficeDefaultTwigBundle\Repository\CategoryRepository;
 use BackOfficeDefaultTwigBundle\Repository\ProductRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
-use BackOfficeDefaultTwigBundle\Service\Catalog\ProductRelationsContext;
-use BackOfficeDefaultTwigBundle\Service\I18n\EditLocaleResolver;
-use BackOfficeDefaultTwigBundle\Service\Listing\ListingThumbnailPresenter;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductFilterPresenter;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductFilters;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductPricingPresenter;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductPricingProvider;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductPricingSnapshot;
+use BackOfficeDefaultTwigBundle\Service\Catalog\ProductRelationsContext;
+use BackOfficeDefaultTwigBundle\Service\I18n\EditLocaleResolver;
+use BackOfficeDefaultTwigBundle\Service\Listing\ListingThumbnailPresenter;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -57,6 +57,7 @@ use Thelia\Model\Map\ProductTableMap;
 use Thelia\Model\MetaData;
 use Thelia\Model\MetaDataQuery;
 use Thelia\Model\Product;
+use Thelia\Model\ProductAssociationTypeQuery;
 use Thelia\Model\ProductDocumentQuery;
 use Thelia\Model\ProductQuery;
 use Thelia\Model\ProductSaleElements;
@@ -125,6 +126,7 @@ final class ProductController
                 'available_tax_rules' => $this->taxRuleChoices(),
                 'bulk_contents' => $this->contentChoices($locale),
                 'bulk_products' => $this->productChoices($locale),
+                'bulk_association_types' => $this->associationTypeChoices($request->getLocale()),
             ],
         )));
     }
@@ -246,7 +248,7 @@ final class ProductController
                 'prev_url' => $navigation['previous'] !== null ? $this->urls->generate(self::EDIT_ROUTE, ['product_id' => $navigation['previous']]) : null,
                 'next_url' => $navigation['next'] !== null ? $this->urls->generate(self::EDIT_ROUTE, ['product_id' => $navigation['next']]) : null,
             ],
-            $this->relations->build($product, $locale),
+            $this->relations->build($product, $locale, $uiLocale),
         )));
     }
 
@@ -653,6 +655,25 @@ final class ProductController
         }
 
         usort($items, static fn (array $a, array $b): int => strcasecmp($a['title'], $b['title']));
+
+        return $items;
+    }
+
+    /**
+     * @return list<array{code: string, title: string}>
+     */
+    private function associationTypeChoices(string $locale): array
+    {
+        $items = [];
+        $types = ProductAssociationTypeQuery::create()
+            ->filterByVisible(1)
+            ->orderByPosition()
+            ->find();
+
+        foreach ($types as $type) {
+            $type->setLocale($locale);
+            $items[] = ['code' => (string) $type->getCode(), 'title' => (string) $type->getTitle()];
+        }
 
         return $items;
     }
