@@ -1,0 +1,109 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Product relation types'|trans }}{% endblock %}
+{% block body_testid %}configuration-product-association-types{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.index') }}">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Product relation types'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {{ safe_hook('product-association-type.top') }}
+
+    <div class="container-fluid" data-testid="product-association-types-page">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">{{ 'Product relation types management'|trans }}</h1>
+            {% if is_granted('CREATE', 'admin.configuration') %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#product-association-type-create-modal" data-testid="product-association-type-create-button">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add a new relation type'|trans }}
+                </button>
+            {% endif %}
+        </div>
+
+        <p class="text-muted">{{ 'Each type is a block of its own on the product sheet, titled by the name you give it here, in the order set below.'|trans }}</p>
+
+        {{ component('BoDataTable', {
+            id: 'product-association-types',
+            columns: [
+                column('id', 'ID'|trans, 'start', 'id', hideBelow: 'md'),
+                column('title', 'Title'|trans, 'start', 'title'),
+                column('code', 'Code'|trans, 'start', 'code', hideBelow: 'lg'),
+                column_toggle('reciprocal', 'Reciprocal'|trans, null),
+                column('relation_count', 'Relations'|trans, 'center', hideBelow: 'lg'),
+                column_toggle('visible', 'Offered'|trans, 'toggle_visible_url'),
+                column('position', 'Position'|trans, 'center', 'position', hideBelow: 'lg'),
+                column_actions('_actions', 'Actions'|trans),
+            ],
+            rows: rows,
+            emptyMessage: 'No relation type defined yet.'|trans,
+            extraColumnsHeaderHook: 'product-association-type.table-header',
+            extraColumnsHook: 'product-association-type.table-row',
+            rowHookArgs: { product_association_type_id: 'id' },
+            sortField: sort_field,
+            sortDirection: sort_direction,
+            tbodyAttributes: {
+                'data-controller': 'bo-sortable',
+                'data-bo-sortable-url-value': update_position_url,
+                'data-bo-sortable-token-value': update_position_token,
+                'data-bo-sortable-param-name-value': 'product_association_type_id',
+            },
+        }) }}
+    </div>
+
+    {{ safe_hook('product-association-type.bottom') }}
+
+    {% component 'BoCreateDialog' with {
+        id: 'product-association-type-create-modal',
+        title: 'Create a new relation type',
+        form: create_form,
+        formAction: path('admin.product-association-type.create'),
+        submitLabel: 'Create',
+        testid: 'product-association-type-create',
+        size: '',
+    } %}
+        {% block fields %}
+            <div class="mb-3">
+                {{ form_label(create_form.code) }}
+                {{ form_widget(create_form.code, { attr: { class: 'form-control' } }) }}
+                <div class="form-text">{{ 'The code names this type in the code and in the front office. It is set once and cannot be changed afterwards.'|trans }}</div>
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.title) }}
+                {{ form_widget(create_form.title, { attr: { class: 'form-control' } }) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.description) }}
+                {{ form_widget(create_form.description, { attr: { class: 'form-control', rows: 3 } }) }}
+            </div>
+            <div class="form-check mb-2">
+                {{ form_widget(create_form.visible, { attr: { class: 'form-check-input' } }) }}
+                {{ form_label(create_form.visible, null, { label_attr: { class: 'form-check-label' } }) }}
+            </div>
+            <div class="form-check mb-3">
+                {{ form_widget(create_form.reciprocal, { attr: { class: 'form-check-input' } }) }}
+                {{ form_label(create_form.reciprocal, null, { label_attr: { class: 'form-check-label' } }) }}
+            </div>
+            {{ form_widget(create_form.locale) }}
+        {% endblock %}
+    {% endcomponent %}
+
+    {{ component('BoConfirmDialog', {
+        id: 'product-association-type-delete-modal',
+        title: 'Delete relation type',
+        formAction: path('admin.product-association-type.delete'),
+        message: 'Do you really want to delete this relation type?',
+        testid: 'product-association-type-delete',
+        prefillTrigger: 'data-type-id',
+        prefillInput: 'product_association_type_id',
+    }) }}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ safe_hook('product-association-type.js', { location: 'product-association-type-js' }) }}
+{% endblock %}
