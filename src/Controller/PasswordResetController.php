@@ -200,9 +200,7 @@ final class PasswordResetController
         $event->setPassword((string) $form->get('password')->getData());
         $this->events->dispatch($event, TheliaEvents::ADMINISTRATOR_UPDATEPASSWORD);
 
-        if ($session instanceof TheliaSession) {
-            $session->set(self::TOKEN_KEY, null);
-        }
+        $session->set(self::TOKEN_KEY, null);
 
         $this->throttle->reset(self::THROTTLE_CREATE_PASSWORD);
 
