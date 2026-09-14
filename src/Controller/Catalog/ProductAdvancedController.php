@@ -39,6 +39,7 @@ use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\Event\UpdatePositionEvent;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Model\AccessoryQuery;
 use Thelia\Model\Attribute;
 use Thelia\Model\AttributeAvQuery;
 use Thelia\Model\AttributeQuery;
@@ -53,6 +54,7 @@ use Thelia\Model\FeatureQuery;
 use Thelia\Model\FeatureTemplateQuery;
 use Thelia\Model\LangQuery;
 use Thelia\Model\Product;
+use Thelia\Model\ProductAssociationTypeQuery;
 use Thelia\Model\ProductDocument;
 use Thelia\Model\ProductDocumentQuery;
 use Thelia\Model\ProductImage;
@@ -124,7 +126,7 @@ final class ProductAdvancedController
         }
 
         $locale = $this->defaultLocale();
-        $alreadyAssigned = \Thelia\Model\AccessoryQuery::create()
+        $alreadyAssigned = AccessoryQuery::create()
             ->select('accessory')
             ->findByProductId($productId)
             ->toArray();
@@ -144,6 +146,73 @@ final class ProductAdvancedController
         }
 
         return $_format === 'json' ? new JsonResponse($items) : new Response('');
+    }
+
+    /**
+     * The products a category offers for a relation of this type.
+     *
+     * Products already related under this very type are out, and so is the product
+     * itself. Products related under another type stay in: a case may be both an
+     * accessory of the phone and a cross-sell of the charger, and excluding every
+     * relation whatever its type would hide them from the other blocks.
+     */
+    #[Route('/admin/product/{productId}/available-associations/{typeCode}/{categoryId}.{_format}', name: 'admin.product.associations-content', methods: ['GET'], requirements: ['productId' => '\d+', 'typeCode' => '[a-z0-9_]+', 'categoryId' => '\d+'])]
+    public function availableAssociations(int $productId, string $typeCode, int $categoryId, string $_format): Response
+    {
+        if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::VIEW)) {
+            return $denied;
+        }
+
+        $type = ProductAssociationTypeQuery::create()->filterByCode($typeCode)->findOne();
+
+        if (null === $type) {
+            return $_format === 'json' ? new JsonResponse([]) : new Response('');
+        }
+
+        $locale = $this->defaultLocale();
+        $alreadyRelated = AccessoryQuery::create()
+            ->filterByProductId($productId)
+            ->filterByTypeId($type->getId())
+            ->select('accessory')
+            ->find()
+            ->toArray();
+        $excluded = array_merge([$productId], array_map('intval', $alreadyRelated));
+
+        $query = ProductQuery::create()
+            ->useProductCategoryQuery()
+                ->filterByCategoryId($categoryId)
+            ->endUse()
+            ->filterById($excluded, Criteria::NOT_IN)
+            ->orderByPosition();
+
+        $items = [];
+        foreach ($query->find() as $product) {
+            $product->setLocale($locale);
+            $items[] = ['id' => (int) $product->getId(), 'title' => (string) $product->getTitle(), 'ref' => (string) $product->getRef()];
+        }
+
+        return $_format === 'json' ? new JsonResponse($items) : new Response('');
+    }
+
+    #[Route('/admin/product/update-association-position', name: 'admin.product.update-association-position', methods: ['GET', 'POST'])]
+    public function updateAssociationPosition(Request $request): Response
+    {
+        $event = new UpdatePositionEvent(
+            (int) ($request->query->get('association_id') ?? $request->request->get('association_id', 0)),
+            (int) ($request->query->get('mode') ?? $request->request->get('mode', UpdatePositionEvent::POSITION_ABSOLUTE)),
+            (int) ($request->query->get('position') ?? $request->request->get('position', 0)),
+        );
+
+        return $this->action->tokenAction(
+            resource: self::RESOURCE,
+            access: AccessManager::UPDATE,
+            request: $request,
+            event: $event,
+            eventName: TheliaEvents::PRODUCT_UPDATE_ASSOCIATION_POSITION,
+            actionLabel: 'Product relation reorder',
+            successRoute: self::EDIT_ROUTE,
+            successParameters: ['product_id' => (int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)), 'current_tab' => 'related'],
+        );
     }
 
     #[Route('/admin/product/update-content-position', name: 'admin.product.update-content-position', methods: ['GET', 'POST'])]

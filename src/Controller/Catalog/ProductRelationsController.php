@@ -25,9 +25,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Core\Event\Product\ProductAddAccessoryEvent;
+use Thelia\Core\Event\Product\ProductAddAssociationEvent;
 use Thelia\Core\Event\Product\ProductAddCategoryEvent;
 use Thelia\Core\Event\Product\ProductAddContentEvent;
 use Thelia\Core\Event\Product\ProductDeleteAccessoryEvent;
+use Thelia\Core\Event\Product\ProductDeleteAssociationEvent;
 use Thelia\Core\Event\Product\ProductDeleteCategoryEvent;
 use Thelia\Core\Event\Product\ProductDeleteContentEvent;
 use Thelia\Core\Event\TheliaEvents;
@@ -35,6 +37,8 @@ use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Model\CategoryQuery;
 use Thelia\Model\LangQuery;
+use Thelia\Model\Product;
+use Thelia\Model\ProductAssociationType;
 use Thelia\Model\ProductQuery;
 use Twig\Environment;
 
@@ -68,7 +72,7 @@ final class ProductRelationsController
         $locale = $this->defaultLocale();
         $product->setLocale($locale);
 
-        return new Response($this->twig->render('@BackOfficeDefaultTwig/catalog/product/_related_tab.html.twig', $this->relations->build($product, $locale)));
+        return new Response($this->twig->render('@BackOfficeDefaultTwig/catalog/product/_related_tab.html.twig', $this->relations->build($product, $locale, $request->getLocale())));
     }
 
     #[Route('/related/tab/categories/search', name: 'related.tab.categories.search', methods: ['GET'])]
@@ -252,6 +256,63 @@ final class ProductRelationsController
             successRoute: self::EDIT_ROUTE,
             successParameters: ['product_id' => (int) $product->getId(), 'current_tab' => 'related'],
         );
+    }
+
+    #[Route('/association/add', name: 'associations.add', methods: ['POST', 'GET'])]
+    public function addAssociation(Request $request): Response
+    {
+        $product = $this->requestedProduct($request);
+        if ($product === null) {
+            return new RedirectResponse($this->urls->generate('admin.products.default'));
+        }
+
+        return $this->action->tokenAction(
+            resource: self::RESOURCE,
+            access: AccessManager::UPDATE,
+            request: $request,
+            event: new ProductAddAssociationEvent($product, $this->requestedAssociatedProductId($request), $this->requestedTypeCode($request)),
+            eventName: TheliaEvents::PRODUCT_ADD_ASSOCIATION,
+            actionLabel: 'Product relation added',
+            successRoute: self::EDIT_ROUTE,
+            successParameters: ['product_id' => (int) $product->getId(), 'current_tab' => 'related'],
+        );
+    }
+
+    #[Route('/association/delete', name: 'associations.delete', methods: ['POST', 'GET'])]
+    public function deleteAssociation(Request $request): Response
+    {
+        $product = $this->requestedProduct($request);
+        if ($product === null) {
+            return new RedirectResponse($this->urls->generate('admin.products.default'));
+        }
+
+        return $this->action->tokenAction(
+            resource: self::RESOURCE,
+            access: AccessManager::UPDATE,
+            request: $request,
+            event: new ProductDeleteAssociationEvent($product, $this->requestedAssociatedProductId($request), $this->requestedTypeCode($request)),
+            eventName: TheliaEvents::PRODUCT_REMOVE_ASSOCIATION,
+            actionLabel: 'Product relation removed',
+            successRoute: self::EDIT_ROUTE,
+            successParameters: ['product_id' => (int) $product->getId(), 'current_tab' => 'related'],
+        );
+    }
+
+    private function requestedProduct(Request $request): ?Product
+    {
+        return ProductQuery::create()->findPk((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)));
+    }
+
+    private function requestedAssociatedProductId(Request $request): int
+    {
+        return (int) ($request->query->get('associated_product_id') ?? $request->request->get('associated_product_id', 0));
+    }
+
+    private function requestedTypeCode(Request $request): string
+    {
+        $code = (string) ($request->query->get('type_code') ?? $request->request->get('type_code', ''));
+
+        return '' === $code ? ProductAssociationType::CODE_ACCESSORY : $code;
     }
 
     private function defaultLocale(): string

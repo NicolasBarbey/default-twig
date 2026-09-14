@@ -1,0 +1,82 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Edit relation type'|trans }} - {{ product_association_type.title }}{% endblock %}
+{% block body_testid %}configuration-product-association-type-edit{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.index') }}">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.product-association-type.default') }}">{{ 'Product relation types'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ product_association_type.title }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {% form_theme form with bo_form_themes only %}
+
+    {{ safe_hook('product-association-type-edit.top', { product_association_type_id: product_association_type.id }) }}
+
+    <div class="container-fluid" data-testid="product-association-type-edit-page">
+        <h1 class="h3 mb-2">{{ 'Relation type'|trans }} <small class="text-muted"><code>{{ product_association_type.code }}</code> - #{{ product_association_type.id }}</small></h1>
+
+        <div class="mb-3">
+            {{ component('BoLanguageSwitcher', { currentLanguageId: edit_language_id }) }}
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                {{ form_start(form, { action: path('admin.product-association-type.save', { product_association_type_id: product_association_type.id }), method: 'post', attr: { 'data-testid': 'product-association-type-edit-form' } }) }}
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            {{ form_label(form.code) }}
+                            {{ form_widget(form.code, { attr: { class: 'form-control' } }) }}
+                            <div class="form-text">{{ 'The code is set once, when the type is created, and cannot be changed afterwards.'|trans }}</div>
+                        </div>
+                        <div class="col-md-8">
+                            {{ form_label(form.title) }}
+                            {{ form_widget(form.title, { attr: { class: 'form-control' } }) }}
+                            <div class="form-text">{{ 'This is the title of the block on the product sheet, in the language shown above.'|trans }}</div>
+                        </div>
+                        <div class="col-12">
+                            {{ form_label(form.description) }}
+                            {{ form_widget(form.description, { attr: { class: 'form-control', rows: 4 } }) }}
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                {{ form_widget(form.visible, { attr: { class: 'form-check-input' } }) }}
+                                {{ form_label(form.visible, null, { label_attr: { class: 'form-check-label' } }) }}
+                            </div>
+                            <div class="form-check form-switch">
+                                {{ form_widget(form.reciprocal, { attr: { class: 'form-check-input' } }) }}
+                                {{ form_label(form.reciprocal, null, { label_attr: { class: 'form-check-label' } }) }}
+                                <div class="form-text">{{ 'Useful for complementary products: relating a mug to a coffee maker is worth stating both ways. An accessory or a higher-end model reads in one direction only.'|trans }}</div>
+                            </div>
+                            {% if not product_association_type.deletable %}
+                                <div class="form-text" data-testid="product-association-type-locked-notice">
+                                    {{ 'This type is required by the shop: it cannot be deleted. It can still be hidden, so it is no longer offered on the product sheet.'|trans }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {{ form_widget(form.id) }}
+                    {{ form_widget(form.locale) }}
+                    {{ safe_hook('product-association-type.update-form', { product_association_type_id: product_association_type.id }) }}
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <a href="{{ path('admin.product-association-type.default') }}" class="btn btn-outline-secondary">{{ 'Back'|trans }}</a>
+                        <button type="submit" class="btn btn-primary" data-testid="product-association-type-edit-submit"><i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}</button>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+
+    {{ safe_hook('product-association-type-edit.bottom', { product_association_type_id: product_association_type.id }) }}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ safe_hook('product-association-type.edit-js', { product_association_type_id: product_association_type.id }) }}
+    {{ safe_hook('wysiwyg.js') }}
+{% endblock %}
