@@ -1465,6 +1465,7 @@ return [
     'Registration date' => 'Date d\'enregistrement',
     'Related' => 'Associés',
     'Related content' => 'Contenu associé',
+    'Remove' => 'Retirer',
     'Remove accessories' => 'Retirer des accessoires',
     'Remove additional categories' => 'Retirer des catégories supplémentaires',
     'Remove an accessory' => 'Supprimer l\'accessoire',
