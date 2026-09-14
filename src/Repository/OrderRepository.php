@@ -19,6 +19,8 @@ use BackOfficeDefaultTwigBundle\Service\Order\OrderFilters;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Collection\ObjectCollection;
 use Propel\Runtime\Propel;
+use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
+use Thelia\Core\Event\TheliaEvents;
 use Thelia\Model\Map\OrderTableMap;
 use Thelia\Model\Order;
 use Thelia\Model\OrderProduct;
@@ -59,6 +61,19 @@ final class OrderRepository
     private array $statusesWithCounts = [];
 
     /**
+     * The status rows change rarely and through these events only; the counts
+     * change with every order, and a memo per request is what the sidebar wants.
+     */
+    #[AsEventListener(event: TheliaEvents::ORDER_STATUS_CREATE, priority: -128)]
+    #[AsEventListener(event: TheliaEvents::ORDER_STATUS_UPDATE, priority: -128)]
+    #[AsEventListener(event: TheliaEvents::ORDER_STATUS_DELETE, priority: -128)]
+    #[AsEventListener(event: TheliaEvents::ORDER_STATUS_UPDATE_POSITION, priority: -128)]
+    public function reset(): void
+    {
+        $this->statusesWithCounts = [];
+    }
+
+    /**
      * @return array{rows: ObjectCollection<int, Order>, total: int, lastPage: int}
      */
     public function findPaginated(OrderFilters $filters, int $page, int $perPage): array
@@ -94,6 +109,48 @@ final class OrderRepository
     public function findById(int $orderId): ?Order
     {
         return OrderQuery::create()->findPk($orderId);
+    }
+
+    /**
+     * What a bulk status change needs to decide: the identifier, the reference to
+     * name a skipped order with, and the status the graph starts from. Three
+     * columns, no object, nothing the decision does not read.
+     *
+     * @param list<int> $orderIds
+     *
+     * @return list<array{id: int, ref: string, status_id: int}>
+     */
+    public function findStatusDecisionRows(array $orderIds): array
+    {
+        if ($orderIds === []) {
+            return [];
+        }
+
+        $decisions = [];
+
+        foreach (OrderQuery::create()->filterById($orderIds, Criteria::IN)->select(['Id', 'Ref', 'StatusId'])->find() as $row) {
+            $decisions[] = [
+                'id' => (int) $row['Id'],
+                'ref' => (string) $row['Ref'],
+                'status_id' => (int) $row['StatusId'],
+            ];
+        }
+
+        return $decisions;
+    }
+
+    /**
+     * @param list<int> $orderIds
+     *
+     * @return list<Order>
+     */
+    public function findByIds(array $orderIds): array
+    {
+        if ($orderIds === []) {
+            return [];
+        }
+
+        return iterator_to_array(OrderQuery::create()->filterById($orderIds, Criteria::IN)->find(), false);
     }
 
     public function countItemsForOrder(int $orderId): int

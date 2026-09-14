@@ -20,6 +20,7 @@ use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
+use Thelia\Domain\Order\Service\OrderStatusTransitionGuard;
 use Thelia\Model\Module;
 use Thelia\Model\Order;
 use Thelia\Model\OrderStatusQuery;
@@ -45,6 +46,7 @@ final readonly class OrderListRowPresenter
         private TranslatorInterface $translator,
         private OrderRepository $orderRepository,
         private ModuleRepository $moduleRepository,
+        private OrderStatusTransitionGuard $transitionGuard,
     ) {
     }
 
@@ -115,6 +117,8 @@ final readonly class OrderListRowPresenter
         $cancelStatus = OrderStatusQuery::getCancelledStatus();
         $cancelStatusId = $cancelStatus !== null ? (int) $cancelStatus->getId() : 0;
         $isCanceled = $cancelStatusId > 0 && (int) $order->getStatusId() === $cancelStatusId;
+        // The graph decides whether canceling is offered at all; it is memoized for the request.
+        $canCancel = $cancelStatusId > 0 && !$isCanceled && $this->transitionGuard->isAllowed((int) $order->getStatusId(), $cancelStatusId);
 
         return [
             'id' => $orderId,
@@ -125,6 +129,9 @@ final readonly class OrderListRowPresenter
                 $this->urls->generate(self::DETAIL_ROUTE, ['order_id' => $orderId]),
             ),
             'status' => (string) ($status?->getTitle() ?? '-'),
+            // Carried by the selection checkbox, so the bulk toolbar can narrow its
+            // targets to what the graph allows from every ticked order.
+            'status_id' => (int) $order->getStatusId(),
             'status_code' => (string) ($status?->getCode() ?? ''),
             'status_color' => (string) ($status?->getColor() ?: self::FALLBACK_STATUS_COLOR),
             'customer_html' => $this->renderCustomer($order),
@@ -135,7 +142,7 @@ final readonly class OrderListRowPresenter
             'date_html' => $this->renderDate($order),
             'is_urgent' => $isUrgent,
             '_row_class' => $isUrgent ? 'bo-order-row--urgent' : '',
-            '_actions' => $this->buildActions($orderId, $cancelStatusId, $isCanceled, (string) $order->getRef()),
+            '_actions' => $this->buildActions($orderId, $canCancel, (string) $order->getRef()),
         ];
     }
 
@@ -338,7 +345,7 @@ final readonly class OrderListRowPresenter
     /**
      * @return list<RowAction>
      */
-    private function buildActions(int $orderId, int $cancelStatusId, bool $isCanceled, string $orderRef): array
+    private function buildActions(int $orderId, bool $canCancel, string $orderRef): array
     {
         $actions = [
             new RowAction(
@@ -366,7 +373,7 @@ final readonly class OrderListRowPresenter
             ),
         ];
 
-        if ($cancelStatusId > 0 && !$isCanceled) {
+        if ($canCancel) {
             $actions[] = new RowAction(
                 kind: 'cancel',
                 label: $this->translator->trans('Cancel order'),
