@@ -1,0 +1,82 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Edit customer tag'|trans }} - {{ tag.label }}{% endblock %}
+{% block body_testid %}tag-edit{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="/admin/configuration">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.tags.default') }}">{{ 'Customer tags'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ tag.label }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="tag-edit-page">
+        <h1 class="h3 mb-2">{{ 'Customer tag'|trans }} <small class="text-muted">#{{ tag.id }}</small></h1>
+
+        <p class="text-muted">
+            {{ 'Renaming a tag renames it on every customer carrying it.'|trans }}
+            {{ 'Customers carrying this tag: %count%'|trans({'%count%': tag.customer_count}) }}
+        </p>
+
+        <div class="card">
+            <div class="card-body">
+                {% form_theme form with bo_form_themes only %}
+                {{ form_start(form, { action: path('admin.configuration.tags.save'), method: 'post' }) }}
+                    {{ form_row(form.label) }}
+                    {# The checkbox comes first on purpose: a native colour input has no
+                       empty state and always shows a colour, black by default, so the
+                       reader needs to know which of the two controls decides before
+                       looking at the swatch. #}
+                    {{ form_row(form.noColor) }}
+                    {{ form_row(form.colorCode) }}
+                    {{ form_widget(form.id) }}
+                    <div class="d-flex flex-wrap justify-content-end gap-2 mt-3">
+                        {# Outside the submit pair on the left: this leaves the screen
+                           without saving, and sitting next to Save it would read as
+                           part of the same action. #}
+                        {% if tag.customers_url is defined and tag.customers_url and is_granted('VIEW', 'admin.customer') %}
+                            <a href="{{ tag.customers_url }}" class="btn btn-outline-secondary me-auto" data-testid="tag-edit-customers-link">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                {{ 'View customers (%count%)'|trans({'%count%': tag.customer_count}) }}
+                            </a>
+                        {% endif %}
+                        <a href="{{ path('admin.configuration.tags.default') }}" class="btn btn-outline-secondary">{{ 'Cancel'|trans }}</a>
+                        <button type="submit" class="btn btn-primary" data-testid="tag-save-button"><i class="bi bi-check2"></i> {{ 'Save'|trans }}</button>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+
+        {% if merge_targets is not empty %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h2 class="h5">{{ 'Merge into another tag'|trans }}</h2>
+                    <p class="text-muted">
+                        {{ 'The customers carrying this tag will carry the one you pick, and this tag will no longer exist.'|trans }}
+                    </p>
+
+                    {# A GET on purpose: this only leads to the confirmation page,
+                       it changes nothing. The token guards the confirmation. #}
+                    <form action="{{ path('admin.configuration.tags.merge') }}" method="get" class="d-flex flex-wrap gap-2 align-items-end" data-testid="tag-merge-picker">
+                        <input type="hidden" name="tag_id" value="{{ tag.id }}">
+                        <div>
+                            <label for="tag-merge-into" class="form-label">{{ 'Absorb into'|trans }}</label>
+                            <select id="tag-merge-into" name="into" class="form-select" required>
+                                <option value="">{{ 'Pick a tag'|trans }}</option>
+                                {% for target in merge_targets %}
+                                    <option value="{{ target.id }}">{{ target.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-outline-danger">{{ 'Continue'|trans }}</button>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

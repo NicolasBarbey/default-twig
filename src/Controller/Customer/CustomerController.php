@@ -29,6 +29,8 @@ use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilters;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerListRowPresenter;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\StateChoiceProvider;
+use BackOfficeDefaultTwigBundle\Service\Tag\TagSwatch;
+use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -43,6 +45,7 @@ use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Domain\Customer\Service\CustomerTitleService;
+use Thelia\Domain\Tagging\Service\TagService;
 use Thelia\Mailer\MailerFactory;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\Customer;
@@ -51,6 +54,9 @@ use Thelia\Model\Event\CustomerEvent;
 use Thelia\Model\LangQuery;
 use Thelia\Model\Order;
 use Thelia\Model\OrderQuery;
+use Thelia\Model\Tag;
+use Thelia\Model\TagElement;
+use Thelia\Model\TagQuery;
 use Thelia\Tools\Password;
 use Twig\Environment;
 
@@ -86,6 +92,8 @@ final class CustomerController
         private readonly StateChoiceProvider $stateChoices,
         private readonly CountryStateProvider $countryStates,
         private readonly MailerFactory $mailer,
+        private readonly TagService $tags,
+        private readonly TagSwatch $swatch,
     ) {
     }
 
@@ -113,6 +121,7 @@ final class CustomerController
         $phones = $this->customerRepository->findPrimaryPhones($customerIds);
         $primaryCountryIds = $this->customerRepository->findPrimaryCountryIds($customerIds);
         $countriesIndex = $this->buildCountriesIndex($primaryCountryIds, $locale);
+        $tagsByCustomer = $this->tags->findTagsForMany(TagElement::ELEMENT_KEY_CUSTOMER, $customerIds);
 
         $rows = [];
         foreach ($paginated['rows'] as $customer) {
@@ -129,6 +138,7 @@ final class CustomerController
                 phone: $phones[$customerId] ?? '',
                 countryFlag: $country['flag'],
                 countryTitle: $country['title'],
+                tags: $tagsByCustomer[$customerId] ?? [],
             );
         }
 
@@ -295,7 +305,23 @@ final class CustomerController
                 );
             }
 
-            return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['customer_id' => $updated?->getId() ?? $customerId]));
+            // Outside the customer save on purpose, and it cannot be folded into it: the
+            // update travels through the event dispatcher, which opens no transaction this
+            // call could join. The customer is already written when we get here, so a
+            // failure has to say so rather than read as "nothing was saved".
+            $savedCustomerId = (int) ($updated?->getId() ?? $customerId);
+
+            $tagFailure = $this->applySubmittedTags($savedCustomerId, $data);
+            if ($tagFailure !== null) {
+                $this->errorRenderer->setup(
+                    $this->translator->trans('Customer update'),
+                    $this->translator->trans('The customer was saved, but its tags could not be updated.'),
+                    $form,
+                    $tagFailure,
+                );
+            }
+
+            return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['customer_id' => $savedCustomerId]));
         } catch (\Throwable $exception) {
             $this->errorRenderer->setup(
                 $this->translator->trans('Customer update'),
@@ -363,11 +389,16 @@ final class CustomerController
      */
     private function buildUpdateForm(string $locale, ?array $data, bool $includeAddress): FormInterface
     {
+        $tagChoices = $this->tagChoices();
+
         return $this->formFactory->createNamed(self::UPDATE_FORM_NAME, CustomerType::class, $data, array_merge($this->formOptions($locale), [
             'include_id' => true,
             'include_password' => true,
             'password_required' => false,
             'include_address' => $includeAddress,
+            'include_tags' => true,
+            'tag_choices' => array_keys($tagChoices),
+            'tag_colors' => array_filter($tagChoices),
         ]));
     }
 
@@ -523,6 +554,114 @@ final class CustomerController
     /**
      * @return array<string, mixed>
      */
+    /**
+     * The whole tag vocabulary, label => colour, in label order.
+     *
+     * The colour is checked by TagSwatch and not by the template: it is the one
+     * place that decides whether a tag colour may reach a style attribute.
+     *
+     * @return array<string, string>
+     */
+    private function tagChoices(): array
+    {
+        $choices = [];
+
+        foreach (TagQuery::create()->orderByLabel(Criteria::ASC)->find() as $tag) {
+            $choices[(string) $tag->getLabel()] = $this->swatch->color($tag->getColorCode()) ?? '';
+        }
+
+        return $choices;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function currentTagLabels(int $customerId): array
+    {
+        return array_map(
+            static fn (Tag $tag): string => (string) $tag->getLabel(),
+            $this->tags->findTagsFor(TagElement::ELEMENT_KEY_CUSTOMER, $customerId),
+        );
+    }
+
+    /**
+     * Writes the submitted tags and hands back what stopped it, or null on success.
+     *
+     * @param array<string, mixed> $data
+     */
+    private function applySubmittedTags(int $customerId, array $data): ?\Throwable
+    {
+        $picked = \is_array($data['tags'] ?? null) ? $data['tags'] : [];
+        $typed = explode(',', (string) ($data['new_tags'] ?? ''));
+
+        // Passed on as typed: setLabelsFor() normalises every label and drops the
+        // ones that reduce to nothing, so a second pass here would be a guard no
+        // test can tell apart from the one the service already holds.
+        $labels = array_map(static fn (mixed $label): string => (string) $label, [...$picked, ...$typed]);
+
+        // Attaching a tag is customer data; adding a word to the shop vocabulary is
+        // not. The admin API refuses the creation to a profile holding no grant on
+        // the tag resource, so the customer sheet refuses it too instead of being
+        // the way around that check. The known labels are still attached.
+        $refused = $this->labelsRefusedToCreate($labels);
+
+        if ($refused !== []) {
+            $labels = array_values(array_filter(
+                $labels,
+                static fn (string $label): bool => !\in_array(Tag::normalizeLabel($label), $refused, true),
+            ));
+        }
+
+        try {
+            $this->tags->setLabelsFor(TagElement::ELEMENT_KEY_CUSTOMER, $customerId, $labels);
+        } catch (\Throwable $exception) {
+            return $exception;
+        }
+
+        if ($refused !== []) {
+            return new \RuntimeException($this->translator->trans(
+                'Creating a tag needs the tag configuration permission: %labels% not created.',
+                ['%labels%' => implode(', ', array_map(static fn (string $label): string => '"'.$label.'"', $refused))],
+            ));
+        }
+
+        return null;
+    }
+
+    /**
+     * The labels the vocabulary does not hold yet, when the profile may not add to it.
+     *
+     * The grant is only checked once an unknown label is actually submitted: the
+     * check writes an audit entry on refusal, and an administrator who only picks
+     * existing tags has attempted nothing.
+     *
+     * @param list<string> $labels
+     *
+     * @return list<string> normalised labels
+     */
+    private function labelsRefusedToCreate(array $labels): array
+    {
+        $unknown = [];
+
+        foreach ($labels as $label) {
+            $normalized = Tag::normalizeLabel($label);
+
+            if ($normalized === '' || isset($unknown[$normalized])) {
+                continue;
+            }
+
+            if (TagQuery::create()->findOneByLabel($normalized) === null) {
+                $unknown[$normalized] = $normalized;
+            }
+        }
+
+        if ($unknown === [] || $this->access->check(AdminResources::TAG, [], AccessManager::CREATE) === null) {
+            return [];
+        }
+
+        return array_values($unknown);
+    }
+
     private function customerToFormData(Customer $customer): array
     {
         $data = [
@@ -534,6 +673,8 @@ final class CustomerController
             'lang_id' => $customer->getLangId(),
             'discount' => $customer->getDiscount(),
             'reseller' => (bool) $customer->getReseller(),
+            'tags' => $this->currentTagLabels((int) $customer->getId()),
+            'new_tags' => '',
         ];
 
         $address = $customer->getDefaultAddress();

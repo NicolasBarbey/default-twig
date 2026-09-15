@@ -1,0 +1,10 @@
+{{ component('BoConfirmDialog', {
+    id: 'tag-delete-modal',
+    title: 'Delete customer tag',
+    formAction: path('admin.configuration.tags.delete'),
+    message: 'Deleting a tag takes it off every customer carrying it. The customer count of each tag is shown in the list above. This cannot be undone.',
+    testid: 'tag-delete',
+    hook: 'tag.delete-form',
+    prefillTrigger: 'data-tag-id',
+    prefillInput: 'tag_id',
+}) }}

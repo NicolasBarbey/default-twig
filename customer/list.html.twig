@@ -253,6 +253,33 @@
 
                     <div class="col-md-6 col-lg-4">
                         <fieldset>
+                            <legend class="form-label">{{ 'Tags'|trans }}</legend>
+                            {% if filters.tag_options %}
+                                {# Ticking a second tag widens the result, like the language and
+                                   title filters above: a customer matches on any ticked tag. #}
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for option in filters.tag_options %}
+                                        {% set checked = option.id in filters.selected_tag_ids %}
+                                        {# A dot when the tag has a colour, nothing when it has not:
+                                           a fallback icon here would put two glyph systems side by
+                                           side in the same row of pills. #}
+                                        <label class="bo-customer-filters__pill" data-checked="{{ checked ? 'true' : 'false' }}">
+                                            <input type="checkbox" class="visually-hidden" name="tag_ids[]"
+                                                   value="{{ option.id }}" {{ checked ? 'checked' : '' }}>
+                                            {% if option.color %}
+                                                <span class="bo-tag-badge__swatch" style="background-color:{{ option.color }}"></span>
+                                            {% endif %}{{ option.title }}
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted small mb-0">{{ 'No tag available'|trans }}</p>
+                            {% endif %}
+                        </fieldset>
+                    </div>
+
+                    <div class="col-md-6 col-lg-4">
+                        <fieldset>
                             <legend class="form-label">{{ 'Language'|trans }}</legend>
                             {% if filters.lang_options %}
                                 <div class="d-flex flex-wrap gap-2">
@@ -325,6 +352,10 @@
 
         <div class="mt-3">
             {{ safe_hook('customers.caption', { location: 'customer_list_caption' }) }}
+            {# The tag column is declared visibleFrom 'xxl' and not 'xl': this table
+               already fills its container at a laptop width, so below that the tags
+               belong in the details panel the DataTable opens for its hidden columns
+               rather than in the horizontal scroll. #}
             {{ component('BoDataTable', {
                 id: 'customers',
                 columns: [
@@ -336,6 +367,7 @@
                     column_html('total_spent_html', 'Total spent'|trans, 'end', 'total_spent'),
                     column_html('last_order_html', 'Last order'|trans, 'start', visibleFrom: 'xl'),
                     column_html('created_html', 'Registered on'|trans, 'start', 'created_at', visibleFrom: 'lg'),
+                    column_html('tags_html', 'Tags'|trans, 'start', visibleFrom: 'xxl'),
                     column_html('guest_html', 'Account'|trans, 'center'),
                     column_actions('_actions', 'Actions'|trans),
                 ],

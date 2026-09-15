@@ -2186,6 +2186,180 @@ tr.bo-order-row--urgent {
     hr { margin: 1rem 0; }
 }
 
+// ---------- Tag picker ----------
+// Chip input over the tag multi-select of a customer screen. Built to read as
+// one form control: the wrapper carries the border and the focus ring the
+// theme gives an input, and the text field inside it is stripped bare.
+
+.bo-tag-picker__control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .375rem;
+    min-height: calc(1.5em + .75rem + 2px);
+    padding: .375rem .5rem;
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: .5rem;
+    cursor: text;
+}
+
+.bo-tag-picker__control:focus-within {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 .25rem rgba(var(--bs-primary-rgb), .25);
+}
+
+.bo-tag-picker__chips {
+    display: contents;
+}
+
+.bo-tag-picker__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    max-width: 100%;
+    padding: .125rem .25rem .125rem .5rem;
+    font-size: .875rem;
+    line-height: 1.4;
+    background-color: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 999px;
+    overflow-wrap: anywhere;
+}
+
+.bo-tag-picker__swatch {
+    flex: 0 0 auto;
+    width: .625rem;
+    height: .625rem;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, .15);
+}
+
+.bo-tag-picker__remove {
+    flex: 0 0 auto;
+    // A 1.25rem hit area is small for a finger; the enlarged controls further
+    // down the file widen it on touch widths rather than here.
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--bs-secondary-color);
+    background: none;
+    border: 0;
+    border-radius: 50%;
+}
+
+.bo-tag-picker__remove:hover,
+.bo-tag-picker__remove:focus-visible {
+    color: var(--bs-body-color);
+    background-color: var(--bs-tertiary-bg);
+}
+
+.bo-tag-picker__input {
+    // Wraps onto its own line rather than shrinking: this control sits in the
+    // narrow right column, where a shrinking input clips its own placeholder.
+    flex: 1 1 10rem;
+    min-width: 10rem;
+    padding: .125rem 0;
+    color: inherit;
+    background: none;
+    border: 0;
+    outline: 0;
+}
+
+.bo-tag-picker__menu {
+    position: relative;
+    z-index: 5;
+    max-height: 14rem;
+    margin: .25rem 0 0;
+    padding: .25rem;
+    overflow-y: auto;
+    list-style: none;
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: .5rem;
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .1);
+}
+
+.bo-tag-picker__option {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .375rem .5rem;
+    border-radius: .375rem;
+    cursor: pointer;
+}
+
+.bo-tag-picker__option--active,
+.bo-tag-picker__option:hover {
+    background-color: var(--bs-tertiary-bg);
+}
+
+.bo-tag-picker__option--create {
+    font-style: italic;
+    color: var(--bs-secondary-color);
+}
+
+.bo-tag-picker__empty {
+    padding: .375rem .5rem;
+    color: var(--bs-secondary-color);
+}
+
+// Tag badges in a list cell. Same dot as the picker, read-only and tighter: a
+// customer can carry several, and the cell must not push the row taller.
+//
+// No min-width on purpose: this table already fills its container at a laptop
+// width and scrolls horizontally past it, so a floor here buys nothing and
+// pushes the columns after it out of sight.
+
+.bo-tag-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+}
+
+.bo-tag-badge__swatch {
+    flex: 0 0 auto;
+    width: .5rem;
+    height: .5rem;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, .15);
+}
+
+.bo-tag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    padding: .0625rem .375rem;
+    font-size: .75rem;
+    line-height: 1.4;
+    max-width: 100%;
+    background-color: var(--bs-secondary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 999px;
+}
+
+// One line, cut with an ellipsis, inside a table cell only. A pill is a pill:
+// wrapped over three lines it reads as a balloon, and it made the row grow from
+// 60 to 154 pixels. The whole label stays reachable through the title attribute
+// the presenter writes, and the details panel below undoes the cut where there
+// is room for it.
+.bo-tag-badge__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 11rem;
+}
+
+// The details panel is the full width of the table: nothing to gain from
+// cutting a label there, and the operator opened it precisely to read.
+.bo-datatable__details .bo-tag-badge__label {
+    overflow: visible;
+    white-space: normal;
+    max-width: none;
+}
+
 // ---------- Small screens (phone and tablet portrait) ----------
 // The back-office is used from a tablet, sometimes from a phone. Everything
 // below trades density for reach: nothing is hidden that cannot be reached

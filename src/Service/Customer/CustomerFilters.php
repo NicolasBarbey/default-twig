@@ -19,6 +19,7 @@ use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\HttpFoundation\Request;
 use Thelia\Model\CustomerQuery;
 use Thelia\Model\Map\CustomerTableMap;
+use Thelia\Model\TagElement;
 
 /**
  * Single source of truth for the customer list filters: parsing, URL
@@ -49,6 +50,7 @@ final readonly class CustomerFilters
     public const KEY_COUNTRY = 'country_id';
     public const KEY_LANG_IDS = 'lang_ids';
     public const KEY_TITLE_IDS = 'title_ids';
+    public const KEY_TAG_IDS = 'tag_ids';
     public const KEY_PHONE = 'phone';
     public const KEY_SEARCH = 'search';
     public const KEY_PERIOD = 'period';
@@ -76,6 +78,7 @@ final readonly class CustomerFilters
         public ?int $countryId = null,
         public array $langIds = [],
         public array $titleIds = [],
+        public array $tagIds = [],
         public string $phone = '',
         public string $search = '',
         public string $sort = self::DEFAULT_SORT,
@@ -150,6 +153,7 @@ final readonly class CustomerFilters
             countryId: self::parsePositiveInt((string) $query->get('country_id', '')),
             langIds: self::parseIntArray($query->all('lang_ids')),
             titleIds: self::parseIntArray($query->all('title_ids')),
+            tagIds: self::parseIntArray($query->all('tag_ids')),
             phone: trim((string) $query->get('phone', '')),
             search: trim((string) $query->get('q', '')),
             sort: $sort,
@@ -171,6 +175,7 @@ final readonly class CustomerFilters
             && $this->countryId === null
             && $this->langIds === []
             && $this->titleIds === []
+            && $this->tagIds === []
             && $this->phone === '';
     }
 
@@ -213,6 +218,9 @@ final readonly class CustomerFilters
         }
         if ($this->titleIds !== []) {
             $params['title_ids'] = $this->titleIds;
+        }
+        if ($this->tagIds !== []) {
+            $params['tag_ids'] = $this->tagIds;
         }
         if ($this->phone !== '') {
             $params['phone'] = $this->phone;
@@ -262,6 +270,7 @@ final readonly class CustomerFilters
             self::KEY_COUNTRY => ['countryId' => null],
             self::KEY_LANG_IDS => ['langIds' => []],
             self::KEY_TITLE_IDS => ['titleIds' => []],
+            self::KEY_TAG_IDS => ['tagIds' => []],
             self::KEY_PHONE => ['phone' => ''],
             self::KEY_SEARCH => ['search' => ''],
             default => [],
@@ -290,6 +299,7 @@ final readonly class CustomerFilters
         $this->applyGuest($query);
         $this->applyCountry($query);
         $this->applyPhone($query);
+        $this->applyTags($query);
         $this->applyTotalSpentRange($query);
         $this->applyOrderCountRange($query);
         $this->applySearch($query);
@@ -368,6 +378,34 @@ final readonly class CustomerFilters
         );
     }
 
+    /**
+     * Customers carrying at least one of the selected tags.
+     *
+     * One correlated EXISTS whatever the number of tags, and never an AND of
+     * several: ticking a second tag widens the result the way the language and
+     * title filters of this same screen do.
+     *
+     * A raw EXISTS rather than a join: tag_element points at a customer by an
+     * element key and an identifier, with no foreign key Propel could follow,
+     * and a join would multiply the rows of a customer carrying several tags.
+     */
+    private function applyTags(CustomerQuery $query): void
+    {
+        if ($this->tagIds === []) {
+            return;
+        }
+
+        // Placeholders counted, never interpolated: the identifiers themselves
+        // are bound, and the only thing built into the SQL is their number.
+        $placeholders = implode(',', array_fill(0, \count($this->tagIds), '?'));
+
+        $query->where(
+            'EXISTS (SELECT 1 FROM tag_element te WHERE te.element_id = '.CustomerTableMap::COL_ID
+                .' AND te.element_key = ? AND te.tag_id IN ('.$placeholders.'))',
+            [TagElement::ELEMENT_KEY_CUSTOMER, ...$this->tagIds],
+        );
+    }
+
     private function applyTotalSpentRange(CustomerQuery $query): void
     {
         if ($this->minTotalSpent === null && $this->maxTotalSpent === null) {
@@ -421,6 +459,7 @@ final readonly class CustomerFilters
             countryId: \array_key_exists('countryId', $overrides) ? $overrides['countryId'] : $this->countryId,
             langIds: \array_key_exists('langIds', $overrides) ? $overrides['langIds'] : $this->langIds,
             titleIds: \array_key_exists('titleIds', $overrides) ? $overrides['titleIds'] : $this->titleIds,
+            tagIds: \array_key_exists('tagIds', $overrides) ? $overrides['tagIds'] : $this->tagIds,
             phone: \array_key_exists('phone', $overrides) ? $overrides['phone'] : $this->phone,
             search: \array_key_exists('search', $overrides) ? $overrides['search'] : $this->search,
             sort: \array_key_exists('sort', $overrides) ? $overrides['sort'] : $this->sort,

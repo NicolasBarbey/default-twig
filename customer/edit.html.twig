@@ -144,6 +144,62 @@
                         </div>
                     {% endif %}
 
+                    {% if form.tags is defined %}
+                        <div class="card mb-3">
+                            <div class="card-header">
+                                <i class="bi bi-tags" aria-hidden="true"></i> {{ 'Tags'|trans }}
+                            </div>
+                            <div class="card-body"
+                                 data-controller="bo-multiselect-search bo-tag-picker"
+                                 data-bo-tag-picker-create-label-value="{{ 'Create “%label%”'|trans }}"
+                                 data-bo-tag-picker-empty-label-value="{{ 'No matching tag.'|trans }}"
+                                 data-bo-tag-picker-remove-label-value="{{ 'Remove %label%'|trans }}">
+                                {# The chip input below is an enhancement over these two fields, not a
+                                   replacement: they stay in the form and carry the submission. Without
+                                   JavaScript they are what the operator sees, and the search box hides
+                                   the non-matching options client-side the way the coupon and sale
+                                   audiences do. #}
+                                <div data-bo-tag-picker-target="fallback">
+                                    <input type="search"
+                                           class="form-control mb-2"
+                                           placeholder="{{ 'Filter the tags…'|trans }}"
+                                           aria-label="{{ 'Filter the tags…'|trans }}"
+                                           data-bo-multiselect-search-target="input"
+                                           data-action="input->bo-multiselect-search#filter"
+                                           data-testid="customer-tags-filter">
+                                    {{ form_row(form.tags) }}
+                                    {{ form_row(form.new_tags) }}
+                                </div>
+
+                                <div class="d-none" data-bo-tag-picker-target="widget" data-testid="customer-tags-picker">
+                                    {# No visible label: the card header already says "Tags", and a
+                                       second one under it reads as a different field. #}
+                                    <div class="bo-tag-picker__control"
+                                         data-action="click->bo-tag-picker#focusInput">
+                                        <span class="bo-tag-picker__chips" data-bo-tag-picker-target="chips"></span>
+                                        <input type="text"
+                                               id="customer-tags-picker-input"
+                                               class="bo-tag-picker__input"
+                                               autocomplete="off"
+                                               role="combobox"
+                                               aria-autocomplete="list"
+                                               aria-controls="customer-tags-picker-menu"
+                                               aria-label="{{ 'Tags'|trans }}"
+                                               placeholder="{{ 'Search or create a tag…'|trans }}"
+                                               data-bo-tag-picker-target="input"
+                                               data-action="input->bo-tag-picker#search focus->bo-tag-picker#open blur->bo-tag-picker#close keydown->bo-tag-picker#key">
+                                    </div>
+                                    <ul class="bo-tag-picker__menu d-none"
+                                        id="customer-tags-picker-menu"
+                                        role="listbox"
+                                        data-bo-tag-picker-target="menu"></ul>
+                                </div>
+
+                                <span class="form-text small">{{ 'A tag the shop does not know yet is created when the customer is saved.'|trans }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
                     <div class="card mb-3">
                         <div class="card-header">
                             <i class="bi bi-sliders" aria-hidden="true"></i> {{ 'Preferences'|trans }}
@@ -339,7 +395,7 @@
             id: 'customer-anonymize-modal',
             title: 'Anonymize this customer',
             formAction: path('admin.customer.anonymize'),
-            message: 'The name, email, password, addresses, carts and newsletter subscription of this customer are erased, and the identity frozen on their orders is neutralised. The orders themselves, their amounts, taxes and invoice numbers are kept. This cannot be undone.',
+            message: 'The name, email, password, addresses, carts and newsletter subscription of this customer are erased, the tags they carry are taken off them, and the identity frozen on their orders is neutralised. The orders themselves, their amounts, taxes and invoice numbers are kept. This cannot be undone.',
             confirmLabel: 'Anonymize',
             confirmIcon: 'bi-eraser',
             testid: 'customer-anonymize',

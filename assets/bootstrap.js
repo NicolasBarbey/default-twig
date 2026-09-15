@@ -56,6 +56,7 @@ import BoSaleTargetingController from './controllers/bo-sale-targeting_controlle
 import BoSortableController from './controllers/bo-sortable_controller.js';
 import BoStateCascadeController from './controllers/bo-state-cascade_controller.js';
 import BoSystemLogsController from './controllers/bo-system-logs_controller.js';
+import BoTagPickerController from './controllers/bo-tag-picker_controller.js';
 import BoTaxRuleMatrixController from './controllers/bo-tax-rule-matrix_controller.js';
 import BoTemplateNoticeController from './controllers/bo-template-notice_controller.js';
 import BoTranslationsController from './controllers/bo-translations_controller.js';
@@ -119,6 +120,7 @@ app.register('bo-sale-targeting', BoSaleTargetingController);
 app.register('bo-sortable', BoSortableController);
 app.register('bo-state-cascade', BoStateCascadeController);
 app.register('bo-system-logs', BoSystemLogsController);
+app.register('bo-tag-picker', BoTagPickerController);
 app.register('bo-tax-rule-matrix', BoTaxRuleMatrixController);
 app.register('bo-template-notice', BoTemplateNoticeController);
 app.register('bo-translations', BoTranslationsController);

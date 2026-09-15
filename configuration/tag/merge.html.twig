@@ -1,0 +1,54 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Merge customer tags'|trans }}{% endblock %}
+{% block body_testid %}tag-merge{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="/admin/configuration">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.tags.default') }}">{{ 'Customer tags'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Merge'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="tag-merge-page">
+        <h1 class="h3 mb-3">{{ 'Merge customer tags'|trans }}</h1>
+
+        <div class="card border-danger">
+            <div class="card-body">
+                <p>
+                    {{ 'The tag "%absorbed%" will be absorbed into "%surviving%", and will no longer exist.'|trans({
+                        '%absorbed%': absorbed.label,
+                        '%surviving%': surviving.label,
+                    }) }}
+                </p>
+
+                <p class="mb-0">
+                    {# Not the sum of the two counts: a customer carrying both is
+                       one customer, and comes out of the merge with one tag. #}
+                    <strong>{{ 'Customers carrying "%surviving%" afterwards: %count%'|trans({
+                        '%surviving%': surviving.label,
+                        '%count%': resulting_customer_count,
+                    }) }}</strong>
+                </p>
+
+                <p class="text-danger mt-3 mb-0">{{ 'This cannot be undone.'|trans }}</p>
+
+                <form action="{{ path('admin.configuration.tags.merge') }}?_token={{ assignToken() }}" method="post" class="mt-3" data-testid="tag-merge-form">
+                    <input type="hidden" name="tag_id" value="{{ absorbed.id }}">
+                    <input type="hidden" name="into" value="{{ surviving.id }}">
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ path('admin.configuration.tags.update', { tag_id: absorbed.id }) }}" class="btn btn-outline-secondary">{{ 'Cancel'|trans }}</a>
+                        <button type="submit" class="btn btn-danger" data-testid="tag-merge-submit">
+                            <i class="bi bi-sign-merge-left" aria-hidden="true"></i> {{ 'Merge'|trans }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

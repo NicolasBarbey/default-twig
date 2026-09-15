@@ -14,12 +14,14 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Customer;
 
+use BackOfficeDefaultTwigBundle\Service\Tag\TagSwatch;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Model\Customer;
+use Thelia\Model\Tag;
 
 /**
  * Maps a Customer model to the DataTable row shape used by
@@ -36,10 +38,13 @@ final readonly class CustomerListRowPresenter
     public function __construct(
         private UrlGeneratorInterface $urls,
         private TranslatorInterface $translator,
+        private TagSwatch $swatch,
     ) {
     }
 
     /**
+     * @param list<Tag> $tags
+     *
      * @return array<string, mixed>
      */
     public function present(
@@ -51,6 +56,7 @@ final readonly class CustomerListRowPresenter
         string $phone,
         string $countryFlag,
         string $countryTitle,
+        array $tags,
     ): array {
         $customerId = (int) $customer->getId();
         $firstname = (string) $customer->getFirstname();
@@ -70,6 +76,7 @@ final readonly class CustomerListRowPresenter
             'last_order_html' => $this->renderLastOrder($lastOrderAt),
             'created_html' => $this->renderCreatedAt($createdAt),
             'guest_html' => $this->renderGuest($customer->isGuest()),
+            'tags_html' => $this->renderTags($tags),
             'firstname' => $firstname,
             'lastname' => $lastname,
             'email' => $email,
@@ -199,6 +206,37 @@ final readonly class CustomerListRowPresenter
         );
     }
 
+
+    /**
+     * @param list<Tag> $tags
+     */
+    private function renderTags(array $tags): string
+    {
+        if ($tags === []) {
+            return '<span class="text-muted">-</span>';
+        }
+
+        $badges = '';
+
+        foreach ($tags as $tag) {
+            $color = $this->swatch->color($tag->getColorCode());
+            $dot = $color === null
+                ? ''
+                : \sprintf('<span class="bo-tag-badge__swatch" style="background-color:%s"></span>', htmlspecialchars($color));
+
+            // The title carries the whole label: the cell truncates it, and a
+            // truncated tag with no way to read it in full would be worse than
+            // no column at all.
+            $badges .= \sprintf(
+                '<span class="bo-tag-badge" title="%s">%s<span class="bo-tag-badge__label">%s</span></span>',
+                htmlspecialchars((string) $tag->getLabel()),
+                $dot,
+                htmlspecialchars((string) $tag->getLabel()),
+            );
+        }
+
+        return \sprintf('<span class="bo-tag-badges" data-testid="bo-customer-tags">%s</span>', $badges);
+    }
 
     private function renderGuest(bool $isGuest): string
     {

@@ -40,21 +40,24 @@ final readonly class CustomerFilterPresenter
         $countries = $this->catalog->referencedCountries($locale);
         $langs = $this->catalog->langs();
         $titles = $this->catalog->titles($locale);
+        $tags = $this->catalog->tags();
 
         $countryIndex = $this->indexById($countries);
         $langIndex = $this->indexById($langs);
         $titleIndex = $this->indexById($titles);
+        $tagIndex = $this->indexById($tags);
 
         return [
             'is_empty' => $filters->isEmpty(),
             'has_any_filter' => !$filters->isEmpty() || $filters->search !== '' || $filters->period !== CustomerFilters::PERIOD_ALL,
             'advanced_count' => $this->countAdvancedFilters($filters),
-            'active_chips' => $this->buildActiveChips($filters, $countryIndex, $langIndex, $titleIndex),
+            'active_chips' => $this->buildActiveChips($filters, $countryIndex, $langIndex, $titleIndex, $tagIndex),
             'clear_all_url' => $this->urls->generate(self::LIST_ROUTE),
 
             'country_options' => $countries,
             'lang_options' => $langs,
             'title_options' => $titles,
+            'tag_options' => $tags,
             'tristate_options' => $this->tristateOptions(),
             'newsletter_options' => $this->newsletterOptions(),
             'guest_options' => $this->guestOptions(),
@@ -62,6 +65,7 @@ final readonly class CustomerFilterPresenter
             'selected_country_id' => $filters->countryId,
             'selected_lang_ids' => $filters->langIds,
             'selected_title_ids' => $filters->titleIds,
+            'selected_tag_ids' => $filters->tagIds,
             'newsletter_value' => $this->triStateValue($filters->newsletter),
             'guest_value' => $this->triStateValue($filters->guest),
 
@@ -96,6 +100,7 @@ final readonly class CustomerFilterPresenter
         array $countryIndex,
         array $langIndex,
         array $titleIndex,
+        array $tagIndex,
     ): array {
         $chips = [];
 
@@ -176,6 +181,15 @@ final readonly class CustomerFilterPresenter
                 CustomerFilters::KEY_TITLE_IDS,
                 $this->translator->trans('Customer title'),
                 $this->joinTitles($filters->titleIds, $titleIndex),
+            );
+        }
+
+        if ($filters->tagIds !== []) {
+            $chips[] = $this->chip(
+                $filters,
+                CustomerFilters::KEY_TAG_IDS,
+                $this->translator->trans('Tags'),
+                $this->joinTitles($filters->tagIds, $tagIndex),
             );
         }
 
@@ -380,6 +394,9 @@ final readonly class CustomerFilterPresenter
             ++$count;
         }
         if ($filters->titleIds !== []) {
+            ++$count;
+        }
+        if ($filters->tagIds !== []) {
             ++$count;
         }
         if ($filters->phone !== '') {
