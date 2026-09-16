@@ -9,8 +9,8 @@
         "thelia-bootstrap-5"
     ],
     "require": {
-        "php": ">=8.3",
-        "thelia/core": "^3.0.0-beta4",
+        "php": ">=8.3 <9.0",
+        "thelia/core": "^3.1",
         "symfony/asset": "^7.4",
         "symfony/asset-mapper": "^7.4",
         "symfony/framework-bundle": "^7.4",
@@ -22,7 +22,7 @@
         "thelia/custom-delivery-module": "^4.0",
         "thelia/free-order-module": "^3.0",
         "thelia/tiptap-module": "^1.0",
-        "thelia/twig-engine-module": "^1.0",
+        "thelia/twig-engine-module": "^1.0.9",
         "thelia/virtual-product-delivery-module": "^3.0",
         "twbs/bootstrap": "^5.3.8",
         "twbs/bootstrap-icons": "^1.13"
