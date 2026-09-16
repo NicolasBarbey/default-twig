@@ -47,7 +47,7 @@ final class OrderStatusType extends AbstractType
             ])
             ->add('color', TextType::class, [
                 'constraints' => [
-                    new Regex(['pattern' => '/^#[0-9a-fA-F]{6}$/', 'message' => 'Must be a hex color #RRGGBB.']),
+                    new Regex(pattern: '/^#[0-9a-fA-F]{6}$/', message: 'Must be a hex color #RRGGBB.'),
                 ],
                 'required' => false,
                 'label' => $this->translator->trans('Color'),

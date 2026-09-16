@@ -85,28 +85,28 @@ final class ConfigStoreType extends AbstractType
             ])
             ->add('store_vat_intracom', TextType::class, [
                 'required' => false,
-                'constraints' => [new Regex([
-                    'pattern' => '/^[A-Z]{2}[0-9A-Z]{2,13}$/',
-                    'message' => $this->translator->trans('The intra-community VAT number must start with a two letter country code followed by 2 to 13 alphanumeric characters.'),
-                ])],
+                'constraints' => [new Regex(
+                    pattern: '/^[A-Z]{2}[0-9A-Z]{2,13}$/',
+                    message: $this->translator->trans('The intra-community VAT number must start with a two letter country code followed by 2 to 13 alphanumeric characters.'),
+                )],
                 'label' => $this->translator->trans('Intra-community VAT number'),
                 'help' => $this->translator->trans('Country code followed by the national number, without spaces.'),
             ])
             ->add('store_ape_code', TextType::class, [
                 'required' => false,
-                'constraints' => [new Regex([
-                    'pattern' => '/^[0-9]{4}[A-Z]$/',
-                    'message' => $this->translator->trans('The APE code must contain 4 digits followed by one letter.'),
-                ])],
+                'constraints' => [new Regex(
+                    pattern: '/^[0-9]{4}[A-Z]$/',
+                    message: $this->translator->trans('The APE code must contain 4 digits followed by one letter.'),
+                )],
                 'label' => $this->translator->trans('APE / NAF code'),
                 'help' => $this->translator->trans('Business activity code, 4 digits and one letter.'),
             ])
             ->add('store_eori', TextType::class, [
                 'required' => false,
-                'constraints' => [new Regex([
-                    'pattern' => '/^[A-Z]{2}[0-9A-Z]{1,15}$/',
-                    'message' => $this->translator->trans('The EORI number must start with a two letter country code followed by up to 15 alphanumeric characters.'),
-                ])],
+                'constraints' => [new Regex(
+                    pattern: '/^[A-Z]{2}[0-9A-Z]{1,15}$/',
+                    message: $this->translator->trans('The EORI number must start with a two letter country code followed by up to 15 alphanumeric characters.'),
+                )],
                 'label' => $this->translator->trans('EORI number'),
                 'help' => $this->translator->trans('Required only for customs operations outside the European Union.'),
             ])
@@ -183,7 +183,7 @@ final class ConfigStoreType extends AbstractType
             ])
             ->add('favicon_file', FileType::class, [
                 'required' => false,
-                'constraints' => [new Image(['mimeTypes' => ['image/png', 'image/x-icon']])],
+                'constraints' => [new Image(mimeTypes: ['image/png', 'image/x-icon'])],
                 'label' => $this->translator->trans('Favicon image'),
                 'help' => $this->translator->trans('Icon of the website. Only PNG and ICO files are allowed.'),
             ])

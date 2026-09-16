@@ -147,7 +147,7 @@ final class CustomerType extends AbstractType
             ])
             ->add('discount', NumberType::class, [
                 'required' => false,
-                'constraints' => [new Range(['min' => 0, 'max' => 100])],
+                'constraints' => [new Range(min: 0, max: 100)],
                 'label' => $tr->trans('Discount (%)'),
             ])
             ->add('reseller', CheckboxType::class, [

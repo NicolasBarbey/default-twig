@@ -31,6 +31,7 @@ final class LangUrlType extends AbstractType
         foreach ($options['languages'] as $lang) {
             $builder->add(self::FIELD_PREFIX.$lang['id'], UrlType::class, [
                 'data' => $lang['url'] ?? '',
+                'default_protocol' => 'https',
                 'required' => false,
                 'label' => $lang['title'],
             ]);
