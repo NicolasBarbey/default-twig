@@ -87,7 +87,7 @@
         <h1 class="h3 mb-4">{{ 'Configuration'|trans }}</h1>
 
         {% for section in sections %}
-            {% set visible_items = section.items|filter((item) => item.enabled|default(true) and is_granted('VIEW', item.resource)) %}
+            {% set visible_items = section.items|filter((item) => (item.enabled is defined ? item.enabled : true) and is_granted('VIEW', item.resource)) %}
             {% if visible_items|length > 0 or section.hookTop is defined %}
                 <h2 class="h5 text-muted mb-3">{{ section.title }}</h2>
                 <div class="row g-3 mb-4" data-testid="configuration-section">
