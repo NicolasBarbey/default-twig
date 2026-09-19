@@ -157,7 +157,7 @@
             {% endif %}
 
             {% if is_granted('VIEW', 'admin.tools') %}
-                {% set active = nav.is_section(current_path, ['/admin/tools', '/admin/coupon', '/admin/sale', '/admin/newsletter', '/admin/export', '/admin/import', '/admin/brand']) %}
+                {% set active = nav.is_section(current_path, ['/admin/tools', '/admin/coupon', '/admin/sale', '/admin/catalog-price-rule', '/admin/newsletter', '/admin/export', '/admin/import', '/admin/brand']) %}
                 <li class="nav-item" data-testid="bo-nav-tools">
                     <a href="#bo-nav-tools-collapse" data-bs-toggle="collapse" aria-expanded="{{ active ? 'true' : 'false' }}" class="nav-link bo-side-nav__toggle {{ active ? 'active' : '' }}">
                         <i class="bi bi-wrench-adjustable me-2" aria-hidden="true"></i>
@@ -179,6 +179,10 @@
                                edit screen (/admin/sale/update/{id}). #}
                             {% set item_active = nav.is_section(current_path, ['/admin/sale']) %}
                             <li><a class="nav-link {{ item_active ? 'active' : '' }}" href="{{ path('admin.sale.default') }}" data-testid="bo-nav-tools-sales">{{ 'Sales'|trans }}</a></li>
+                        {% endif %}
+                        {% if is_granted('VIEW', 'admin.catalog-price-rule') %}
+                            {% set item_active = nav.is_section(current_path, ['/admin/catalog-price-rule']) %}
+                            <li><a class="nav-link {{ item_active ? 'active' : '' }}" href="{{ path('admin.catalog-price-rule.list') }}" data-testid="bo-nav-tools-catalog-price-rules">{{ 'Catalog price rules'|trans }}</a></li>
                         {% endif %}
                         {% set item_active = nav.is_section(current_path, ['/admin/newsletter']) %}
                         <li><a class="nav-link {{ item_active ? 'active' : '' }}" href="{{ path('admin.newsletter.default') }}">{{ 'Newsletter'|trans }}</a></li>

@@ -1,0 +1,312 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Edit rule'|trans }} - {{ rule.title }}{% endblock %}
+{% block body_testid %}catalog-price-rule-edit{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.catalog-price-rule.list') }}">{{ 'Catalog price rules'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ rule.title ?: '#' ~ rule.id }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {{ safe_hook('catalog-price-rule-edit.top', { catalog_price_rule_id: rule.id }) }}
+
+    <div class="container-fluid"
+         data-testid="catalog-price-rule-edit-page"
+         data-controller="bo-catalog-price-rule-form"
+         data-bo-catalog-price-rule-form-products-url-value="{{ products_url }}"
+         data-bo-catalog-price-rule-form-preview-url-value="{{ preview_url }}"
+         data-bo-catalog-price-rule-form-percentage-type-value="{{ constant('Thelia\\Model\\CatalogPriceRule::EFFECT_TYPE_PERCENTAGE') }}"
+         data-bo-catalog-price-rule-form-reserved-mode-value="{{ constant('Thelia\\Model\\CatalogPriceRule::AUDIENCE_MODE_CUSTOMERS') }}"
+         data-bo-catalog-price-rule-form-count-template-value="{{ '%count% product(s) named'|trans }}"
+         data-bo-catalog-price-rule-form-preview-failed-value="{{ 'The preview could not be computed. Check the form and try again.'|trans }}">
+
+        {% form_theme form with bo_form_themes only %}
+        {{ form_start(form, { action: path('admin.catalog-price-rule.save', { rule_id: rule.id }), attr: { 'data-testid': 'catalog-price-rule-edit-form', 'data-bo-catalog-price-rule-form-target': 'form' } }) }}
+            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+                <h1 class="h3 mb-0">{{ rule.title ?: '#' ~ rule.id }}</h1>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ path('admin.catalog-price-rule.list') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left" aria-hidden="true"></i> {{ 'Back to list'|trans }}
+                    </a>
+                    <button type="button" class="btn btn-outline-primary" data-action="bo-catalog-price-rule-form#preview" data-testid="catalog-price-rule-preview-btn">
+                        <i class="bi bi-eye" aria-hidden="true"></i> {{ 'Preview prices'|trans }}
+                    </button>
+                    <button type="submit" class="btn btn-primary" data-testid="catalog-price-rule-edit-submit">
+                        <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                {{ component('BoLanguageSwitcher', { currentLanguageId: edit_language_id }) }}
+            </div>
+
+            {{ form_widget(form.id) }}
+            {{ form_widget(form.locale) }}
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card mb-3">
+                        <div class="card-header">{{ 'General information'|trans }}</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                {{ form_label(form.title) }}
+                                {{ form_widget(form.title, { attr: { class: 'form-control', 'data-testid': 'catalog-price-rule-title' } }) }}
+                            </div>
+                            <div class="mb-0">
+                                {{ form_label(form.description) }}
+                                {{ form_widget(form.description, { attr: { class: 'form-control', rows: 3 } }) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3" data-testid="catalog-price-rule-scope-card">
+                        <div class="card-header">{{ 'Scope'|trans }}</div>
+                        <div class="card-body">
+                            <p class="form-text mt-0">{{ 'The criteria below combine with AND: a product has to match every criterion type that names something. Within one type, naming several values means any of them. A type left empty restricts nothing.'|trans }}</p>
+
+                            {% if unknown_criterion_types is not empty %}
+                                <div class="alert alert-danger" data-testid="catalog-price-rule-unknown-criteria">
+                                    {{ 'A criterion of this rule (%types%) cannot be resolved by any installed module: the rule covers nothing until it is removed. Saving the rule drops it.'|trans({'%types%': unknown_criterion_types|join(', ')}) }}
+                                </div>
+                            {% endif %}
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="rule-criteria-category">{{ 'Categories'|trans }}</label>
+                                    <div data-controller="bo-multiselect-search">
+                                        <input type="search" class="form-control form-control-sm mb-1" placeholder="{{ 'Filter…'|trans }}" aria-label="{{ 'Filter the categories'|trans }}"
+                                               data-bo-multiselect-search-target="input" data-action="input->bo-multiselect-search#filter">
+                                        <select id="rule-criteria-category" multiple size="8" class="form-select" name="criteria[category][]"
+                                                data-bo-multiselect-search-target="select" data-testid="catalog-price-rule-criteria-category">
+                                            {% for choice in criteria.category.choices %}
+                                                <option value="{{ choice.id }}" {% if choice.id in criteria.category.selected %}selected{% endif %}>{{ choice.title }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="form-check mt-2">
+                                        {{ form_widget(form.include_subcategories, { attr: { class: 'form-check-input', 'data-testid': 'catalog-price-rule-include-subcategories' } }) }}
+                                        {{ form_label(form.include_subcategories, null, { label_attr: { class: 'form-check-label' } }) }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="rule-criteria-brand">{{ 'Brands'|trans }}</label>
+                                    <select id="rule-criteria-brand" multiple size="5" class="form-select" name="criteria[brand][]" data-testid="catalog-price-rule-criteria-brand">
+                                        {% for choice in criteria.brand.choices %}
+                                            <option value="{{ choice.id }}" {% if choice.id in criteria.brand.selected %}selected{% endif %}>{{ choice.title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <label class="form-label mt-3" for="rule-criteria-template">{{ 'Product templates'|trans }}</label>
+                                    <select id="rule-criteria-template" multiple size="4" class="form-select" name="criteria[template][]" data-testid="catalog-price-rule-criteria-template">
+                                        {% for choice in criteria.template.choices %}
+                                            <option value="{{ choice.id }}" {% if choice.id in criteria.template.selected %}selected{% endif %}>{{ choice.title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="rule-criteria-feature-av">{{ 'Feature values'|trans }}</label>
+                                    <select id="rule-criteria-feature-av" multiple size="8" class="form-select" name="criteria[feature_av][]" data-testid="catalog-price-rule-criteria-feature-av">
+                                        {% for group in criteria.feature_av.groups %}
+                                            <optgroup label="{{ group.title }}">
+                                                {% for choice in group.values %}
+                                                    <option value="{{ choice.id }}" {% if choice.id in criteria.feature_av.selected %}selected{% endif %}>{{ choice.title }}</option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="rule-criteria-attribute-av">{{ 'Attribute values'|trans }}</label>
+                                    <select id="rule-criteria-attribute-av" multiple size="8" class="form-select" name="criteria[attribute_av][]" data-testid="catalog-price-rule-criteria-attribute-av">
+                                        {% for group in criteria.attribute_av.groups %}
+                                            <optgroup label="{{ group.title }}">
+                                                {% for choice in group.values %}
+                                                    <option value="{{ choice.id }}" {% if choice.id in criteria.attribute_av.selected %}selected{% endif %}>{{ choice.title }}</option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">{{ 'Narrows the rule down to the sale elements carrying one of these values.'|trans }}</div>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <label class="form-label" for="rule-product-categories">{{ 'Named products'|trans }}</label>
+                            <p class="form-text mt-0">{{ 'For the special cases a criterion cannot express: pick categories, load their products and tick the ones the rule names. A named product is covered whatever the other criteria say about it.'|trans }}</p>
+                            <div class="d-flex flex-wrap gap-2 align-items-end mb-2">
+                                <div class="flex-grow-1">
+                                    <select id="rule-product-categories" multiple size="4" class="form-select" data-bo-catalog-price-rule-form-target="productCategories" data-testid="catalog-price-rule-product-categories">
+                                        {% for choice in criteria.category.choices %}
+                                            <option value="{{ choice.id }}">{{ choice.title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-outline-primary" data-action="bo-catalog-price-rule-form#loadProducts" data-testid="catalog-price-rule-load-products">
+                                    <i class="bi bi-download" aria-hidden="true"></i> {{ 'Load products'|trans }}
+                                </button>
+                            </div>
+                            <input type="search" class="form-control form-control-sm mb-2" placeholder="{{ 'Reference or title'|trans }}" autocomplete="off" aria-label="{{ 'Filter the loaded products'|trans }}"
+                                   data-bo-catalog-price-rule-form-target="productFilter"
+                                   data-action="input->bo-catalog-price-rule-form#filterProducts keydown.enter->bo-catalog-price-rule-form#blockEnter">
+                            <div class="form-text mt-0 mb-2" aria-live="polite" data-bo-catalog-price-rule-form-target="productCount" data-testid="catalog-price-rule-product-count" data-selected-count="{{ selected_products|length }}">
+                                {{ '%count% product(s) named'|trans({'%count%': selected_products|length}) }}
+                            </div>
+                            <div class="border rounded p-3" style="max-height: 280px; overflow-y: auto;" data-bo-catalog-price-rule-form-target="productZone" data-testid="catalog-price-rule-product-zone" data-action="change->bo-catalog-price-rule-form#refreshProducts">
+                                {% for product in selected_products %}
+                                    <div class="form-check mb-1" data-rule-product-row="1" data-product-id="{{ product.id }}" data-search="{{ (product.ref ~ ' ' ~ product.title)|lower }}">
+                                        <input class="form-check-input" type="checkbox" name="products[]" value="{{ product.id }}" id="rule-product-{{ product.id }}" data-testid="catalog-price-rule-product-check-{{ product.id }}" checked>
+                                        <label class="form-check-label" for="rule-product-{{ product.id }}"><code>{{ product.ref }}</code> {{ product.title }}</label>
+                                    </div>
+                                {% else %}
+                                    <p class="text-body-secondary mb-0" data-bo-catalog-price-rule-form-target="productEmptyHint">{{ 'No product named. The criteria above decide the scope.'|trans }}</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% set targeted_count = selected_customer_ids|length %}
+                    {% set reserved_for_nobody = rule_is_reserved and targeted_count == 0 %}
+                    <div class="card mb-3" data-testid="catalog-price-rule-audience-card">
+                        <div class="card-header">{{ 'Audience'|trans }}</div>
+                        <div class="card-body">
+                            {% if can_target_customers %}
+                                <fieldset class="mb-3">
+                                    {{ form_label(form.audience_mode) }}
+                                    {% for choice in form.audience_mode %}
+                                        {{ form_widget(choice, { attr: {
+                                            'data-bo-catalog-price-rule-form-target': 'audience',
+                                            'data-action': 'change->bo-catalog-price-rule-form#update',
+                                            'data-testid': 'catalog-price-rule-audience-' ~ choice.vars.value,
+                                        } }) }}
+                                    {% endfor %}
+                                </fieldset>
+                                <div data-bo-catalog-price-rule-form-target="reservedField" data-testid="catalog-price-rule-reserved-settings"
+                                     class="{{ form.audience_mode.vars.value == constant('Thelia\\Model\\CatalogPriceRule::AUDIENCE_MODE_CUSTOMERS') ? '' : 'd-none' }}">
+                                    <label class="form-label" for="rule-customers-select">{{ 'Customers this rule prices for'|trans }}</label>
+                                    {% if reserved_for_nobody %}
+                                        <div class="alert alert-danger py-2" data-testid="catalog-price-rule-reserved-empty">
+                                            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                                            {{ 'Reserved, but no customer is named any more: nobody gets this price. Select customers again, or open the rule to everyone.'|trans }}
+                                        </div>
+                                    {% endif %}
+                                    {% include '@BackOfficeDefaultTwig/fragments/customer-multiselect.html.twig' with {
+                                        name: 'rule_customers[]',
+                                        choices: customer_choices,
+                                        selected: selected_customer_ids,
+                                        testid: 'catalog-price-rule-customers',
+                                        id: 'rule-customers-select',
+                                        with_email: can_target_customers,
+                                    } only %}
+                                    <div class="form-text">{{ 'A reserved rule is resolved when the customer reads a price; its prices are not stored ahead of time. Customer groups will come with a later version.'|trans }}</div>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning mb-0" data-testid="catalog-price-rule-customers-warning">
+                                    <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                                    {% if rule_is_reserved %}
+                                        {{ 'This rule prices for %count% named customer(s). Changing who it is for needs the permission to view customers, so its current audience is kept as is when you save.'|trans({'%count%': targeted_count}) }}
+                                    {% else %}
+                                        {{ 'This rule prices for everyone. Reserving it for named customers needs the permission to view customers.'|trans }}
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="card mb-3" data-testid="catalog-price-rule-preview-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>{{ 'Preview'|trans }}</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-action="bo-catalog-price-rule-form#preview" data-testid="catalog-price-rule-preview-btn-card">
+                                <i class="bi bi-eye" aria-hidden="true"></i> {{ 'Preview prices'|trans }}
+                            </button>
+                        </div>
+                        <div class="card-body" data-bo-catalog-price-rule-form-target="previewZone" data-testid="catalog-price-rule-preview-zone">
+                            <p class="text-body-secondary mb-0">{{ 'Today the rule covers %products% product(s) (%sale_elements% sale element(s)). Preview the prices as the form stands before saving or turning the rule on.'|trans({'%products%': coverage.products, '%sale_elements%': coverage.sale_elements}) }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card mb-3">
+                        <div class="card-header">{{ 'Settings'|trans }}</div>
+                        <div class="card-body">
+                            <div class="form-check form-switch mb-2">
+                                {{ form_widget(form.active, { attr: { class: 'form-check-input', 'data-testid': 'catalog-price-rule-active' } }) }}
+                                {{ form_label(form.active, null, { label_attr: { class: 'form-check-label' } }) }}
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                {{ form_widget(form.display_initial_price, { attr: { class: 'form-check-input', 'data-testid': 'catalog-price-rule-display-initial-price' } }) }}
+                                {{ form_label(form.display_initial_price, null, { label_attr: { class: 'form-check-label' } }) }}
+                            </div>
+                            <div class="mb-3">
+                                {{ form_label(form.priority) }}
+                                {{ form_widget(form.priority, { attr: { class: 'form-control', min: 0, 'data-testid': 'catalog-price-rule-priority' } }) }}
+                                {{ form_help(form.priority) }}
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                {{ form_widget(form.stop_processing, { attr: { class: 'form-check-input', 'data-testid': 'catalog-price-rule-stop-processing' } }) }}
+                                {{ form_label(form.stop_processing, null, { label_attr: { class: 'form-check-label' } }) }}
+                            </div>
+                            <div data-controller="bo-date-range" data-bo-date-range-format-value="Y-m-d H:i:s">
+                                <div class="mb-3">
+                                    {{ form_label(form.start_date) }}
+                                    {{ form_widget(form.start_date, { attr: { class: 'form-control', placeholder: 'YYYY-MM-DD HH:mm:ss', 'data-testid': 'catalog-price-rule-start-date', 'data-bo-date-range-target': 'start', 'data-action': 'input->bo-date-range#validate' } }) }}
+                                </div>
+                                <div class="mb-0">
+                                    {{ form_label(form.end_date) }}
+                                    {{ form_widget(form.end_date, { attr: { class: 'form-control', placeholder: 'YYYY-MM-DD HH:mm:ss', 'data-testid': 'catalog-price-rule-end-date', 'data-bo-date-range-target': 'end', 'data-action': 'input->bo-date-range#validate' } }) }}
+                                    {{ form_help(form.end_date) }}
+                                    <div class="invalid-feedback" data-bo-date-range-target="message" hidden>{{ 'The end date must be after the start date.'|trans }}</div>
+                                </div>
+                            </div>
+                            <div class="form-text mt-3" data-testid="catalog-price-rule-state" data-state="{{ coverage.state }}">
+                                {% if coverage.dirty %}
+                                    {{ 'The stored prices of this rule are pending: the scheduled command finishes them.'|trans }}
+                                {% elseif coverage.computed_at %}
+                                    {{ 'Stored prices computed on %date%.'|trans({'%date%': coverage.computed_at}) }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3" data-testid="catalog-price-rule-effect-card">
+                        <div class="card-header">{{ 'Effect'|trans }}</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                {{ form_label(form.effect_type) }}
+                                {{ form_widget(form.effect_type, { attr: { class: 'form-select', 'data-testid': 'catalog-price-rule-effect-type', 'data-bo-catalog-price-rule-form-target': 'effectType', 'data-action': 'change->bo-catalog-price-rule-form#update' } }) }}
+                            </div>
+                            <div data-bo-catalog-price-rule-form-target="percentageField" class="mb-0 {{ form.effect_type.vars.value == constant('Thelia\\Model\\CatalogPriceRule::EFFECT_TYPE_PERCENTAGE') ? '' : 'd-none' }}">
+                                {{ form_label(form.percentage_value) }}
+                                <div class="input-group">
+                                    {{ form_widget(form.percentage_value, { attr: { class: 'form-control', min: 0, max: 100, step: '0.01', 'data-testid': 'catalog-price-rule-percentage' } }) }}
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div data-bo-catalog-price-rule-form-target="currencyField" class="mb-0 {{ form.effect_type.vars.value == constant('Thelia\\Model\\CatalogPriceRule::EFFECT_TYPE_PERCENTAGE') ? 'd-none' : '' }}">
+                                <label class="form-label">{{ 'Value per currency, tax included'|trans }}</label>
+                                {% for currency in currencies %}
+                                    <div class="input-group mb-2">
+                                        <span class="input-group-text" style="min-width: 4.5rem;">{{ currency.code }}</span>
+                                        <input type="number" step="0.01" min="0" class="form-control" name="effect_value[{{ currency.id }}]" value="{{ currency.value }}"
+                                               data-testid="catalog-price-rule-effect-value-{{ currency.id }}" aria-label="{{ currency.code }}">
+                                        <span class="input-group-text">{{ currency.symbol }}</span>
+                                    </div>
+                                {% endfor %}
+                                <div class="form-text">{{ 'An amount is taken off the price tax included; a fixed price is the price tax included the customer pays. A currency left blank is not priced by this rule.'|trans }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {{ form_end(form) }}
+    </div>
+
+    {{ safe_hook('catalog-price-rule-edit.bottom', { catalog_price_rule_id: rule.id }) }}
+{% endblock %}

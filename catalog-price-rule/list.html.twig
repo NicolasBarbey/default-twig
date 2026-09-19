@@ -1,0 +1,140 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Catalog price rules'|trans }}{% endblock %}
+{% block body_testid %}catalog-price-rules-list{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.tools.index') }}">{{ 'Tools'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Catalog price rules'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {{ safe_hook('catalog-price-rule.top', { location: 'catalog_price_rule_top' }) }}
+
+    <div class="container-fluid" data-testid="catalog-price-rules-page">
+        {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: 'Catalog price rules'|trans } %}
+            {% block actions %}
+                <a href="{{ global_actions.recompute_url }}" class="btn btn-outline-secondary btn-sm" data-testid="catalog-price-rule-recompute"
+                   title="{{ 'Finish the rules whose prices are still pending, and drop the stored prices already over.'|trans }}">
+                    <i class="bi bi-arrow-repeat" aria-hidden="true"></i> {{ 'Recompute pending prices'|trans }}
+                </a>
+                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#catalog-price-rule-create-modal" data-testid="catalog-price-rule-create-btn">
+                    <i class="bi bi-plus-circle" aria-hidden="true"></i> {{ 'New rule'|trans }}
+                </button>
+            {% endblock %}
+        {% endembed %}
+
+        <p class="text-body-secondary">
+            {{ 'A rule prices a slice of the catalog for a period: categories, brands, templates, feature and attribute values, named products. Rules covering the same product apply from the smallest priority to the largest; the price replaces the promotional price everywhere the shop shows one.'|trans }}
+        </p>
+
+        {% set table_rows = [] %}
+        {% for row in rows %}
+            {% set badges = '' %}
+            {% if row.reserved and row.customer_count > 0 %}
+                {% set badges = badges ~ ' <span class="badge bg-warning-subtle text-warning-emphasis" data-testid="catalog-price-rule-reserved-badge-' ~ row.id ~ '" title="' ~ 'This rule prices for named customers only.'|trans|e ~ '">'
+                    ~ ('Reserved · %count% customer(s)'|trans({'%count%': row.customer_count}))|e ~ '</span>' %}
+            {% elseif row.reserved %}
+                {% set badges = badges ~ ' <span class="badge bg-danger text-white" data-testid="catalog-price-rule-reserved-badge-' ~ row.id ~ '" title="' ~ 'Reserved, but no customer is named any more: nobody gets this price.'|trans|e ~ '">'
+                    ~ '<i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> ' ~ 'Reserved · no customer'|trans|e ~ '</span>' %}
+            {% endif %}
+            {% if row.unknown_criterion_types is not empty %}
+                {% set badges = badges ~ ' <span class="badge bg-danger text-white" data-testid="catalog-price-rule-unknown-badge-' ~ row.id ~ '" title="' ~ ('A criterion of this rule (%types%) cannot be resolved by any installed module: the rule covers nothing until it is removed.'|trans({'%types%': row.unknown_criterion_types|join(', ')}))|e ~ '">'
+                    ~ '<i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i> ' ~ 'Unresolved criterion'|trans|e ~ '</span>' %}
+            {% endif %}
+            {% if row.dirty %}
+                {% set badges = badges ~ ' <span class="badge bg-info-subtle text-info-emphasis" data-testid="catalog-price-rule-dirty-badge-' ~ row.id ~ '" title="' ~ 'The prices of this rule are being recomputed by the scheduled command.'|trans|e ~ '">' ~ 'Prices pending'|trans|e ~ '</span>' %}
+            {% endif %}
+            {% set table_rows = table_rows|merge([{
+                'id': row.id,
+                'title_html': '<a href="' ~ row.edit_url|e ~ '" class="fw-semibold text-decoration-none" data-testid="catalog-price-rule-edit-' ~ row.id ~ '">' ~ (row.title ?: '#' ~ row.id)|e ~ '</a>' ~ badges,
+                'priority': row.priority,
+                'effect': row.effect_label,
+                'start_date': row.start_date ?? '-',
+                'end_date': row.end_date ?? ('Until turned off'|trans),
+                'products': row.product_count,
+                'state_html': '<a href="' ~ row.toggle_url|e ~ '" class="text-decoration-none" data-testid="catalog-price-rule-toggle-' ~ row.id ~ '" title="' ~ (row.active ? 'Turn off'|trans : 'Turn on'|trans)|e ~ '"><span class="badge bg-' ~ row.state_color ~ '" data-state="' ~ row.state ~ '">' ~ row.state_label|e ~ '</span></a>',
+                '_actions': [
+                    row_action('edit', 'Edit'|trans, row.edit_url),
+                    row_action('delete', 'Delete'|trans, null, '#catalog-price-rule-delete-modal', null, null, {'rule-id': row.id}),
+                ],
+            }]) %}
+        {% endfor %}
+
+        {{ component('BoDataTable', {
+            id: 'catalog-price-rules',
+            columns: [
+                column_html('title_html', 'Rule'|trans, 'start', 'title'),
+                column('priority', 'Priority'|trans, 'center', 'priority', visibleFrom: 'lg'),
+                column('effect', 'Effect'|trans, 'start', null, visibleFrom: 'lg'),
+                column('start_date', 'Start'|trans, 'start', 'start_date', visibleFrom: 'xl'),
+                column('end_date', 'End'|trans, 'start', 'end_date', visibleFrom: 'xl'),
+                column('products', 'Products covered'|trans, 'center', 'products', visibleFrom: 'lg'),
+                column_html('state_html', 'State'|trans, 'center', 'state'),
+                column_actions('_actions', 'Actions'|trans),
+            ],
+            rows: table_rows,
+            emptyMessage: 'No catalog price rule yet. Create the first one.'|trans,
+            sortField: sort_field,
+            sortDirection: sort_direction,
+            sortParam: 'order',
+            sortDirectionParam: 'direction',
+            sortKeepParams: query_params is defined ? query_params : {},
+            extraColumnsHeaderHook: 'catalog-price-rule.table-header',
+            extraColumnsHook: 'catalog-price-rule.table-row',
+            rowHookArgs: { catalog_price_rule_id: 'id' },
+            rowIdentifierKey: 'title',
+        }) }}
+    </div>
+
+    <div class="modal fade" id="catalog-price-rule-create-modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            {% form_theme create_form with bo_form_themes only %}
+            {{ form_start(create_form, { action: path('admin.catalog-price-rule.create'), attr: { 'data-testid': 'catalog-price-rule-create-form' } }) }}
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5">{{ 'New rule'|trans }}</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'Close'|trans }}"></button>
+                    </div>
+                    <div class="modal-body">
+                        {{ form_widget(create_form.locale) }}
+                        <div class="mb-3">
+                            {{ form_label(create_form.title) }}
+                            {{ form_widget(create_form.title, { attr: { class: 'form-control', 'data-testid': 'catalog-price-rule-create-title' } }) }}
+                            <div class="form-text">{{ 'The rule is created turned off: its scope, effect and audience are set on the next screen, where its prices can be previewed.'|trans }}</div>
+                        </div>
+                        {{ safe_hook('catalog-price-rule.create-form', { location: 'catalog_price_rule_create_form' }) }}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ 'Cancel'|trans }}</button>
+                        <button type="submit" class="btn btn-primary" data-testid="catalog-price-rule-create-submit">{{ 'Create and configure'|trans }}</button>
+                    </div>
+                </div>
+            {{ form_end(create_form) }}
+        </div>
+    </div>
+
+    {{ component('BoConfirmDialog', {
+        id: 'catalog-price-rule-delete-modal',
+        title: 'Delete rule',
+        formAction: global_actions.delete_url ~ '?_token=' ~ global_actions.delete_token,
+        token: false,
+        message: 'Do you really want to delete this rule? The products it covers get their catalog price back at once.',
+        testid: 'catalog-price-rule-delete',
+        hook: 'catalog-price-rule.delete-form',
+        hookContext: { location: 'catalog_price_rule_delete_form' },
+        prefillTrigger: 'data-rule-id',
+        prefillInput: 'rule_id',
+    }) }}
+
+    {{ safe_hook('catalog-price-rule.bottom', { location: 'catalog_price_rule_bottom' }) }}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ safe_hook('catalog-price-rule.js', { location: 'catalog-price-rule-js' }) }}
+{% endblock %}

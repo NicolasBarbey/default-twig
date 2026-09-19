@@ -65,6 +65,7 @@
                 'status_html': '<a href="' ~ row.toggle_url|e ~ '" class="text-decoration-none" data-testid="sale-toggle-' ~ row.id ~ '">' ~ (row.active ? '<span class="badge bg-success">' ~ 'Active'|trans ~ '</span>' : '<span class="badge bg-secondary">' ~ 'Inactive'|trans ~ '</span>') ~ '</a>',
                 '_actions': [
                     row_action('edit', 'Edit'|trans, row.edit_url),
+                    row_action('custom', 'Convert to a catalog price rule'|trans, row.convert_url, null, 'CREATE', 'admin.catalog-price-rule', {'testid': 'sale-convert-' ~ row.id}, true),
                     row_action('delete', 'Delete'|trans, null, '#sale-delete-modal', null, null, {'sale-id': row.id}),
                 ],
             }]) %}

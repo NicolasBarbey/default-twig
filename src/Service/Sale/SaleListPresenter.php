@@ -68,6 +68,7 @@ final readonly class SaleListPresenter
                 'products_count' => $sale->getSaleProductList()->count(),
                 'edit_url' => $this->urls->generate('admin.sale.update', ['sale_id' => $id]),
                 'toggle_url' => $this->tokenizedUrl('admin.sale.toggle', ['sale_id' => $id]),
+                'convert_url' => $this->tokenizedUrl('admin.catalog-price-rule.convert-sale', ['sale_id' => $id]),
             ];
         }
 
