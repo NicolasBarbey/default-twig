@@ -1,0 +1,81 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Edit gift wrapping'|trans }} - {{ gift_wrapping.title }}{% endblock %}
+{% block body_testid %}configuration-gift-wrapping-edit{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.index') }}">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.gift-wrapping.default') }}">{{ 'Gift wrappings'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ gift_wrapping.title }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {% form_theme form with bo_form_themes only %}
+
+    {{ safe_hook('gift-wrapping-edit.top', { gift_wrapping_id: gift_wrapping.id }) }}
+
+    <div class="container-fluid" data-testid="gift-wrapping-edit-page">
+        <h1 class="h3 mb-2">{{ 'Gift wrapping'|trans }} <small class="text-muted"><code>{{ gift_wrapping.code }}</code> - #{{ gift_wrapping.id }}</small></h1>
+
+        <div class="mb-3">
+            {{ component('BoLanguageSwitcher', { currentLanguageId: edit_language_id }) }}
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                {{ form_start(form, { action: path('admin.gift-wrapping.save', { gift_wrapping_id: gift_wrapping.id }), method: 'post', attr: { 'data-testid': 'gift-wrapping-edit-form' } }) }}
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            {{ form_label(form.code) }}
+                            {{ form_widget(form.code, { attr: { class: 'form-control' } }) }}
+                            <div class="form-text">{{ 'The code is set once, when the gift wrapping is created, and cannot be changed afterwards.'|trans }}</div>
+                        </div>
+                        <div class="col-md-8">
+                            {{ form_label(form.title) }}
+                            {{ form_widget(form.title, { attr: { class: 'form-control' } }) }}
+                            <div class="form-text">{{ 'Renaming it leaves the orders already placed with the wording they were invoiced under.'|trans }}</div>
+                        </div>
+                        <div class="col-12">
+                            {{ form_label(form.description) }}
+                            {{ form_widget(form.description, { attr: { class: 'form-control', rows: 4 } }) }}
+                        </div>
+                        <div class="col-md-4">
+                            {{ form_label(form.price) }}
+                            {{ form_widget(form.price, { attr: { class: 'form-control' } }) }}
+                            <div class="form-text">{{ 'Leave it at zero to offer the wrapping.'|trans }}</div>
+                        </div>
+                        <div class="col-md-8">
+                            {{ form_label(form.tax_rule_id) }}
+                            {{ form_widget(form.tax_rule_id, { attr: { class: 'form-select' } }) }}
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                {{ form_widget(form.active, { attr: { class: 'form-check-input' } }) }}
+                                {{ form_label(form.active, null, { label_attr: { class: 'form-check-label' } }) }}
+                            </div>
+                        </div>
+                    </div>
+                    {{ form_widget(form.id) }}
+                    {{ form_widget(form.locale) }}
+                    {{ safe_hook('gift-wrapping.update-form', { gift_wrapping_id: gift_wrapping.id }) }}
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <a href="{{ path('admin.gift-wrapping.default') }}" class="btn btn-outline-secondary">{{ 'Back'|trans }}</a>
+                        <button type="submit" class="btn btn-primary" data-testid="gift-wrapping-edit-submit"><i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}</button>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+
+    {{ safe_hook('gift-wrapping-edit.bottom', { gift_wrapping_id: gift_wrapping.id }) }}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ safe_hook('gift-wrapping.edit-js', { gift_wrapping_id: gift_wrapping.id }) }}
+    {{ safe_hook('wysiwyg.js') }}
+{% endblock %}

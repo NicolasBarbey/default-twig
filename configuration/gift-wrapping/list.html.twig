@@ -1,0 +1,115 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Gift wrappings'|trans }}{% endblock %}
+{% block body_testid %}configuration-gift-wrappings{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.index') }}">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Gift wrappings'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {{ safe_hook('gift-wrapping.top') }}
+
+    <div class="container-fluid" data-testid="gift-wrappings-page">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">{{ 'Gift wrappings management'|trans }}</h1>
+            {% if is_granted('CREATE', 'admin.configuration.gift-wrapping') %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#gift-wrapping-create-modal" data-testid="gift-wrapping-create-button">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add a new gift wrapping'|trans }}
+                </button>
+            {% endif %}
+        </div>
+
+        <p class="text-muted">
+            {{ 'A gift wrapping priced at zero is offered to the buyer. While no wrapping is active, the checkout is exactly the one it is without this feature.'|trans }}
+        </p>
+
+        {{ component('BoDataTable', {
+            id: 'gift-wrappings',
+            columns: [
+                column('id', 'ID'|trans, 'start', 'id', hideBelow: 'md'),
+                column('title', 'Title'|trans, 'start', 'title'),
+                column('code', 'Code'|trans, 'start', 'code', hideBelow: 'lg'),
+                column('price', 'Price (tax excluded)'|trans, 'end', 'price'),
+                column('tax_rule', 'Tax rule'|trans, 'start', null, hideBelow: 'lg'),
+                column_toggle('active', 'Active'|trans, 'toggle_active_url'),
+                column('position', 'Position'|trans, 'center', 'position', hideBelow: 'lg'),
+                column_actions('_actions', 'Actions'|trans),
+            ],
+            rows: rows,
+            emptyMessage: 'No gift wrapping defined yet.'|trans,
+            extraColumnsHeaderHook: 'gift-wrapping.table-header',
+            extraColumnsHook: 'gift-wrapping.table-row',
+            rowHookArgs: { gift_wrapping_id: 'id' },
+            sortField: sort_field,
+            sortDirection: sort_direction,
+            tbodyAttributes: {
+                'data-controller': 'bo-sortable',
+                'data-bo-sortable-url-value': update_position_url,
+                'data-bo-sortable-token-value': update_position_token,
+                'data-bo-sortable-param-name-value': 'gift_wrapping_id',
+            },
+        }) }}
+    </div>
+
+    {{ safe_hook('gift-wrapping.bottom') }}
+
+    {% component 'BoCreateDialog' with {
+        id: 'gift-wrapping-create-modal',
+        title: 'Create a new gift wrapping',
+        form: create_form,
+        formAction: path('admin.gift-wrapping.create'),
+        submitLabel: 'Create',
+        testid: 'gift-wrapping-create',
+        size: '',
+    } %}
+        {% block fields %}
+            <div class="mb-3">
+                {{ form_label(create_form.code) }}
+                {{ form_widget(create_form.code, { attr: { class: 'form-control' } }) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.title) }}
+                {{ form_widget(create_form.title, { attr: { class: 'form-control' } }) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.description) }}
+                {{ form_widget(create_form.description, { attr: { class: 'form-control', rows: 3 } }) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.price) }}
+                {{ form_widget(create_form.price, { attr: { class: 'form-control' } }) }}
+                <div class="form-text">{{ 'Leave it at zero to offer the wrapping.'|trans }}</div>
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.tax_rule_id) }}
+                {{ form_widget(create_form.tax_rule_id, { attr: { class: 'form-select' } }) }}
+            </div>
+            <div class="form-check mb-3">
+                {{ form_widget(create_form.active, { attr: { class: 'form-check-input' } }) }}
+                {{ form_label(create_form.active, null, { label_attr: { class: 'form-check-label' } }) }}
+            </div>
+            {{ form_widget(create_form.locale) }}
+        {% endblock %}
+    {% endcomponent %}
+
+    {{ component('BoConfirmDialog', {
+        id: 'gift-wrapping-delete-modal',
+        title: 'Delete gift wrapping',
+        formAction: path('admin.gift-wrapping.delete'),
+        message: 'Do you really want to delete this gift wrapping? The orders that already carry it keep their line.',
+        testid: 'gift-wrapping-delete',
+        prefillTrigger: 'data-gift-wrapping-id',
+        prefillInput: 'gift_wrapping_id',
+    }) }}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ safe_hook('gift-wrapping.js', { location: 'gift-wrapping-js' }) }}
+{% endblock %}

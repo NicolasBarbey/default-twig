@@ -458,6 +458,27 @@
                     </div>
                 {% endif %}
 
+                {% if gift.services|length > 0 or gift.message %}
+                    <div class="card mb-3" data-testid="order-gift">
+                        <div class="card-header">{{ 'Gift'|trans }}</div>
+                        <div class="card-body small">
+                            {% for service in gift.services %}
+                                <p class="mb-1">
+                                    <strong>{{ service.title }}</strong>
+                                    {% if service.tax_rule_title %}
+                                        <span class="text-muted">({{ service.tax_rule_title }})</span>
+                                    {% endif %}
+                                </p>
+                            {% endfor %}
+                            {% if gift.message %}
+                                <p class="mb-1 text-muted">{{ 'Message for the recipient'|trans }}</p>
+                                {# Typed by a visitor: printed as text, never as markup. #}
+                                <blockquote class="mb-0 border-start ps-2" data-testid="order-gift-message">{{ gift.message|nl2br }}</blockquote>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+
                 {% if consents|length > 0 %}
                     <div class="card mb-3" data-testid="order-consents">
                         <div class="card-header">{{ 'Consents'|trans }}</div>

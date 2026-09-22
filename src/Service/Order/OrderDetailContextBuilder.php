@@ -18,6 +18,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Thelia\Model\ModuleQuery;
 use Thelia\Model\Order;
 use Thelia\Model\OrderConsent;
+use Thelia\Model\OrderProduct;
 use Thelia\Model\OrderCoupon;
 use Thelia\Model\OrderStatusQuery;
 
@@ -126,7 +127,31 @@ final readonly class OrderDetailContextBuilder
             ];
         }
 
+        // The service lines of the order, and the note the buyer left for whoever receives
+        // the parcel. Read off the order rather than off the wrapping the shop offers today:
+        // the merchant may have renamed, repriced or deleted it since, and the fiche has to
+        // say what was sold.
+        $serviceLines = [];
+        foreach ($order->getOrderProducts() as $orderProduct) {
+            \assert($orderProduct instanceof OrderProduct);
+
+            if (!$orderProduct->isServiceLine()) {
+                continue;
+            }
+
+            $serviceLines[] = [
+                'title' => (string) $orderProduct->getTitle(),
+                'description' => (string) $orderProduct->getDescription(),
+                'tax_rule_title' => (string) $orderProduct->getTaxRuleTitle(),
+                'price' => (float) $orderProduct->getPrice(),
+            ];
+        }
+
         return [
+            'gift' => [
+                'services' => $serviceLines,
+                'message' => (string) $order->getGiftMessage(),
+            ],
             'totals' => [
                 'subtotal_ht' => $subtotalHt,
                 'subtotal_taxes' => $subtotalTaxes,
