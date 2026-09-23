@@ -1,0 +1,10 @@
+framework:
+  rate_limiter:
+    # A re-verification reaches an outside authority, on a button an
+    # administrator can hold down. The window is per administrator, generous
+    # enough for a day of legitimate corrections and narrow enough that the
+    # back office cannot be turned into a probe against that authority.
+    vat_reverification:
+      policy: 'sliding_window'
+      limit: 30
+      interval: '15 minutes'
