@@ -1,0 +1,60 @@
+{% extends '@BackOfficeDefaultTwig/auth-layout.html.twig' %}
+
+{% block title %}{{ 'Enable two-step verification'|trans }}{% endblock %}
+
+{% block auth_title %}{{ 'Enable two-step verification'|trans }}{% endblock %}
+
+{% block auth_subtitle %}{{ 'Add this account to your authenticator app, then enter the code it shows.'|trans }}{% endblock %}
+
+{% block auth_content %}
+    {% set code_form = getForm('thelia.admin.two_factor_code') %}
+    {% form_theme code_form with bo_form_themes only %}
+
+    {% if two_factor_required %}
+        <div class="alert alert-info" role="status" data-testid="two-factor-required">
+            {{ 'This shop requires two-step verification for every administrator.'|trans }}
+        </div>
+    {% endif %}
+
+    <div class="mb-3">
+        <label class="form-label" for="two-factor-secret">{{ 'Setup key'|trans }}</label>
+        <input type="text" id="two-factor-secret" class="form-control font-monospace" value="{{ two_factor_secret }}" readonly data-testid="two-factor-secret">
+    </div>
+
+    <div class="mb-3">
+        <a class="small text-break" href="{{ two_factor_provisioning_uri }}" data-testid="two-factor-provisioning-uri">
+            {{ 'Open in an authenticator app on this device'|trans }}
+        </a>
+    </div>
+
+    <form action="{{ path('admin.two-factor.confirm') }}" method="post" data-testid="two-factor-setup-form" novalidate>
+        {{ form_widget(code_form._token) }}
+
+        {% if code_form.vars.errors|length > 0 %}
+            <div class="alert alert-danger" role="alert" data-testid="two-factor-error">
+                {{ 'This code does not match. Check the time of your device and try again.'|trans }}
+            </div>
+        {% endif %}
+
+        <div class="mb-3">
+            {{ form_label(code_form.code, 'Authentication code'|trans, {'label_attr': {'class': 'form-label'}}) }}
+            {{ form_widget(code_form.code, {
+                'attr': {
+                    'class': 'form-control form-control-lg',
+                    'autocomplete': 'one-time-code',
+                    'data-testid': 'two-factor-code',
+                },
+            }) }}
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg w-100" data-testid="two-factor-submit">
+            {{ 'Enable'|trans }}
+        </button>
+    </form>
+
+    <div class="text-center mt-4">
+        <a class="text-decoration-none small" href="{{ path('admin.logout') }}">
+            {{ 'Logout'|trans }}
+        </a>
+    </div>
+{% endblock %}
