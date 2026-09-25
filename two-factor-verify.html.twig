@@ -1,0 +1,48 @@
+{% extends '@BackOfficeDefaultTwig/auth-layout.html.twig' %}
+
+{% block title %}{{ 'Two-step verification'|trans }}{% endblock %}
+
+{% block auth_title %}{{ 'Two-step verification'|trans }}{% endblock %}
+
+{% block auth_subtitle %}{{ 'Enter the code shown by your authenticator app, or one of your backup codes.'|trans }}{% endblock %}
+
+{% block auth_content %}
+    {% set code_form = getForm('thelia.admin.two_factor_code') %}
+    {% form_theme code_form with bo_form_themes only %}
+
+    <form action="{{ path('admin.two-factor.check') }}" method="post" data-testid="two-factor-form" novalidate>
+        {{ form_widget(code_form._token) }}
+
+        {% if code_form.vars.errors|length > 0 %}
+            <div class="alert alert-danger" role="alert" data-testid="two-factor-error">
+                {{ 'Invalid credentials.'|trans }}
+            </div>
+        {% endif %}
+
+        <div class="mb-3">
+            {{ form_label(code_form.code, 'Authentication code'|trans, {'label_attr': {'class': 'form-label'}}) }}
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                {{ form_widget(code_form.code, {
+                    'attr': {
+                        'class': 'form-control form-control-lg',
+                        'autofocus': 'autofocus',
+                        'autocomplete': 'one-time-code',
+                        'data-testid': 'two-factor-code',
+                    },
+                }) }}
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg w-100" data-testid="two-factor-submit">
+            {{ 'Verify'|trans }}
+        </button>
+    </form>
+
+    <form class="text-center mt-4" action="{{ path('admin.two-factor.cancel') }}" method="post">
+        <button type="submit" class="btn btn-link text-decoration-none small" data-testid="two-factor-cancel">
+            <i class="bi bi-arrow-left me-1"></i>
+            {{ 'Back to the login page'|trans }}
+        </button>
+    </form>
+{% endblock %}
