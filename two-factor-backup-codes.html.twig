@@ -1,0 +1,19 @@
+{% extends '@BackOfficeDefaultTwig/auth-layout.html.twig' %}
+
+{% block title %}{{ 'Backup codes'|trans }}{% endblock %}
+
+{% block auth_title %}{{ 'Two-step verification is enabled'|trans }}{% endblock %}
+
+{% block auth_subtitle %}{{ 'Keep these backup codes somewhere safe. Each one works once, and they will not be shown again.'|trans }}{% endblock %}
+
+{% block auth_content %}
+    <ul class="list-group mb-4 font-monospace" data-testid="two-factor-backup-codes">
+        {% for backup_code in backup_codes %}
+            <li class="list-group-item">{{ backup_code }}</li>
+        {% endfor %}
+    </ul>
+
+    <a class="btn btn-primary btn-lg w-100" href="{{ path('admin') }}" data-testid="two-factor-continue">
+        {{ 'Continue'|trans }}
+    </a>
+{% endblock %}
