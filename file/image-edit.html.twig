@@ -76,12 +76,16 @@
                             {% if file_name %}
                                 <div class="form-text text-truncate"><i class="bi bi-file-earmark-image" aria-hidden="true"></i> {{ file_name }}</div>
                             {% endif %}
+                            {% if file_inherited|default(false) %}
+                                <div class="form-text" data-testid="bo-image-inherited-file">{{ 'This language has no image of its own: the image of the default language is shown.'|trans }}</div>
+                            {% endif %}
                         </div>
 
                         <div class="col-md-6">
                             <div class="mb-3">
                                 {{ form_label(form.file) }}
                                 {{ form_widget(form.file, { attr: { class: 'form-control' } }) }}
+                                <div class="form-text">{{ 'The file is used for the language being edited only.'|trans }}</div>
                             </div>
 
                             <div class="form-check mb-3">

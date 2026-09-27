@@ -37,6 +37,7 @@ use Thelia\Core\Event\Image\ImageEvent;
 use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\File\FileManager;
 use Thelia\Core\File\FileModelInterface;
+use Thelia\Core\File\LocalizedFileModelInterface;
 use Thelia\Core\File\Service\FileDeleteService;
 use Thelia\Core\File\Service\FilePositionService;
 use Thelia\Core\File\Service\FileProcessorService;
@@ -378,6 +379,9 @@ final class FileController
 
         return [
             'kind' => $kind,
+            // A translated image file: the language being edited shows the file of the
+            // default language until one is uploaded for it.
+            'file_inherited' => $model instanceof LocalizedFileModelInterface && null === $model->getOwnFile() && $fileName !== '',
             'parent_type' => $parentType,
             'parent_id' => $parentId,
             'file_id' => $fileId,
