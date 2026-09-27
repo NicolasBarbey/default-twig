@@ -2106,4 +2106,6 @@ return [
     'Catalog price rule deletion' => 'Suppression d\'une règle de prix catalogue',
     'Catalog price rule activity toggled' => 'Activation d\'une règle de prix catalogue basculée',
     'Catalog price rules recomputed' => 'Règles de prix catalogue recalculées',
+    'This language has no image of its own: the image of the default language is shown.' => 'Cette langue n\'a pas d\'image propre : l\'image de la langue par défaut est affichée.',
+    'The file is used for the language being edited only.' => 'Le fichier ne s\'applique qu\'à la langue en cours d\'édition.',
 ];
