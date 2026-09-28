@@ -156,6 +156,7 @@ final class ConfigStoreController
             'store_city' => ConfigQuery::read('store_city'),
             'store_country' => ConfigQuery::read('store_country'),
             'guest_checkout_mode' => ConfigQuery::read('guest_checkout_mode', GuestCheckoutMode::Disabled->value),
+            'admin_two_factor_required' => (string) ConfigQuery::read('admin_two_factor_required', '0'),
         ];
     }
 

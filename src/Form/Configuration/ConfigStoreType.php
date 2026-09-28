@@ -64,6 +64,7 @@ final class ConfigStoreType extends AbstractType
     private const BOOLEAN_FIELDS = [
         'store_vat_exempt',
         'store_registration_exempt',
+        'admin_two_factor_required',
     ];
 
     public function __construct(
@@ -125,6 +126,11 @@ final class ConfigStoreType extends AbstractType
                 'required' => false,
                 'label' => $this->translator->trans('Exempt from trade register registration (RCS and RM)'),
                 'help' => $this->translator->trans('Prints the registration exemption notice on invoices.'),
+            ])
+            ->add('admin_two_factor_required', CheckboxType::class, [
+                'required' => false,
+                'label' => $this->translator->trans('Require two-step verification for every administrator'),
+                'help' => $this->translator->trans('An administrator without it is sent to its activation right after signing in, and the admin API gives such an account no token.'),
             ])
             ->add('store_legal_mentions', TextareaType::class, [
                 'required' => false,

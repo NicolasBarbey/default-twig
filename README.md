@@ -119,6 +119,7 @@ the theme renders on its pages (`bo_importmap()`, see `src/Twig/ImportMapExtensi
 | `htmx.org` | `assets/vendor/htmx.esm.js` | npm `htmx.org@2.0.10`, `dist/htmx.esm.js` |
 | `chart.js` | `assets/vendor/chart.js` (+ `chunks/helpers.dataset.js`) | npm `chart.js@4.5.1`, `dist/` |
 | `@kurkle/color` | `assets/vendor/color.esm.js` | npm `@kurkle/color@0.3.4`, `dist/color.esm.js` |
+| `qrcode-generator` | `assets/vendor/qrcode.mjs` | npm `qrcode-generator@2.0.4`, `dist/qrcode.mjs` |
 
 To bump one of them, replace the file with the same artifact from the newer release
 (drop the trailing `//# sourceMappingURL=` line) and update this table.

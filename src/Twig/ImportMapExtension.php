@@ -44,6 +44,7 @@ final class ImportMapExtension extends AbstractExtension
         'htmx.org' => 'backoffice/vendor/htmx.esm.js',
         'chart.js' => 'backoffice/vendor/chart.js',
         '@kurkle/color' => 'backoffice/vendor/color.esm.js',
+        'qrcode-generator' => 'backoffice/vendor/qrcode.mjs',
     ];
 
     /**

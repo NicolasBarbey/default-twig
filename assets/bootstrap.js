@@ -10,6 +10,8 @@ import BoAutoOpenModalController from './controllers/bo-auto-open-modal_controll
 import BoBrandLogoPickerController from './controllers/bo-brand-logo-picker_controller.js';
 import BoCatalogPriceRuleFormController from './controllers/bo-catalog-price-rule-form_controller.js';
 import BoCopyToClipboardController from './controllers/bo-copy-to-clipboard_controller.js';
+import BoTwoFactorCodeController from './controllers/bo-two-factor-code_controller.js';
+import BoTwoFactorQrController from './controllers/bo-two-factor-qr_controller.js';
 import BoBulkActionPickerController from './controllers/bo-bulk-action-picker_controller.js';
 import BoBulkSelectController from './controllers/bo-bulk-select_controller.js';
 import BoCategoryProductPickerController from './controllers/bo-category-product-picker_controller.js';
@@ -75,6 +77,8 @@ app.register('bo-area-edit', BoAreaEditController);
 app.register('bo-auto-open-modal', BoAutoOpenModalController);
 app.register('bo-brand-logo-picker', BoBrandLogoPickerController);
 app.register('bo-copy-to-clipboard', BoCopyToClipboardController);
+app.register('bo-two-factor-code', BoTwoFactorCodeController);
+app.register('bo-two-factor-qr', BoTwoFactorQrController);
 app.register('bo-bulk-action-picker', BoBulkActionPickerController);
 app.register('bo-bulk-select', BoBulkSelectController);
 app.register('bo-category-product-picker', BoCategoryProductPickerController);
