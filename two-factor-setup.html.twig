@@ -28,7 +28,7 @@
         <li class="mb-4">
             <p class="fw-semibold mb-2">{{ '2. Or type this setup key in the app'|trans }}</p>
             <label class="visually-hidden" for="two-factor-secret">{{ 'Setup key'|trans }}</label>
-            <input type="text" id="two-factor-secret" class="form-control font-monospace text-center" value="{{ two_factor_secret }}" readonly autocomplete="off" spellcheck="false" data-testid="two-factor-secret">
+            <input type="text" id="two-factor-secret" class="form-control font-monospace text-center text-body" value="{{ two_factor_secret }}" readonly autocomplete="off" spellcheck="false" data-testid="two-factor-secret">
             <a class="small d-inline-block mt-2" href="{{ two_factor_provisioning_uri }}" data-testid="two-factor-provisioning-uri">
                 {{ 'Open in an authenticator app on this device'|trans }}
             </a>

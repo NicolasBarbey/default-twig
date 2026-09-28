@@ -209,6 +209,7 @@ final class AdministratorController
         }
 
         $this->twoFactorManager->resetOnBehalfOf($target, $current);
+        $this->flash($request, 'success', $this->translator->trans('The two-step verification of %login% is reset: this administrator signs in with their password alone until they enable it again.', ['%login%' => $target->getLogin()]));
 
         return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
     }
@@ -308,6 +309,15 @@ final class AdministratorController
                 dataAttributes: ['administrator-id' => $id],
             ),
         ];
+
+        if ($id === $currentAdminId) {
+            $actions[] = new RowAction(
+                kind: 'custom',
+                label: $this->translator->trans('Account security'),
+                href: $this->urls->generate('admin.account.two-factor.view'),
+                inMenu: true,
+            );
+        }
 
         if ($twoFactorEnabled && $id !== $currentAdminId) {
             $actions[] = new RowAction(
@@ -448,10 +458,15 @@ final class AdministratorController
 
     private function flashError(Request $request, string $message): void
     {
+        $this->flash($request, 'danger', $message);
+    }
+
+    private function flash(Request $request, string $type, string $message): void
+    {
         try {
             $session = $request->getSession();
             if (method_exists($session, 'getFlashBag')) {
-                $session->getFlashBag()->add('danger', $message);
+                $session->getFlashBag()->add($type, $message);
             }
         } catch (\Throwable) {
         }
