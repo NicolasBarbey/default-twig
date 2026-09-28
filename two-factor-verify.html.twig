@@ -10,7 +10,12 @@
     {% set code_form = getForm('thelia.admin.two_factor_code') %}
     {% form_theme code_form with bo_form_themes only %}
 
-    <form action="{{ path('admin.two-factor.check') }}" method="post" data-testid="two-factor-form" novalidate>
+    <form action="{{ path('admin.two-factor.check') }}" method="post" data-testid="two-factor-form" novalidate autocomplete="off"
+          data-controller="bo-two-factor-code"
+          data-bo-two-factor-code-totp-label-value="{{ 'Authentication code'|trans }}"
+          data-bo-two-factor-code-backup-label-value="{{ 'Backup code'|trans }}"
+          data-bo-two-factor-code-totp-toggle-value="{{ 'Use the code of my authenticator app'|trans }}"
+          data-bo-two-factor-code-backup-toggle-value="{{ 'Use a backup code'|trans }}">
         {{ form_widget(code_form._token) }}
 
         {% if code_form.vars.errors|length > 0 %}
@@ -20,14 +25,19 @@
         {% endif %}
 
         <div class="mb-3">
-            {{ form_label(code_form.code, 'Authentication code'|trans, {'label_attr': {'class': 'form-label'}}) }}
+            <label class="form-label" for="{{ code_form.code.vars.id }}" data-bo-two-factor-code-target="label">{{ 'Authentication code'|trans }}</label>
             <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                <span class="input-group-text"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
                 {{ form_widget(code_form.code, {
+                    'value': '',
                     'attr': {
-                        'class': 'form-control form-control-lg',
+                        'class': 'form-control form-control-lg font-monospace',
                         'autofocus': 'autofocus',
                         'autocomplete': 'one-time-code',
+                        'inputmode': 'numeric',
+                        'spellcheck': 'false',
+                        'data-bo-two-factor-code-target': 'input',
+                        'data-action': 'input->bo-two-factor-code#clean',
                         'data-testid': 'two-factor-code',
                     },
                 }) }}
@@ -37,11 +47,17 @@
         <button type="submit" class="btn btn-primary btn-lg w-100" data-testid="two-factor-submit">
             {{ 'Verify'|trans }}
         </button>
+
+        <div class="text-center mt-3">
+            <button type="button" class="btn btn-link btn-sm text-decoration-none" data-bo-two-factor-code-target="toggle" data-action="bo-two-factor-code#switch" data-testid="two-factor-toggle">
+                {{ 'Use a backup code'|trans }}
+            </button>
+        </div>
     </form>
 
-    <form class="text-center mt-4" action="{{ path('admin.two-factor.cancel') }}" method="post">
-        <button type="submit" class="btn btn-link text-decoration-none small" data-testid="two-factor-cancel">
-            <i class="bi bi-arrow-left me-1"></i>
+    <form class="text-center mt-2" action="{{ path('admin.two-factor.cancel') }}" method="post">
+        <button type="submit" class="btn btn-link btn-sm text-decoration-none" data-testid="two-factor-cancel">
+            <i class="bi bi-arrow-left me-1" aria-hidden="true"></i>
             {{ 'Back to the login page'|trans }}
         </button>
     </form>

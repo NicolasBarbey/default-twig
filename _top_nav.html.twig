@@ -74,6 +74,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link" href="{{ path('admin.account.two-factor.view') }}" title="{{ 'Account security'|trans }}" data-testid="bo-top-nav-account-security">
+                    <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                    <span class="visually-hidden">{{ 'Account security'|trans }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link" href="{{ path('admin.configuration.administrators.view-profile') }}" title="{{ 'Edit profile'|trans }}" data-testid="bo-top-nav-profile">
                     <i class="bi bi-person-circle" aria-hidden="true"></i>
                     <span class="ms-1 d-none d-lg-inline">{{ bo_current_admin().firstname|default('Admin') }}</span>

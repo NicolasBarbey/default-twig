@@ -44,6 +44,7 @@
                 column('name', 'Name'|trans, 'start', 'lastname'),
                 column('email', 'Email'|trans, 'start', 'email', hideBelow: 'lg'),
                 column('profile', 'Profile'|trans, hideBelow: 'lg'),
+                column('two_factor', 'Two-step verification'|trans, hideBelow: 'md'),
                 column_actions('_actions', 'Actions'|trans),
             ],
             rows: rows,
@@ -107,6 +108,19 @@
             {% endblock %}
         {% endcomponent %}
     {% endfor %}
+
+    {{ component('BoConfirmDialog', {
+        id: 'administrator-two-factor-reset-modal',
+        title: 'Reset the two-step verification',
+        formAction: path('admin.configuration.administrators.two-factor-reset'),
+        message: 'This administrator will sign in with their password alone, then enable two-step verification again. Do this only once you are sure of who asks for it.',
+        variant: 'warning',
+        confirmLabel: 'Reset the two-step verification',
+        confirmIcon: 'bi-shield-x',
+        testid: 'administrator-two-factor-reset',
+        prefillTrigger: 'data-administrator-id',
+        prefillInput: 'administrator_id',
+    }) }}
 
     {{ component('BoConfirmDialog', {
         id: 'administrator-delete-modal',

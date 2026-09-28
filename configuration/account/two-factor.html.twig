@@ -1,0 +1,78 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Account security'|trans }}{% endblock %}
+{% block body_testid %}account-two-factor{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Account security'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="account-two-factor-page">
+        <h1 class="h3 mb-4">{{ 'Account security'|trans }}</h1>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                    <div>
+                        <h2 class="h5 mb-1">{{ 'Two-step verification'|trans }}</h2>
+                        <p class="text-body-secondary mb-0">{{ 'A code from your phone is asked after your password, so a leaked password is not enough to open your account.'|trans }}</p>
+                    </div>
+                    {% if two_factor_enabled %}
+                        <span class="badge text-bg-success" data-testid="account-two-factor-status">{{ 'Turned on'|trans }}</span>
+                    {% else %}
+                        <span class="badge text-bg-secondary" data-testid="account-two-factor-status">{{ 'Turned off'|trans }}</span>
+                    {% endif %}
+                </div>
+
+                {% if not two_factor_enabled %}
+                    {% if two_factor_required %}
+                        <div class="alert alert-info" role="status">{{ 'This shop requires two-step verification for every administrator.'|trans }}</div>
+                    {% endif %}
+                    <a class="btn btn-primary" href="{{ path('admin.two-factor.setup') }}" data-testid="account-two-factor-enable">
+                        <i class="bi bi-shield-lock me-1" aria-hidden="true"></i>
+                        {{ 'Enable two-step verification'|trans }}
+                    </a>
+                {% else %}
+                    <p class="mb-3" data-testid="account-two-factor-backup-codes-left">
+                        {{ '%count% backup codes left'|trans({ '%count%': remaining_backup_codes }) }}
+                    </p>
+
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <form action="{{ path('admin.account.two-factor.regenerate') }}" method="post" data-testid="account-two-factor-regenerate-form">
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                <h3 class="h6">{{ 'New backup codes'|trans }}</h3>
+                                <p class="text-body-secondary small">{{ 'Generate ten new backup codes. The previous ones stop working.'|trans }}</p>
+                                <button type="submit" class="btn btn-outline-primary" data-testid="account-two-factor-regenerate">
+                                    {{ 'Generate new backup codes'|trans }}
+                                </button>
+                            </form>
+                        </div>
+                        <div class="col-lg-6">
+                            <form action="{{ path('admin.account.two-factor.disable') }}" method="post" autocomplete="off" data-testid="account-two-factor-disable-form">
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                                <h3 class="h6">{{ 'Disable two-step verification'|trans }}</h3>
+                                {% if two_factor_required %}
+                                    <p class="text-body-secondary small">{{ 'This shop requires two-step verification: you will be asked to enable it again right away.'|trans }}</p>
+                                {% endif %}
+                                <div class="mb-2">
+                                    <label class="form-label small" for="account-two-factor-password">{{ 'Your password'|trans }}</label>
+                                    <input type="password" class="form-control" id="account-two-factor-password" name="password" required autocomplete="current-password" data-testid="account-two-factor-password">
+                                </div>
+                                <button type="submit" class="btn btn-outline-danger" data-testid="account-two-factor-disable">
+                                    {{ 'Disable'|trans }}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

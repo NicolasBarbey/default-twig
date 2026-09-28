@@ -142,6 +142,13 @@
                             {{ form_row(form.guest_checkout_mode, { attr: { 'data-testid': 'config-store-guest-checkout-mode' } }) }}
                         </div>
                     </div>
+
+                    <div class="card mb-4">
+                        <div class="card-header">{{ 'Administrators'|trans }}</div>
+                        <div class="card-body">
+                            {{ form_row(form.admin_two_factor_required, { attr: { 'data-testid': 'config-store-admin-two-factor-required' } }) }}
+                        </div>
+                    </div>
                 </div>
             </div>
 

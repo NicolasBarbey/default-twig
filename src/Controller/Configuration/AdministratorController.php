@@ -33,9 +33,12 @@ use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Core\Security\SecurityContext;
+use Thelia\Domain\Admin\TwoFactor\AdminTwoFactorManager;
 use Thelia\Model\Admin;
 use Thelia\Model\AdminQuery;
+use Thelia\Model\AdminTwoFactorQuery;
 use Thelia\Model\ProfileQuery;
+use Thelia\Tools\TokenProvider;
 use Twig\Environment;
 
 #[Route('/admin/configuration/administrators', name: 'admin.configuration.administrators.')]
@@ -53,6 +56,8 @@ final class AdministratorController
         private readonly UrlGeneratorInterface $urls,
         private readonly TranslatorInterface $translator,
         private readonly SecurityContext $securityContext,
+        private readonly AdminTwoFactorManager $twoFactorManager,
+        private readonly TokenProvider $tokens,
     ) {
     }
 
@@ -179,6 +184,35 @@ final class AdministratorController
         );
     }
 
+    #[Route('/two-factor-reset', name: 'two-factor-reset', methods: ['POST'])]
+    public function resetTwoFactor(Request $request): Response
+    {
+        if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
+            return $denied;
+        }
+
+        $current = $this->securityContext->getAdminUser();
+        $target = AdminQuery::create()->findPk((int) $request->request->get('administrator_id', 0));
+
+        try {
+            $this->tokens->checkToken((string) ($request->request->get('_token') ?? $request->query->get('_token') ?? ''));
+        } catch (\Throwable) {
+            $this->flashError($request, $this->translator->trans('Your session has expired. Please try again.'));
+
+            return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
+        }
+
+        if (!$current instanceof Admin || !$target instanceof Admin || (int) $target->getId() === (int) $current->getId()) {
+            $this->flashError($request, $this->translator->trans('You cannot reset the two-step verification of this account.'));
+
+            return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
+        }
+
+        $this->twoFactorManager->resetOnBehalfOf($target, $current);
+
+        return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
+    }
+
     /**
      * @return array{0: string, 1: int|null}
      */
@@ -224,9 +258,14 @@ final class AdministratorController
         $defaultLocale = $this->resolveDefaultLocale();
         $profileChoices = $this->profileChoices();
         $currentAdminId = $this->currentAdminId();
+        $protectedAdminIds = array_map(intval(...), AdminTwoFactorQuery::create()
+            ->filterByEnabledAt(null, Criteria::ISNOTNULL)
+            ->select(['AdminId'])
+            ->find()
+            ->getData());
 
         foreach ($admins as $admin) {
-            $rows[] = $this->administratorToRow($admin, $currentAdminId, $defaultLocale);
+            $rows[] = $this->administratorToRow($admin, $currentAdminId, $defaultLocale, \in_array((int) $admin->getId(), $protectedAdminIds, true));
             $editForms[$admin->getId()] = $this->createEditForm($admin, $defaultLocale, $profileChoices)->createView();
         }
 
@@ -255,7 +294,7 @@ final class AdministratorController
     /**
      * @return array<string, mixed>
      */
-    private function administratorToRow(Admin $admin, ?int $currentAdminId, string $defaultLocale): array
+    private function administratorToRow(Admin $admin, ?int $currentAdminId, string $defaultLocale, bool $twoFactorEnabled): array
     {
         $id = $admin->getId();
 
@@ -269,6 +308,18 @@ final class AdministratorController
                 dataAttributes: ['administrator-id' => $id],
             ),
         ];
+
+        if ($twoFactorEnabled && $id !== $currentAdminId) {
+            $actions[] = new RowAction(
+                kind: 'custom',
+                label: $this->translator->trans('Reset the two-step verification'),
+                modalTarget: '#administrator-two-factor-reset-modal',
+                grantedAttribute: AccessManager::UPDATE,
+                grantedSubject: self::RESOURCE,
+                dataAttributes: ['administrator-id' => $id],
+                inMenu: true,
+            );
+        }
 
         if ($id !== $currentAdminId) {
             $actions[] = new RowAction(
@@ -292,6 +343,7 @@ final class AdministratorController
             'name' => trim($admin->getFirstname().' '.$admin->getLastname()),
             'email' => $admin->getEmail(),
             'profile' => $profileLabel,
+            'two_factor' => $twoFactorEnabled ? $this->translator->trans('Turned on') : $this->translator->trans('Turned off'),
             '_actions' => $actions,
         ];
     }

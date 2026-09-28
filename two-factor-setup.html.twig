@@ -16,41 +16,60 @@
         </div>
     {% endif %}
 
-    <div class="mb-3">
-        <label class="form-label" for="two-factor-secret">{{ 'Setup key'|trans }}</label>
-        <input type="text" id="two-factor-secret" class="form-control font-monospace" value="{{ two_factor_secret }}" readonly data-testid="two-factor-secret">
-    </div>
+    <ol class="list-unstyled mb-0">
+        <li class="mb-4">
+            <p class="fw-semibold mb-2">{{ '1. Scan this QR code with your authenticator app'|trans }}</p>
+            <div class="bo-auth__qr bg-white p-2 border rounded"
+                 data-controller="bo-two-factor-qr"
+                 data-bo-two-factor-qr-uri-value="{{ two_factor_provisioning_uri }}"
+                 data-bo-two-factor-qr-label-value="{{ 'QR code to scan with your authenticator app'|trans }}"
+                 data-testid="two-factor-qr"></div>
+        </li>
+        <li class="mb-4">
+            <p class="fw-semibold mb-2">{{ '2. Or type this setup key in the app'|trans }}</p>
+            <label class="visually-hidden" for="two-factor-secret">{{ 'Setup key'|trans }}</label>
+            <input type="text" id="two-factor-secret" class="form-control font-monospace text-center" value="{{ two_factor_secret }}" readonly autocomplete="off" spellcheck="false" data-testid="two-factor-secret">
+            <a class="small d-inline-block mt-2" href="{{ two_factor_provisioning_uri }}" data-testid="two-factor-provisioning-uri">
+                {{ 'Open in an authenticator app on this device'|trans }}
+            </a>
+        </li>
+        <li>
+            <p class="fw-semibold mb-2">{{ '3. Enter the code the app shows'|trans }}</p>
+            <form action="{{ path('admin.two-factor.confirm') }}" method="post" data-testid="two-factor-setup-form" novalidate autocomplete="off"
+                  data-controller="bo-two-factor-code"
+                  data-bo-two-factor-code-totp-label-value="{{ 'Authentication code'|trans }}">
+                {{ form_widget(code_form._token) }}
 
-    <div class="mb-3">
-        <a class="small text-break" href="{{ two_factor_provisioning_uri }}" data-testid="two-factor-provisioning-uri">
-            {{ 'Open in an authenticator app on this device'|trans }}
-        </a>
-    </div>
+                {% if code_form.vars.errors|length > 0 %}
+                    <div class="alert alert-danger" role="alert" data-testid="two-factor-error">
+                        {{ 'This code does not match. Check the time of your device and try again.'|trans }}
+                    </div>
+                {% endif %}
 
-    <form action="{{ path('admin.two-factor.confirm') }}" method="post" data-testid="two-factor-setup-form" novalidate>
-        {{ form_widget(code_form._token) }}
+                <div class="mb-3">
+                    <label class="form-label" for="{{ code_form.code.vars.id }}" data-bo-two-factor-code-target="label">{{ 'Authentication code'|trans }}</label>
+                    {{ form_widget(code_form.code, {
+                        'value': '',
+                        'attr': {
+                            'class': 'form-control form-control-lg font-monospace',
+                            'autocomplete': 'one-time-code',
+                            'inputmode': 'numeric',
+                            'spellcheck': 'false',
+                            'data-bo-two-factor-code-target': 'input',
+                            'data-action': 'input->bo-two-factor-code#clean',
+                            'data-testid': 'two-factor-code',
+                        },
+                    }) }}
+                </div>
 
-        {% if code_form.vars.errors|length > 0 %}
-            <div class="alert alert-danger" role="alert" data-testid="two-factor-error">
-                {{ 'This code does not match. Check the time of your device and try again.'|trans }}
-            </div>
-        {% endif %}
+                <span hidden data-bo-two-factor-code-target="toggle"></span>
 
-        <div class="mb-3">
-            {{ form_label(code_form.code, 'Authentication code'|trans, {'label_attr': {'class': 'form-label'}}) }}
-            {{ form_widget(code_form.code, {
-                'attr': {
-                    'class': 'form-control form-control-lg',
-                    'autocomplete': 'one-time-code',
-                    'data-testid': 'two-factor-code',
-                },
-            }) }}
-        </div>
-
-        <button type="submit" class="btn btn-primary btn-lg w-100" data-testid="two-factor-submit">
-            {{ 'Enable'|trans }}
-        </button>
-    </form>
+                <button type="submit" class="btn btn-primary btn-lg w-100" data-testid="two-factor-submit">
+                    {{ 'Enable'|trans }}
+                </button>
+            </form>
+        </li>
+    </ol>
 
     <div class="text-center mt-4">
         <a class="text-decoration-none small" href="{{ path('admin.logout') }}">

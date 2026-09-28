@@ -2,18 +2,31 @@
 
 {% block title %}{{ 'Backup codes'|trans }}{% endblock %}
 
-{% block auth_title %}{{ 'Two-step verification is enabled'|trans }}{% endblock %}
+{% block auth_title %}{{ 'Save your backup codes'|trans }}{% endblock %}
 
-{% block auth_subtitle %}{{ 'Keep these backup codes somewhere safe. Each one works once, and they will not be shown again.'|trans }}{% endblock %}
+{% block auth_subtitle %}{{ 'Each code signs you in once if your phone is not at hand.'|trans }}{% endblock %}
 
 {% block auth_content %}
-    <ul class="list-group mb-4 font-monospace" data-testid="two-factor-backup-codes">
-        {% for backup_code in backup_codes %}
-            <li class="list-group-item">{{ backup_code }}</li>
-        {% endfor %}
-    </ul>
+    <div data-controller="bo-copy-to-clipboard" data-bo-copy-to-clipboard-copied-label-value="{{ 'Copied'|trans }}">
+        <div class="alert alert-warning" role="alert" data-testid="two-factor-backup-codes-warning">
+            {{ 'These codes will not be shown again. Keep them somewhere safe, away from your phone.'|trans }}
+        </div>
 
-    <a class="btn btn-primary btn-lg w-100" href="{{ path('admin') }}" data-testid="two-factor-continue">
-        {{ 'Continue'|trans }}
-    </a>
+        <ul class="list-group mb-3 font-monospace text-center" data-testid="two-factor-backup-codes">
+            {% for backup_code in backup_codes %}
+                <li class="list-group-item">{{ backup_code }}</li>
+            {% endfor %}
+        </ul>
+
+        <textarea class="visually-hidden" readonly tabindex="-1" aria-hidden="true" data-bo-copy-to-clipboard-target="source">{{ backup_codes|join("\n") }}</textarea>
+
+        <button type="button" class="btn btn-outline-primary w-100 mb-3" data-action="bo-copy-to-clipboard#copy" data-testid="two-factor-backup-codes-copy">
+            <i class="bi bi-clipboard me-1" aria-hidden="true"></i>
+            {{ 'Copy the codes'|trans }}
+        </button>
+
+        <a class="btn btn-primary btn-lg w-100" href="{{ continue_url|default(path('admin')) }}" data-testid="two-factor-continue">
+            {{ 'Continue'|trans }}
+        </a>
+    </div>
 {% endblock %}

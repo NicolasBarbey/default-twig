@@ -1125,6 +1125,17 @@ td.bo-datatable__details-col {
     color: var(--bs-secondary-color);
 }
 
+.bo-auth__qr {
+    max-width: 14rem;
+    margin-inline: auto;
+
+    svg {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+}
+
 // The login page has no top bar, so it carries the running version itself.
 .bo-auth__version {
     margin: 1.5rem 0 0;
