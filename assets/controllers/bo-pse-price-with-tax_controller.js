@@ -41,7 +41,7 @@ export default class extends Controller {
             const payload = await response.json();
             const result = Number(payload?.result);
             if (!Number.isNaN(result) && output) {
-                output.value = result.toFixed(4);
+                output.value = result.toFixed(6);
             }
         } catch {
             // silently ignore — user keeps editing manually

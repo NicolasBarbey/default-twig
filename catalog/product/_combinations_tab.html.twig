@@ -85,9 +85,9 @@
                                         <td><small>{{ row.label }}</small></td>
                                         <td><input type="hidden" name="product_sale_element_id[]" value="{{ row.id }}"><input type="text" name="reference[]" value="{{ row.ref }}" class="form-control form-control-sm"></td>
                                         <td><input type="number" step="0.01" name="quantity[]" value="{{ row.quantity }}" class="form-control form-control-sm text-end"></td>
-                                        <td><input type="number" step="0.0001" name="price[]" value="{{ row.price }}" class="form-control form-control-sm text-end"></td>
-                                        <td><input type="number" step="0.0001" name="sale_price[]" value="{{ row.sale_price }}" class="form-control form-control-sm text-end"></td>
-                                        <td><input type="number" step="0.0001" name="weight[]" value="{{ row.weight }}" class="form-control form-control-sm text-end"></td>
+                                        <td><input type="number" step="any" name="price[]" value="{{ row.price }}" class="form-control form-control-sm text-end"></td>
+                                        <td><input type="number" step="any" name="sale_price[]" value="{{ row.sale_price }}" class="form-control form-control-sm text-end"></td>
+                                        <td><input type="number" step="any" name="weight[]" value="{{ row.weight }}" class="form-control form-control-sm text-end"></td>
                                         <td><input type="text" name="ean_code[]" value="{{ row.ean_code }}" class="form-control form-control-sm"></td>
                                         <td class="text-center"><input type="checkbox" name="onsale[{{ loop.index0 }}]" value="1" {% if row.onsale %}checked{% endif %}></td>
                                         <td class="text-center"><input type="checkbox" name="isnew[{{ loop.index0 }}]" value="1" {% if row.isnew %}checked{% endif %}></td>
@@ -193,7 +193,7 @@
                                         <div class="mb-3">
                                             <label class="form-label" for="default_pse_price">{{ 'Product price excluding taxes'|trans }}</label>
                                             <div class="input-group">
-                                                <input type="number" step="0.0001" id="default_pse_price" name="price" value="{{ default_pse.price }}" class="form-control" required
+                                                <input type="number" step="any" id="default_pse_price" name="price" value="{{ default_pse.price }}" class="form-control" required
                                                        data-bo-pse-price-with-tax-target="priceExcl"
                                                        data-action="blur->bo-pse-price-with-tax#onPriceExclBlur">
                                                 <span class="input-group-text">{{ currency.symbol }}</span>
@@ -203,7 +203,7 @@
                                         <div class="mb-3">
                                             <label class="form-label" for="default_pse_price_with_tax">{{ 'Product price including taxes'|trans }}</label>
                                             <div class="input-group">
-                                                <input type="number" step="0.0001" id="default_pse_price_with_tax" name="price_with_tax" value="" class="form-control" placeholder="{{ 'Auto-computed from price + tax rule'|trans }}"
+                                                <input type="number" step="any" id="default_pse_price_with_tax" name="price_with_tax" value="" class="form-control" placeholder="{{ 'Auto-computed from price + tax rule'|trans }}"
                                                        data-bo-pse-price-with-tax-target="priceIncl"
                                                        data-action="blur->bo-pse-price-with-tax#onPriceInclBlur">
                                                 <span class="input-group-text">{{ currency.symbol }}</span>
@@ -228,7 +228,7 @@
                                         <div class="mb-3">
                                             <label class="form-label" for="default_pse_weight">{{ 'Weight'|trans }}</label>
                                             <div class="input-group">
-                                                <input type="number" step="0.0001" id="default_pse_weight" name="weight" value="{{ default_pse.weight }}" class="form-control">
+                                                <input type="number" step="any" id="default_pse_weight" name="weight" value="{{ default_pse.weight }}" class="form-control">
                                                 <span class="input-group-text">{{ 'Kg'|trans }}</span>
                                             </div>
                                         </div>
@@ -251,7 +251,7 @@
                                         <div class="mb-3">
                                             <label class="form-label" for="default_pse_sale_price">{{ 'Sale price excluding taxes'|trans }}</label>
                                             <div class="input-group">
-                                                <input type="number" step="0.0001" id="default_pse_sale_price" name="sale_price" value="{{ default_pse.sale_price }}" class="form-control" required
+                                                <input type="number" step="any" id="default_pse_sale_price" name="sale_price" value="{{ default_pse.sale_price }}" class="form-control" required
                                                        data-bo-pse-price-with-tax-target="salePriceExcl"
                                                        data-action="blur->bo-pse-price-with-tax#onSalePriceExclBlur">
                                                 <span class="input-group-text">{{ currency.symbol }}</span>
@@ -261,7 +261,7 @@
                                         <div class="mb-3">
                                             <label class="form-label" for="default_pse_sale_price_with_tax">{{ 'Sale price including taxes'|trans }}</label>
                                             <div class="input-group">
-                                                <input type="number" step="0.0001" id="default_pse_sale_price_with_tax" name="sale_price_with_tax" value="" class="form-control" placeholder="{{ 'Auto-computed from sale price + tax rule'|trans }}"
+                                                <input type="number" step="any" id="default_pse_sale_price_with_tax" name="sale_price_with_tax" value="" class="form-control" placeholder="{{ 'Auto-computed from sale price + tax rule'|trans }}"
                                                        data-bo-pse-price-with-tax-target="salePriceIncl"
                                                        data-action="blur->bo-pse-price-with-tax#onSalePriceInclBlur">
                                                 <span class="input-group-text">{{ currency.symbol }}</span>
@@ -410,14 +410,14 @@
                                     <div class="mb-3">
                                         <label class="form-label" for="combination-builder-price">{{ 'Price (excl. taxes)'|trans }}</label>
                                         <div class="input-group">
-                                            <input type="number" step="0.0001" class="form-control" id="combination-builder-price" name="price" value="{{ default_pse.price|default(0) }}" required>
+                                            <input type="number" step="any" class="form-control" id="combination-builder-price" name="price" value="{{ default_pse.price|default(0) }}" required>
                                             <span class="input-group-text">{{ currency.symbol }}</span>
                                         </div>
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label" for="combination-builder-sale-price">{{ 'Sale price (excl. taxes)'|trans }}</label>
                                         <div class="input-group">
-                                            <input type="number" step="0.0001" class="form-control" id="combination-builder-sale-price" name="sale_price" value="{{ default_pse.sale_price|default(0) }}">
+                                            <input type="number" step="any" class="form-control" id="combination-builder-sale-price" name="sale_price" value="{{ default_pse.sale_price|default(0) }}">
                                             <span class="input-group-text">{{ currency.symbol }}</span>
                                         </div>
                                     </div>
@@ -429,7 +429,7 @@
                                         <div class="col-6">
                                             <label class="form-label" for="combination-builder-weight">{{ 'Weight'|trans }}</label>
                                             <div class="input-group">
-                                                <input type="number" step="0.0001" class="form-control" id="combination-builder-weight" name="weight" value="{{ default_pse.weight|default(0) }}">
+                                                <input type="number" step="any" class="form-control" id="combination-builder-weight" name="weight" value="{{ default_pse.weight|default(0) }}">
                                                 <span class="input-group-text">{{ 'Kg'|trans }}</span>
                                             </div>
                                         </div>
