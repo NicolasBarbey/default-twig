@@ -632,7 +632,7 @@ final class ProductController
     {
         $locale = $this->defaultLocale();
         $items = [['id' => 0, 'title' => $this->translator->trans('- All categories -')]];
-        foreach (CategoryQuery::create()->orderById()->find() as $category) {
+        foreach (CategoryQuery::create()->joinWithI18n($locale)->orderById()->find() as $category) {
             $category->setLocale($locale);
             $items[] = ['id' => (int) $category->getId(), 'title' => (string) $category->getTitle()];
         }
@@ -649,7 +649,7 @@ final class ProductController
     private function contentChoices(string $locale): array
     {
         $items = [];
-        foreach (\Thelia\Model\ContentQuery::create()->orderById()->limit(self::BULK_CHOICES_LIMIT)->find() as $content) {
+        foreach (\Thelia\Model\ContentQuery::create()->joinWithI18n($locale)->orderById()->limit(self::BULK_CHOICES_LIMIT)->find() as $content) {
             $content->setLocale($locale);
             $items[] = ['id' => (int) $content->getId(), 'title' => (string) $content->getTitle()];
         }
@@ -666,6 +666,7 @@ final class ProductController
     {
         $items = [];
         $types = ProductAssociationTypeQuery::create()
+            ->joinWithI18n($locale)
             ->filterByVisible(1)
             ->orderByPosition()
             ->find();
@@ -684,7 +685,7 @@ final class ProductController
     private function productChoices(string $locale): array
     {
         $items = [];
-        foreach (ProductQuery::create()->orderByRef()->limit(self::BULK_CHOICES_LIMIT)->find() as $product) {
+        foreach (ProductQuery::create()->joinWithI18n($locale)->orderByRef()->limit(self::BULK_CHOICES_LIMIT)->find() as $product) {
             $product->setLocale($locale);
             $items[] = [
                 'id' => (int) $product->getId(),
@@ -701,7 +702,7 @@ final class ProductController
     private function brandChoices(string $locale): array
     {
         $items = [];
-        foreach (BrandQuery::create()->orderByPosition()->find() as $brand) {
+        foreach (BrandQuery::create()->joinWithI18n($locale)->orderByPosition()->find() as $brand) {
             $brand->setLocale($locale);
             $items[] = ['id' => (int) $brand->getId(), 'title' => (string) $brand->getTitle()];
         }
@@ -793,7 +794,7 @@ final class ProductController
     {
         $locale = $this->defaultLocale();
         $items = [];
-        foreach (TaxRuleQuery::create()->orderById()->find() as $taxRule) {
+        foreach (TaxRuleQuery::create()->joinWithI18n($locale)->orderById()->find() as $taxRule) {
             $taxRule->setLocale($locale);
             $items[] = ['id' => (int) $taxRule->getId(), 'title' => (string) $taxRule->getTitle()];
         }
@@ -808,7 +809,7 @@ final class ProductController
     {
         $locale = $this->defaultLocale();
         $items = [['id' => null, 'name' => $this->translator->trans('- No template -')]];
-        foreach (TemplateQuery::create()->orderById()->find() as $template) {
+        foreach (TemplateQuery::create()->joinWithI18n($locale)->orderById()->find() as $template) {
             $template->setLocale($locale);
             $items[] = ['id' => (int) $template->getId(), 'name' => (string) $template->getName()];
         }

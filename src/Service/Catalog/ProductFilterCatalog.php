@@ -142,7 +142,7 @@ final class ProductFilterCatalog
     private function localizedList($query, string $locale): array
     {
         $items = [];
-        foreach ($query->find() as $model) {
+        foreach ($query->joinWithI18n($locale)->find() as $model) {
             $model->setLocale($locale);
             // Templates carry a localized `name`, catalog entities a `title`.
             $label = trim((string) (method_exists($model, 'getTitle') ? $model->getTitle() : $model->getName()));

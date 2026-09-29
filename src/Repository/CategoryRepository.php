@@ -43,6 +43,7 @@ final readonly class CategoryRepository
         /** @var ObjectCollection<int, Category> $categories */
         $categories = CategoryQuery::create()
             ->filterByParent($parentId)
+            ->joinWithI18n($locale)
             ->orderByPosition()
             ->find();
 
@@ -61,23 +62,47 @@ final readonly class CategoryRepository
     public function flatTree(string $locale): array
     {
         $out = [];
-        $this->appendTree(0, $locale, 0, $out);
+        $this->appendTree($this->childrenByParent($locale), 0, 0, $out);
 
         return $out;
     }
 
     /**
+     * Every category with its translation, grouped by parent id in position order:
+     * one query for a whole tree instead of one per node.
+     *
+     * @return array<int, list<Category>>
+     */
+    public function childrenByParent(string $locale): array
+    {
+        $categories = CategoryQuery::create()
+            ->joinWithI18n($locale)
+            ->orderByPosition()
+            ->find();
+
+        $children = [];
+        foreach ($categories as $category) {
+            \assert($category instanceof Category);
+            $category->setLocale($locale);
+            $children[(int) $category->getParent()][] = $category;
+        }
+
+        return $children;
+    }
+
+    /**
+     * @param array<int, list<Category>>                     $children
      * @param list<array{id: int, title: string, depth: int}> $out
      */
-    private function appendTree(int $parentId, string $locale, int $depth, array &$out): void
+    private function appendTree(array $children, int $parentId, int $depth, array &$out): void
     {
-        foreach ($this->findChildrenOrderedByPosition($parentId, $locale) as $category) {
+        foreach ($children[$parentId] ?? [] as $category) {
             $out[] = [
                 'id' => (int) $category->getId(),
                 'title' => (string) $category->getTitle(),
                 'depth' => $depth,
             ];
-            $this->appendTree((int) $category->getId(), $locale, $depth + 1, $out);
+            $this->appendTree($children, (int) $category->getId(), $depth + 1, $out);
         }
     }
 

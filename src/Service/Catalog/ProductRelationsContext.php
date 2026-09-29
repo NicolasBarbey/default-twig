@@ -48,13 +48,14 @@ final readonly class ProductRelationsContext
         $additionalCategories = $this->additionalCategories($product, $locale, $defaultCategoryId);
         $additionalCategoryIds = array_map(static fn (array $row): int => $row['id'], $additionalCategories);
         $excludedFromTree = array_merge([$defaultCategoryId], $additionalCategoryIds);
+        $categoryChildren = $this->categoriesByParent($locale);
 
         return [
             'product' => $product,
             'default_category_id' => $defaultCategoryId,
-            'folder_tree' => $this->folderTree($locale),
-            'category_tree_for_relations' => $this->categoryTree($locale),
-            'category_tree_for_additional' => $this->categoryTree($locale, excluded: $excludedFromTree),
+            'folder_tree' => $this->folderTree($this->foldersByParent($locale)),
+            'category_tree_for_relations' => $this->categoryTree($categoryChildren),
+            'category_tree_for_additional' => $this->categoryTree($categoryChildren, excluded: $excludedFromTree),
             'assigned_contents' => $this->assignedContents($product, $locale),
             'relation_blocks' => $this->relationBlocks($product, $locale, $uiLocale),
             'additional_categories' => $additionalCategories,
@@ -65,21 +66,50 @@ final readonly class ProductRelationsContext
     }
 
     /**
-     * @return list<array{id: int, title: string, level: int}>
+     * Every folder with its translation, grouped by parent id in position order.
+     *
+     * @return array<int, list<Folder>>
      */
-    private function folderTree(string $locale, int $parentId = 0, int $level = 0): array
+    private function foldersByParent(string $locale): array
     {
-        $items = [];
-        $folders = FolderQuery::create()
-            ->filterByParent($parentId)
-            ->orderByPosition()
-            ->find();
-
-        foreach ($folders as $folder) {
+        $children = [];
+        foreach (FolderQuery::create()->joinWithI18n($locale)->orderByPosition()->find() as $folder) {
             \assert($folder instanceof Folder);
             $folder->setLocale($locale);
+            $children[(int) $folder->getParent()][] = $folder;
+        }
+
+        return $children;
+    }
+
+    /**
+     * Every category with its translation, grouped by parent id in position order.
+     *
+     * @return array<int, list<Category>>
+     */
+    private function categoriesByParent(string $locale): array
+    {
+        $children = [];
+        foreach (CategoryQuery::create()->joinWithI18n($locale)->orderByPosition()->find() as $category) {
+            \assert($category instanceof Category);
+            $category->setLocale($locale);
+            $children[(int) $category->getParent()][] = $category;
+        }
+
+        return $children;
+    }
+
+    /**
+     * @param array<int, list<Folder>> $children
+     *
+     * @return list<array{id: int, title: string, level: int}>
+     */
+    private function folderTree(array $children, int $parentId = 0, int $level = 0): array
+    {
+        $items = [];
+        foreach ($children[$parentId] ?? [] as $folder) {
             $items[] = ['id' => (int) $folder->getId(), 'title' => (string) $folder->getTitle(), 'level' => $level];
-            foreach ($this->folderTree($locale, (int) $folder->getId(), $level + 1) as $child) {
+            foreach ($this->folderTree($children, (int) $folder->getId(), $level + 1) as $child) {
                 $items[] = $child;
             }
         }
@@ -88,24 +118,18 @@ final readonly class ProductRelationsContext
     }
 
     /**
-     * @param list<int> $excluded
+     * @param array<int, list<Category>> $children
+     * @param list<int>                  $excluded
      *
      * @return list<array{id: int, title: string, level: int, disabled: bool}>
      */
-    private function categoryTree(string $locale, int $parentId = 0, int $level = 0, array $excluded = []): array
+    private function categoryTree(array $children, int $parentId = 0, int $level = 0, array $excluded = []): array
     {
         $items = [];
-        $categories = CategoryQuery::create()
-            ->filterByParent($parentId)
-            ->orderByPosition()
-            ->find();
-
-        foreach ($categories as $category) {
-            \assert($category instanceof Category);
-            $category->setLocale($locale);
+        foreach ($children[$parentId] ?? [] as $category) {
             $id = (int) $category->getId();
             $items[] = ['id' => $id, 'title' => (string) $category->getTitle(), 'level' => $level, 'disabled' => \in_array($id, $excluded, true)];
-            foreach ($this->categoryTree($locale, $id, $level + 1, $excluded) as $child) {
+            foreach ($this->categoryTree($children, $id, $level + 1, $excluded) as $child) {
                 $items[] = $child;
             }
         }
@@ -154,6 +178,7 @@ final readonly class ProductRelationsContext
     private function relationBlocks(Product $product, string $locale, string $uiLocale): array
     {
         $types = ProductAssociationTypeQuery::create()
+            ->joinWithI18n($uiLocale)
             ->filterByVisible(1)
             ->orderByPosition()
             ->find();

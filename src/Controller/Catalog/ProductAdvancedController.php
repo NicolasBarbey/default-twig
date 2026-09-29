@@ -1100,6 +1100,7 @@ final class ProductAdvancedController
 
         $features = FeatureQuery::create()
             ->filterById($featureIds, Criteria::IN)
+            ->joinWithI18n($locale)
             ->find();
         $byId = [];
         foreach ($features as $feature) {
@@ -1122,6 +1123,7 @@ final class ProductAdvancedController
             // must not turn a free-text feature into a giant select.
             $featureAvs = FeatureAvQuery::create()
                 ->filterByFeatureId($featureId)
+                ->joinWithI18n($locale)
                 ->where('feature_av.ID NOT IN (SELECT feature_av_id FROM feature_product WHERE is_free_text = 1 AND feature_av_id IS NOT NULL)')
                 ->orderByPosition()
                 ->find();
