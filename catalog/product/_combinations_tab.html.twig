@@ -84,7 +84,7 @@
                                         </td>
                                         <td><small>{{ row.label }}</small></td>
                                         <td><input type="hidden" name="product_sale_element_id[]" value="{{ row.id }}"><input type="text" name="reference[]" value="{{ row.ref }}" class="form-control form-control-sm"></td>
-                                        <td><input type="number" step="0.01" name="quantity[]" value="{{ row.quantity }}" class="form-control form-control-sm text-end"></td>
+                                        <td><input type="number" step="any" name="quantity[]" value="{{ row.quantity }}" class="form-control form-control-sm text-end"></td>
                                         <td><input type="number" step="any" name="price[]" value="{{ row.price }}" class="form-control form-control-sm text-end"></td>
                                         <td><input type="number" step="any" name="sale_price[]" value="{{ row.sale_price }}" class="form-control form-control-sm text-end"></td>
                                         <td><input type="number" step="any" name="weight[]" value="{{ row.weight }}" class="form-control form-control-sm text-end"></td>
@@ -235,7 +235,7 @@
 
                                         <div class="mb-3">
                                             <label class="form-label" for="default_pse_quantity">{{ 'Stock quantity'|trans }}</label>
-                                            <input type="number" step="0.01" id="default_pse_quantity" name="quantity" value="{{ default_pse.quantity }}" class="form-control" required>
+                                            <input type="number" step="any" id="default_pse_quantity" name="quantity" value="{{ default_pse.quantity }}" class="form-control" required>
                                         </div>
 
                                         {{ safe_hook('product.details-details-form', { product: product.id, location: 'product_details_details_form' }) }}

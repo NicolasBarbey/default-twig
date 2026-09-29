@@ -78,6 +78,7 @@ final readonly class CategoryRepository
         $categories = CategoryQuery::create()
             ->joinWithI18n($locale)
             ->orderByPosition()
+            ->orderById()
             ->find();
 
         $children = [];

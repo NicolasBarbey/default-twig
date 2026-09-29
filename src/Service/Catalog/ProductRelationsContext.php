@@ -73,7 +73,7 @@ final readonly class ProductRelationsContext
     private function foldersByParent(string $locale): array
     {
         $children = [];
-        foreach (FolderQuery::create()->joinWithI18n($locale)->orderByPosition()->find() as $folder) {
+        foreach (FolderQuery::create()->joinWithI18n($locale)->orderByPosition()->orderById()->find() as $folder) {
             \assert($folder instanceof Folder);
             $folder->setLocale($locale);
             $children[(int) $folder->getParent()][] = $folder;
@@ -90,7 +90,7 @@ final readonly class ProductRelationsContext
     private function categoriesByParent(string $locale): array
     {
         $children = [];
-        foreach (CategoryQuery::create()->joinWithI18n($locale)->orderByPosition()->find() as $category) {
+        foreach (CategoryQuery::create()->joinWithI18n($locale)->orderByPosition()->orderById()->find() as $category) {
             \assert($category instanceof Category);
             $category->setLocale($locale);
             $children[(int) $category->getParent()][] = $category;
