@@ -135,11 +135,9 @@ final class ProductFilterCatalog
     }
 
     /**
-     * @param \Propel\Runtime\ActiveQuery\ModelCriteria $query
-     *
      * @return list<array{id: int, title: string}>
      */
-    private function localizedList($query, string $locale): array
+    private function localizedList(BrandQuery|TemplateQuery|FeatureQuery|AttributeQuery $query, string $locale): array
     {
         $items = [];
         foreach ($query->joinWithI18n($locale)->find() as $model) {
