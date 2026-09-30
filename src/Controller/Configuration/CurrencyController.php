@@ -211,12 +211,14 @@ final class CurrencyController
         );
     }
 
-    #[Route('/update-rates', name: 'update-rates', methods: ['POST', 'GET'])]
+    #[Route('/update-rates', name: 'update-rates', methods: ['POST'])]
     public function updateRates(Request $request): Response
     {
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
             return $denied;
         }
+
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         $event = new CurrencyUpdateRateEvent();
 

@@ -22,6 +22,7 @@
             <div class="d-flex flex-wrap gap-2">
                 {% if is_granted('UPDATE', 'admin.configuration.currency') %}
                     <form action="{{ path('admin.configuration.currencies.update-rates') }}" method="post" class="d-inline">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
                         <button type="submit" class="btn btn-outline-secondary" data-testid="currency-update-rates-button">
                             <i class="bi bi-globe2" aria-hidden="true"></i>
                             {{ 'Update rates'|trans }}

@@ -741,12 +741,14 @@ final class ProductAdvancedController
         return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['product_id' => $productId, 'current_tab' => 'pse']));
     }
 
-    #[Route('/admin/product_sale_elements/{pseId}/{type}/{typeId}', name: 'admin.product_sale_elements.document_image_assoc', methods: ['GET'], requirements: ['pseId' => '\d+', 'typeId' => '\d+', 'type' => 'image|document|virtual'])]
-    public function pseDocumentImageAssoc(int $pseId, string $type, int $typeId): JsonResponse
+    #[Route('/admin/product_sale_elements/{pseId}/{type}/{typeId}', name: 'admin.product_sale_elements.document_image_assoc', methods: ['POST'], requirements: ['pseId' => '\d+', 'typeId' => '\d+', 'type' => 'image|document|virtual'])]
+    public function pseDocumentImageAssoc(int $pseId, string $type, int $typeId, Request $request): JsonResponse
     {
         if ($this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
             return new JsonResponse(['error' => 'forbidden'], Response::HTTP_FORBIDDEN);
         }
+
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         $pse = ProductSaleElementsQuery::create()->findPk($pseId);
         if ($pse === null) {

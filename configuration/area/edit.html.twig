@@ -51,6 +51,7 @@
                     <div class="card-body">
                         <form method="POST" action="{{ path('admin.configuration.shipping-configuration.country.add') }}" data-testid="shipping-configuration-add-country-form">
                             <input type="hidden" name="area_id" value="{{ area_id }}">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
 
                             <div class="mb-2">
                                 <input type="text" class="form-control form-control-sm" placeholder="{{ 'filter country'|trans }}" data-bo-area-edit-target="filter">
@@ -74,6 +75,7 @@
                     <div class="card-body">
                         <form method="POST" action="{{ path('admin.configuration.shipping-configuration.countries.remove') }}" data-testid="shipping-configuration-remove-countries-form">
                             <input type="hidden" name="area_id" value="{{ area_id }}">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
                             {{ safe_hook('shipping-configuration.country-delete-form', { location: 'shipping_configuration_country_delete_form' }) }}
 
                             <div class="table-responsive">

@@ -42,6 +42,7 @@ use Thelia\Model\CountryAreaQuery;
 use Thelia\Model\CountryQuery;
 use Thelia\Model\Event\AreaEvent;
 use Thelia\Model\LangQuery;
+use Thelia\Tools\TokenProvider;
 use Twig\Environment;
 
 #[Route('/admin/configuration/shipping_configuration', name: 'admin.configuration.shipping-configuration.')]
@@ -62,6 +63,7 @@ final class AreaController
         private readonly TranslatorInterface $translator,
         private readonly EventDispatcherInterface $events,
         private readonly CountryStateProvider $countryStates,
+        private readonly TokenProvider $tokens,
     ) {
     }
 
@@ -179,7 +181,7 @@ final class AreaController
         );
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $area = AreaQuery::create()->findPk((int) ($request->query->get('area_id') ?? $request->request->get('area_id', 0)));
@@ -204,6 +206,8 @@ final class AreaController
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
             return $denied;
         }
+
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         $areaId = (int) $request->request->get('area_id', 0);
         $area = AreaQuery::create()->findPk($areaId);
@@ -257,6 +261,8 @@ final class AreaController
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
             return $denied;
         }
+
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         $areaId = (int) $request->request->get('area_id', 0);
         $area = AreaQuery::create()->findPk($areaId);

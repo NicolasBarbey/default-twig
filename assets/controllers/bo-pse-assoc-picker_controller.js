@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { tokenBody } from '../lib/post-request.js';
 
 export default class extends Controller {
     static targets = ['title', 'hint', 'loading', 'empty', 'grid'];
@@ -131,7 +132,16 @@ export default class extends Controller {
 
         card.disabled = true;
         try {
-            const response = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } });
+            const response = await fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: tokenBody().toString(),
+            });
             if (!response.ok) {
                 throw new Error('toggle failed');
             }
