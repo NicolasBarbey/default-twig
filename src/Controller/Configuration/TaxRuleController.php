@@ -327,7 +327,7 @@ final class TaxRuleController
             return $denied;
         }
 
-        $this->tokens->checkToken((string) $request->query->get('_token'));
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         ConfigQuery::write('taxrule_id_delivery_module', (string) (int) $request->request->get('delivery-module-tax-rule', 0));
 
@@ -341,7 +341,7 @@ final class TaxRuleController
             return $denied;
         }
 
-        $this->tokens->checkToken((string) $request->query->get('_token'));
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         $submitted = $request->request->all('postage-tax-rule');
         $this->deliveryModuleTaxRules->save($submitted);
@@ -356,7 +356,7 @@ final class TaxRuleController
             return $denied;
         }
 
-        $this->tokens->checkToken((string) $request->query->get('_token'));
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         $strategy = PostageTaxStrategy::tryFrom((string) $request->request->get('postage-tax-strategy'));
 

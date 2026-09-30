@@ -90,7 +90,7 @@ final class ModuleController
         }
 
         try {
-            $this->tokens->checkToken((string) $request->query->get('_token'));
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
         } catch (\Throwable) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
@@ -254,7 +254,7 @@ final class ModuleController
         }
 
         try {
-            $this->tokens->checkToken((string) $request->request->get('_token', $request->query->get('_token')));
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
         } catch (\Throwable) {
             $this->flash($request, 'danger', $this->translator->trans('Invalid CSRF token.'));
 

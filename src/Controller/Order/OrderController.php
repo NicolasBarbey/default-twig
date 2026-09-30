@@ -170,7 +170,7 @@ final class OrderController
         $redirect = new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
 
         try {
-            $this->tokens->checkToken((string) ($request->request->get('_token') ?? $request->query->get('_token', '')));
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
         } catch (TokenAuthenticationException) {
             $this->flash('danger', $this->translator->trans('Invalid security token, please try again.'));
 
@@ -367,7 +367,7 @@ final class OrderController
         }
 
         try {
-            $this->tokens->checkToken((string) $request->request->get('_token', $request->query->get('_token')));
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
             $form = $this->formFactory->createNamed(
                 'thelia_order_address',

@@ -258,7 +258,7 @@ final class CatalogPriceRuleController
             return $denied;
         }
 
-        if (!$this->tokens->checkToken((string) ($request->query->get('_token') ?? $request->request->get('_token', '')))) {
+        if (!$this->tokens->checkToken((string) $request->request->get('_token', ''))) {
             return new Response($this->translator->trans('Invalid security token'), Response::HTTP_FORBIDDEN);
         }
 

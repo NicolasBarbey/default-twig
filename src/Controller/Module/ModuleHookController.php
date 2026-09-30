@@ -81,7 +81,7 @@ final class ModuleHookController
             return $denied;
         }
 
-        $this->tokens->checkToken((string) $request->query->get('_token', $request->request->get('_token', '')));
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         try {
             $event = new ModuleHookCreateEvent();
@@ -127,7 +127,7 @@ final class ModuleHookController
             return $denied;
         }
 
-        $this->tokens->checkToken((string) $request->query->get('_token', $request->request->get('_token', '')));
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         try {
             $moduleHook = ModuleHookQuery::create()->findPk($module_hook_id);

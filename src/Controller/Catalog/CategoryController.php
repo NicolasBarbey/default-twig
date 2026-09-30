@@ -285,7 +285,7 @@ final class CategoryController
         }
 
         try {
-            $this->tokens->checkToken((string) $request->request->get('_token', $request->query->get('_token')));
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
         } catch (\Throwable) {
             return new JsonResponse(['error' => 'invalid token'], Response::HTTP_BAD_REQUEST);
         }

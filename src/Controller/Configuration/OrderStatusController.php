@@ -255,7 +255,7 @@ final class OrderStatusController
         $statusId = (int) $action->getToStatusId();
         $redirect = new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['order_status_id' => $statusId, 'tab' => 'actions']));
 
-        if (!$this->tokenIsValid((string) ($request->query->get('_token') ?? $request->request->get('_token', '')))) {
+        if (!$this->tokenIsValid((string) $request->request->get('_token', ''))) {
             return $redirect;
         }
 

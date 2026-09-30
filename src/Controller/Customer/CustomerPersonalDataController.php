@@ -78,7 +78,7 @@ final class CustomerPersonalDataController
         }
 
         try {
-            $this->tokens->checkToken((string) $request->query->get('_token', ''));
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
         } catch (\Throwable) {
             return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['customer_id' => $customerId]));
         }

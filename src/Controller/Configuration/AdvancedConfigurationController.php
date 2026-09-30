@@ -89,7 +89,7 @@ final class AdvancedConfigurationController
         }
 
         try {
-            $this->tokens->checkToken((string) $request->query->get('_token'));
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
             $imagesDir = $this->webDir().ConfigQuery::read('image_cache_dir_from_web_root', 'cache'.\DIRECTORY_SEPARATOR.'images');
             $this->events->dispatch(new CacheEvent($imagesDir), TheliaEvents::CACHE_CLEAR);
@@ -112,7 +112,7 @@ final class AdvancedConfigurationController
         }
 
         try {
-            $this->tokens->checkToken((string) $request->query->get('_token'));
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
             $this->events->dispatch(new CacheEvent($dir), TheliaEvents::CACHE_CLEAR);
             $this->flash($request, 'success', $successMessage);
         } catch (\Throwable $exception) {

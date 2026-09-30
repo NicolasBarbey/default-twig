@@ -436,7 +436,7 @@ final class ProductAdvancedController
             return $denied;
         }
 
-        $this->tokens->checkToken((string) $request->request->get('_token', $request->query->get('_token', '')));
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         $product = ProductQuery::create()->findPk($productId);
         if ($product !== null) {

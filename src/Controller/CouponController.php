@@ -289,7 +289,7 @@ final class CouponController
             return new Response('', Response::HTTP_NOT_FOUND);
         }
 
-        $this->tokens->checkToken((string) $request->query->get('_token', $request->request->get('_token', '')));
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         $manager = $this->couponFactory->buildCouponFromModel($coupon);
 
@@ -334,7 +334,7 @@ final class CouponController
             return new Response('', Response::HTTP_NOT_FOUND);
         }
 
-        $this->tokens->checkToken((string) $request->query->get('_token', ''));
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         $manager = $this->couponFactory->buildCouponFromModel($coupon);
 
@@ -359,7 +359,7 @@ final class CouponController
             return new Response('', Response::HTTP_NOT_FOUND);
         }
 
-        $token = (string) $request->query->get('_token', $request->request->get('_token', ''));
+        $token = (string) $request->request->get('_token', '');
         $this->tokens->checkToken($token);
 
         $manager = $this->couponFactory->buildCouponFromModel($coupon);
@@ -392,7 +392,7 @@ final class CouponController
 
     private function handleCreateOrUpdate(Request $request, ?Coupon $coupon): Response
     {
-        $this->tokens->checkToken((string) ($request->request->get('_token') ?? $request->query->get('_token')));
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         $eventName = $coupon === null ? TheliaEvents::COUPON_CREATE : TheliaEvents::COUPON_UPDATE;
         $data = $request->request->all();

@@ -291,7 +291,7 @@ final class TagController
             // tag from the vocabulary and rewrites the attachments of every
             // customer carrying it.
             $this->tokens->checkToken(
-                (string) ($request->request->get('_token') ?? $request->query->get('_token') ?? ''),
+                (string) $request->request->get('_token', ''),
             );
 
             $this->tags->merge($absorbed, $surviving);
@@ -327,7 +327,7 @@ final class TagController
             // silently. Deleting a tag takes it off every customer at once, so an
             // unguarded GET would be a one-click forgery.
             $this->tokens->checkToken(
-                (string) ($request->request->get('_token') ?? $request->query->get('_token') ?? ''),
+                (string) $request->request->get('_token', ''),
             );
         } catch (\Throwable $exception) {
             $this->errorRenderer->setup(
