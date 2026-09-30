@@ -17,6 +17,7 @@ namespace BackOfficeDefaultTwigBundle\Controller\Configuration;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Thelia\Core\Security\AccessManager;
@@ -37,6 +38,9 @@ final class StoreMediaController
         'banner' => 'banner_file',
         'favicon' => 'favicon_file',
     ];
+
+    /** Raster types shown in the page; anything else stored under a store media name is downloaded. */
+    private const INLINE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
 
     public function __construct(private readonly AdminAccessChecker $access)
     {
@@ -60,8 +64,22 @@ final class StoreMediaController
         }
 
         $response = new BinaryFileResponse($absolutePath);
-        $response->setPublic();
+        // Behind an admin route: no shared cache may keep a copy.
+        $response->setPrivate();
         $response->setMaxAge(300);
+        $response->headers->set('X-Content-Type-Options', 'nosniff');
+
+        $mimeType = (string) $response->getFile()->getMimeType();
+
+        if ($mimeType === 'image/svg+xml') {
+            // Opened on its own, the drawing renders as an image and nothing else.
+            $response->headers->set('Content-Type', $mimeType);
+            $response->headers->set('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox");
+        } elseif (!\in_array($mimeType, self::INLINE_MIME_TYPES, true)) {
+            $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, basename($absolutePath));
+        } else {
+            $response->headers->set('Content-Type', $mimeType);
+        }
 
         return $response;
     }

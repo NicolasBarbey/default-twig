@@ -21,7 +21,8 @@ use Thelia\Test\WebIntegrationTestCase;
 use Thelia\Tests\Support\BackOffice\AdminSessionInjector;
 
 /**
- * The store logo and banner uploaded from the store configuration screen.
+ * The store logo and banner uploaded from the store configuration screen, and the
+ * admin route that serves them back.
  */
 final class StoreMediaUploadTest extends WebIntegrationTestCase
 {
@@ -139,6 +140,45 @@ final class StoreMediaUploadTest extends WebIntegrationTestCase
         self::assertSame('', ConfigQuery::read('logo_file'));
     }
 
+    public function testAnSvgStoreMediaIsServedAsAnInertImage(): void
+    {
+        $this->storeFile('logo_file', 'logo.svg', '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><rect width="1" height="1"/></svg>');
+
+        $this->client->request('GET', '/admin/store-media/logo');
+        $response = $this->client->getResponse();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('image/svg+xml', $response->headers->get('Content-Type'));
+        self::assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
+        self::assertSame("default-src 'none'; style-src 'unsafe-inline'; sandbox", $response->headers->get('Content-Security-Policy'));
+        self::assertTrue($response->headers->hasCacheControlDirective('private'), 'An admin-only file is not kept by shared caches.');
+    }
+
+    public function testARasterStoreMediaIsServedInline(): void
+    {
+        $this->storeFile('banner_file', 'banner.png', $this->png());
+
+        $this->client->request('GET', '/admin/store-media/banner');
+        $response = $this->client->getResponse();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('image/png', $response->headers->get('Content-Type'));
+        self::assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
+        self::assertNull($response->headers->get('Content-Disposition'));
+    }
+
+    public function testAStoreMediaThatIsNotAnImageIsDownloaded(): void
+    {
+        $this->storeFile('logo_file', 'logo.html', '<html><body>text</body></html>');
+
+        $this->client->request('GET', '/admin/store-media/logo');
+        $response = $this->client->getResponse();
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertStringStartsWith('attachment', (string) $response->headers->get('Content-Disposition'));
+        self::assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
+    }
+
     /**
      * @param array<string, string> $uploads form field => path of the file to upload
      */
@@ -174,6 +214,16 @@ final class StoreMediaUploadTest extends WebIntegrationTestCase
         self::assertFileExists($path);
 
         return $path;
+    }
+
+    private function storeFile(string $key, string $name, string $content): void
+    {
+        $fileName = uniqid().'-'.$name;
+        $path = $this->storeDirectory().\DIRECTORY_SEPARATOR.$fileName;
+        file_put_contents($path, $content);
+        $this->files[] = $path;
+
+        ConfigQuery::write($key, $fileName, false);
     }
 
     private function file(string $name, string $content): string
