@@ -314,7 +314,7 @@ final class TagController
         return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::DELETE)) {

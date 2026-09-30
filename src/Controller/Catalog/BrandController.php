@@ -226,7 +226,7 @@ final class BrandController
         );
     }
 
-    #[Route('/delete', name: 'delete', methods: ['GET', 'POST'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         return $this->action->tokenAction(

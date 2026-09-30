@@ -208,7 +208,7 @@
                             {% set rows = rows|merge([{
                                 'id': folder.id,
                                 'title_html': folder.title ~ (folder.is_default ? ' <span class="badge bg-secondary ms-2">' ~ 'Default folder'|trans ~ '</span>' : ''),
-                                '_actions': folder.is_default ? [] : [ row_action('delete', 'Delete'|trans, folder.delete_url ~ '&_token=' ~ additional_folder_delete_token) ],
+                                '_actions': folder.is_default ? [] : [ row_action('delete', 'Delete'|trans, folder.delete_url, dataAttributes: { 'bo-post': '' }) ],
                             }]) %}
                         {% endfor %}
                         {{ component('BoDataTable', {

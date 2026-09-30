@@ -97,7 +97,7 @@ final class FeatureAvController
         );
     }
 
-    #[Route('/delete', name: 'delete', methods: ['GET', 'POST'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $featureAvId = (int) $request->query->get('featureav_id', 0);

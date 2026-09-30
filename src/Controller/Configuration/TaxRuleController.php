@@ -286,7 +286,7 @@ final class TaxRuleController
         return new JsonResponse($this->buildSpecification($tax_rule_id));
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $event = new TaxRuleEvent();

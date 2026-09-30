@@ -261,8 +261,7 @@
                 {% component 'BoConfirmDialog' with {
                     id: 'category-related-content-delete',
                     title: 'Remove related content',
-                    formAction: path('admin.categories.related-content.delete') ~ '?_token=' ~ delete_related_content_token,
-                    token: false,
+                    formAction: path('admin.categories.related-content.delete'),
                     confirmLabel: 'Confirm',
                     testid: 'category-related-content-delete',
                     prefillTrigger: 'data-content-id',

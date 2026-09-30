@@ -172,7 +172,7 @@ final class CouponController
         return new Response($this->twig->render(self::EDIT_TEMPLATE, $context));
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $coupon = CouponQuery::create()->findPk((int) ($request->query->get('coupon_id') ?? $request->request->get('coupon_id', 0)));
@@ -322,7 +322,7 @@ final class CouponController
         return new Response();
     }
 
-    #[Route('/{couponId}/condition/delete/{conditionIndex}', name: 'condition.delete', methods: ['GET', 'POST'], requirements: ['couponId' => '\d+', 'conditionIndex' => '\d+'])]
+    #[Route('/{couponId}/condition/delete/{conditionIndex}', name: 'condition.delete', methods: ['POST'], requirements: ['couponId' => '\d+', 'conditionIndex' => '\d+'])]
     public function conditionDelete(Request $request, int $couponId, int $conditionIndex): Response
     {
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {

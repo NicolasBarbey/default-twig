@@ -168,7 +168,7 @@ final class TemplateController
         );
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         return $this->action->tokenAction(
@@ -250,7 +250,7 @@ final class TemplateController
         );
     }
 
-    #[Route('/features/delete', name: 'features.delete', methods: ['POST', 'GET'])]
+    #[Route('/features/delete', name: 'features.delete', methods: ['POST'])]
     public function deleteFeature(Request $request): Response
     {
         $template = TemplateQuery::create()->findPk((int) ($request->query->get('template_id') ?? $request->request->get('template_id', 0)));
@@ -310,7 +310,7 @@ final class TemplateController
         );
     }
 
-    #[Route('/attributes/delete', name: 'attributes.delete', methods: ['POST', 'GET'])]
+    #[Route('/attributes/delete', name: 'attributes.delete', methods: ['POST'])]
     public function deleteAttribute(Request $request): Response
     {
         $template = TemplateQuery::create()->findPk((int) ($request->query->get('template_id') ?? $request->request->get('template_id', 0)));
@@ -499,7 +499,7 @@ final class TemplateController
                 'id' => (int) $feature->getId(),
                 'title' => (string) $feature->getTitle(),
                 'position' => (int) $link->getPosition(),
-                'delete_url' => $this->tokenizedUrl('admin.configuration.templates.features.delete', ['template_id' => (int) $template->getId(), 'feature_id' => (int) $feature->getId()]),
+                'delete_url' => $this->urls->generate('admin.configuration.templates.features.delete', ['template_id' => (int) $template->getId(), 'feature_id' => (int) $feature->getId()]),
             ];
         }
 
@@ -525,7 +525,7 @@ final class TemplateController
                 'id' => (int) $attribute->getId(),
                 'title' => (string) $attribute->getTitle(),
                 'position' => (int) $link->getPosition(),
-                'delete_url' => $this->tokenizedUrl('admin.configuration.templates.attributes.delete', ['template_id' => (int) $template->getId(), 'attribute_id' => (int) $attribute->getId()]),
+                'delete_url' => $this->urls->generate('admin.configuration.templates.attributes.delete', ['template_id' => (int) $template->getId(), 'attribute_id' => (int) $attribute->getId()]),
             ];
         }
 
@@ -630,16 +630,5 @@ final class TemplateController
         $defaultLang = LangQuery::create()->findOneByByDefault(1);
 
         return $defaultLang?->getLocale() ?? 'en_US';
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 }

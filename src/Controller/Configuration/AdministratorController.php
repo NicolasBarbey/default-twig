@@ -154,7 +154,7 @@ final class AdministratorController
         );
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $administratorId = (int) ($request->query->get('administrator_id') ?? $request->request->get('administrator_id', 0));

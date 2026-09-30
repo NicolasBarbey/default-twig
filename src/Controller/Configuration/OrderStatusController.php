@@ -214,7 +214,7 @@ final class OrderStatusController
         }, 'Action %1$s #%2$d switched %4$s on order status %3$s');
     }
 
-    #[Route('/actions/delete', name: 'actions.delete', methods: ['POST', 'GET'])]
+    #[Route('/actions/delete', name: 'actions.delete', methods: ['POST'])]
     public function deleteAction(Request $request): Response
     {
         $actionId = (int) ($request->request->get('action_id') ?? $request->query->get('action_id', 0));
@@ -318,7 +318,7 @@ final class OrderStatusController
         );
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $statusId = (int) ($request->query->get('order_status_id') ?? $request->request->get('order_status_id', 0));

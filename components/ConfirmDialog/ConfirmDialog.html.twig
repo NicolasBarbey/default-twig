@@ -13,7 +13,7 @@
         confirmLabel confirm button label, |trans (default: Delete when danger, else Confirm)
         cancelLabel  cancel button label, |trans (default: Cancel)
         confirmIcon  confirm button icon class (default: bi-trash when danger, else bi-check2)
-        token        append ?_token= to the action (default: true)
+        token        send the back-office token as a hidden _token field (default: true)
         size         modal-dialog size class, e.g. modal-lg (default: none)
         testid       base data-testid: appends -form / -submit (default: none)
         hook         a hook name rendered through safe_hook in the body (default: none)
@@ -31,7 +31,8 @@
     {%- endif %}>
     <div class="modal-dialog{% if size %} {{ size }}{% endif %}">
         <div class="modal-content">
-            <form action="{{ formAction }}{% if token %}?_token={{ assignToken() }}{% endif %}" method="{{ method }}"{% if testid %} data-testid="{{ testid }}-form"{% endif %}>
+            <form action="{{ formAction }}" method="{{ method }}"{% if testid %} data-testid="{{ testid }}-form"{% endif %}>
+                {% if token %}<input type="hidden" name="_token" value="{{ assignToken() }}">{% endif %}
                 <div class="modal-header">
                     <h2 class="modal-title h5" id="{{ id }}-title">{{ title|trans }}</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'Close'|trans }}"></button>

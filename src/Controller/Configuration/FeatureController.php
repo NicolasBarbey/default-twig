@@ -159,7 +159,7 @@ final class FeatureController
         );
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         return $this->action->tokenAction(
@@ -370,7 +370,7 @@ final class FeatureController
             new RowAction(
                 kind: 'custom',
                 label: $this->translator->trans('Remove from all templates'),
-                href: $this->tokenizedUrl('admin.configuration.features.rem-from-all', ['feature_id' => $id]),
+                href: $this->urls->generate('admin.configuration.features.rem-from-all', ['feature_id' => $id]),
                 grantedAttribute: AccessManager::UPDATE,
                 grantedSubject: self::RESOURCE,
                 inMenu: true,
@@ -429,7 +429,7 @@ final class FeatureController
                 'id' => (int) $av->getId(),
                 'title' => (string) $av->getTitle(),
                 'position' => (int) $av->getPosition(),
-                'delete_url' => $this->tokenizedUrl('admin.configuration.features-av.delete', ['featureav_id' => (int) $av->getId()]),
+                'delete_url' => $this->urls->generate('admin.configuration.features-av.delete', ['featureav_id' => (int) $av->getId()]),
             ];
         }
 

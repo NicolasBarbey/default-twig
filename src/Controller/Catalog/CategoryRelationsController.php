@@ -72,7 +72,7 @@ final class CategoryRelationsController
         );
     }
 
-    #[Route('/admin/categories/related-content/delete', name: 'admin.categories.related-content.delete', methods: ['POST', 'GET'])]
+    #[Route('/admin/categories/related-content/delete', name: 'admin.categories.related-content.delete', methods: ['POST'])]
     public function deleteRelatedContent(Request $request): Response
     {
         $categoryId = (int) ($request->query->get('category_id') ?? $request->request->get('category_id', 0));

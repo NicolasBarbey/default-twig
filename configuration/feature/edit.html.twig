@@ -24,7 +24,7 @@
                 <a href="{{ path('admin.configuration.features.add-to-all', { feature_id: feature.id }) }}?_token={{ assignToken() }}" class="btn btn-outline-secondary" data-testid="feature-add-to-all">
                     <i class="bi bi-plus-square" aria-hidden="true"></i> {{ 'Add to all templates'|trans }}
                 </a>
-                <a href="{{ path('admin.configuration.features.rem-from-all', { feature_id: feature.id }) }}?_token={{ assignToken() }}" class="btn btn-outline-secondary" data-testid="feature-rem-from-all">
+                <a href="{{ path('admin.configuration.features.rem-from-all', { feature_id: feature.id }) }}" data-bo-post class="btn btn-outline-secondary" data-testid="feature-rem-from-all">
                     <i class="bi bi-x-square" aria-hidden="true"></i> {{ 'Remove from all templates'|trans }}
                 </a>
                 <a href="{{ path('admin.configuration.features.default') }}" class="btn btn-outline-secondary">
@@ -98,7 +98,7 @@
                                     </td>
                                     <td class="text-center align-middle">{{ av.position }}</td>
                                     <td class="text-end align-middle">
-                                        <a href="{{ av.delete_url }}" class="btn btn-sm btn-outline-danger" data-testid="featureav-delete-{{ av.id }}" onclick="return confirm('{{ 'Delete this value?'|trans }}')">
+                                        <a href="{{ av.delete_url }}" data-bo-post class="btn btn-sm btn-outline-danger" data-testid="featureav-delete-{{ av.id }}" onclick="return confirm('{{ 'Delete this value?'|trans }}')">
                                             <i class="bi bi-trash" aria-hidden="true"></i>
                                         </a>
                                     </td>

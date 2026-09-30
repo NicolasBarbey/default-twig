@@ -11,7 +11,7 @@
         'title': attribute.title,
         'position': attribute.position,
         '_actions': [
-            row_action('delete', 'Remove this attribute from the template?'|trans, attribute.delete_url),
+            row_action('delete', 'Remove this attribute from the template?'|trans, attribute.delete_url, dataAttributes: { 'bo-post': '' }),
         ],
     }]) %}
 {% endfor %}

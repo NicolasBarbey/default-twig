@@ -158,7 +158,7 @@ final class ProductRelationsController
         );
     }
 
-    #[Route('/category/delete', name: 'additional-category.delete', methods: ['POST', 'GET'])]
+    #[Route('/category/delete', name: 'additional-category.delete', methods: ['POST'])]
     public function deleteAdditionalCategory(Request $request): Response
     {
         $product = ProductQuery::create()->findPk((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)));
@@ -198,7 +198,7 @@ final class ProductRelationsController
         );
     }
 
-    #[Route('/content/delete', name: 'related-content.delete', methods: ['POST', 'GET'])]
+    #[Route('/content/delete', name: 'related-content.delete', methods: ['POST'])]
     public function deleteRelatedContent(Request $request): Response
     {
         $product = ProductQuery::create()->findPk((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)));
@@ -238,7 +238,7 @@ final class ProductRelationsController
         );
     }
 
-    #[Route('/accessory/delete', name: 'accessories.delete', methods: ['POST', 'GET'])]
+    #[Route('/accessory/delete', name: 'accessories.delete', methods: ['POST'])]
     public function deleteAccessory(Request $request): Response
     {
         $product = ProductQuery::create()->findPk((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)));
@@ -278,7 +278,7 @@ final class ProductRelationsController
         );
     }
 
-    #[Route('/association/delete', name: 'associations.delete', methods: ['POST', 'GET'])]
+    #[Route('/association/delete', name: 'associations.delete', methods: ['POST'])]
     public function deleteAssociation(Request $request): Response
     {
         $product = $this->requestedProduct($request);

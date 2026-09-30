@@ -149,8 +149,7 @@
     {% component 'BoConfirmDialog' with {
         id: 'product-related-content-delete',
         title: 'Remove related content',
-        formAction: path('admin.products.related-content.delete') ~ '?_token=' ~ token,
-        token: false,
+        formAction: path('admin.products.related-content.delete'),
         confirmLabel: 'Confirm',
         testid: 'product-related-content-delete',
         prefillTrigger: 'data-content-id',
@@ -168,8 +167,7 @@
         {% component 'BoConfirmDialog' with {
             id: relation.id_prefix ~ '-delete',
             title: 'Remove a relation',
-            formAction: relation.delete_url ~ '?_token=' ~ token,
-            token: false,
+            formAction: relation.delete_url,
             confirmLabel: 'Confirm',
             testid: relation.id_prefix ~ '-delete',
             prefillTrigger: 'data-associated-product-id',
@@ -188,8 +186,7 @@
     {% component 'BoConfirmDialog' with {
         id: 'product-additional-category-delete',
         title: 'Remove from category',
-        formAction: path('admin.products.additional-category.delete') ~ '?_token=' ~ token,
-        token: false,
+        formAction: path('admin.products.additional-category.delete'),
         confirmLabel: 'Confirm',
         testid: 'product-additional-category-delete',
         prefillTrigger: 'data-category-id',

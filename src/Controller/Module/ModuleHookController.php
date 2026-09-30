@@ -148,7 +148,7 @@ final class ModuleHookController
         return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['module_hook_id' => $module_hook_id]));
     }
 
-    #[Route('/admin/module-hooks/delete', name: 'admin.module-hook.delete', methods: ['POST', 'GET'])]
+    #[Route('/admin/module-hooks/delete', name: 'admin.module-hook.delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $moduleHookId = (int) ($request->query->get('module_hook_id') ?? $request->request->get('module_hook_id', 0));
@@ -272,7 +272,6 @@ final class ModuleHookController
             'create_url' => $this->urls->generate('admin.module-hook.create'),
             'create_token' => $this->tokens->assignToken(),
             'delete_url' => $this->urls->generate('admin.module-hook.delete'),
-            'delete_token' => $this->tokens->assignToken(),
             'classnames_url_template' => $this->urls->generate('admin.module-hook.get-module-hook-classnames', ['moduleId' => 0]),
             'methods_url_template' => $this->urls->generate('admin.module-hook.get-module-hook-methods', ['moduleId' => 0, 'className' => '__CLASS__']),
             'update_position_url' => $this->urls->generate('admin.module-hook.update-position'),

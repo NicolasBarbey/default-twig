@@ -525,7 +525,7 @@ final class ProductAdvancedController
         );
     }
 
-    #[Route('/admin/product/combination/delete', name: 'admin.product.combination.delete', methods: ['POST', 'GET'])]
+    #[Route('/admin/product/combination/delete', name: 'admin.product.combination.delete', methods: ['POST'])]
     public function combinationDelete(Request $request): Response
     {
         $event = new ProductSaleElementDeleteEvent(

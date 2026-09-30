@@ -24,7 +24,7 @@
                 <a href="{{ path('admin.configuration.attributes.add-to-all', { attribute_id: attribute.id }) }}?_token={{ assignToken() }}" class="btn btn-outline-secondary" data-testid="attribute-add-to-all">
                     <i class="bi bi-plus-square" aria-hidden="true"></i> {{ 'Add to all templates'|trans }}
                 </a>
-                <a href="{{ path('admin.configuration.attributes.rem-from-all', { attribute_id: attribute.id }) }}?_token={{ assignToken() }}" class="btn btn-outline-secondary" data-testid="attribute-rem-from-all">
+                <a href="{{ path('admin.configuration.attributes.rem-from-all', { attribute_id: attribute.id }) }}" data-bo-post class="btn btn-outline-secondary" data-testid="attribute-rem-from-all">
                     <i class="bi bi-x-square" aria-hidden="true"></i> {{ 'Remove from all templates'|trans }}
                 </a>
                 <a href="{{ path('admin.configuration.attributes.default') }}" class="btn btn-outline-secondary">
@@ -113,7 +113,7 @@
                                     </td>
                                     <td class="text-center">{{ av.position }}</td>
                                     <td class="text-end">
-                                        <a href="{{ av.delete_url }}" class="btn btn-sm btn-outline-danger" data-testid="attributeav-delete-{{ av.id }}" onclick="return confirm('{{ 'Delete this value?'|trans }}')">
+                                        <a href="{{ av.delete_url }}" data-bo-post class="btn btn-sm btn-outline-danger" data-testid="attributeav-delete-{{ av.id }}" onclick="return confirm('{{ 'Delete this value?'|trans }}')">
                                             <i class="bi bi-trash" aria-hidden="true"></i>
                                         </a>
                                     </td>

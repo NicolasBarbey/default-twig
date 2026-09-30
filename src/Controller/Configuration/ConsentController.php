@@ -143,7 +143,7 @@ final class ConsentController
         );
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $consentId = (int) ($request->query->get('consent_id') ?? $request->request->get('consent_id', 0));

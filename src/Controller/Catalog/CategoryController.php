@@ -326,7 +326,7 @@ final class CategoryController
         return new JsonResponse(['ok' => true, 'category_id' => $categoryId, 'parent_id' => $newParent, 'position' => $position]);
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $categoryId = (int) ($request->query->get('category_id') ?? $request->request->get('category_id', 0));

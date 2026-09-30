@@ -41,7 +41,6 @@ use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Model\Content;
 use Thelia\Model\ContentQuery;
 use Thelia\Model\LangQuery;
-use Thelia\Tools\TokenProvider;
 use Twig\Environment;
 
 #[Route('/admin/content', name: 'admin.content.')]
@@ -58,7 +57,6 @@ final class ContentController
         private readonly Environment $twig,
         private readonly FormFactoryInterface $formFactory,
         private readonly UrlGeneratorInterface $urls,
-        private readonly TokenProvider $tokens,
         private readonly EditLocaleResolver $editLocale,
         private readonly FolderRepository $folderRepository,
     ) {
@@ -111,7 +109,6 @@ final class ContentController
             'folders' => $this->folderChoices($locale),
             'additional_folders' => $this->additionalFolderRows($content, $locale),
             'available_additional_folders' => $this->availableAdditionalFolders($content, $locale),
-            'additional_folder_delete_token' => $this->tokens->assignToken(),
             'current_tab' => (string) $request->query->get('current_tab', 'general'),
             'edit_language_id' => (int) $editLang->getId(),
         ]));
@@ -208,7 +205,7 @@ final class ContentController
         );
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         return $this->action->tokenAction(
@@ -245,7 +242,7 @@ final class ContentController
         );
     }
 
-    #[Route('/additional-folder/delete', name: 'additional-folder.delete', methods: ['POST', 'GET'])]
+    #[Route('/additional-folder/delete', name: 'additional-folder.delete', methods: ['POST'])]
     public function deleteAdditionalFolder(Request $request): Response
     {
         $contentId = (int) ($request->query->get('content_id') ?? $request->request->get('content_id', 0));

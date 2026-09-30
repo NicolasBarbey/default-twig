@@ -334,7 +334,7 @@ final class CustomerController
         }
     }
 
-    #[Route('/customer/delete', name: 'customer.delete', methods: ['POST', 'GET'])]
+    #[Route('/customer/delete', name: 'customer.delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $customerId = (int) ($request->request->get('customer_id') ?? $request->query->get('customer_id') ?? 0);

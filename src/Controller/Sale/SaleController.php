@@ -150,7 +150,7 @@ final class SaleController
         );
     }
 
-    #[Route('/sale/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/sale/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         return $this->action->tokenAction(

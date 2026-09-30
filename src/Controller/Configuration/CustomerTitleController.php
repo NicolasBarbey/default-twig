@@ -159,7 +159,7 @@ final class CustomerTitleController
         );
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $title = CustomerTitleQuery::create()->findPk((int) ($request->query->get('customer_title_id') ?? $request->request->get('customer_title_id', 0)));

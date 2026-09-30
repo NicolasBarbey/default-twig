@@ -230,7 +230,7 @@ final class HookController
         );
     }
 
-    #[Route('/admin/hooks/delete', name: 'admin.hook.delete', methods: ['POST', 'GET'])]
+    #[Route('/admin/hooks/delete', name: 'admin.hook.delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $hookId = (int) $request->request->get('hook_id', 0);

@@ -271,8 +271,7 @@
     {% component 'BoConfirmDialog' with {
         id: 'module-hook-delete-modal',
         title: 'Delete a module hook',
-        formAction: delete_url ~ '?_token=' ~ delete_token,
-        token: false,
+        formAction: delete_url,
         testid: 'module-hook-delete',
         hook: 'module-hook.delete-form',
         hookContext: { location: 'module_hook_delete_form' },

@@ -4,7 +4,7 @@
         'id': feature.id,
         'title': feature.title,
         'position': feature.position,
-        '_actions': [ row_action('delete', 'Remove this feature from the template?'|trans, feature.delete_url) ],
+        '_actions': [ row_action('delete', 'Remove this feature from the template?'|trans, feature.delete_url, dataAttributes: { 'bo-post': '' }) ],
     }]) %}
 {% endfor %}
 {{ component('BoDataTable', {
