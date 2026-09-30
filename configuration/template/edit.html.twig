@@ -59,7 +59,8 @@
                     <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                         <span>{{ 'Features'|trans }}</span>
                         {% if available_features|length > 0 %}
-                            <form action="{{ path('admin.configuration.templates.features.add') }}?_token={{ assignToken() }}" method="post" data-testid="template-add-feature-form">
+                            <form action="{{ path('admin.configuration.templates.features.add') }}" method="post" data-testid="template-add-feature-form">
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
                                 <input type="hidden" name="template_id" value="{{ template.id }}">
                                 <div class="input-group input-group-sm w-auto">
                                     <select name="feature_id" class="form-select" data-testid="template-add-feature-select">
@@ -79,7 +80,8 @@
                     <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
                         <span>{{ 'Attributes'|trans }}</span>
                         {% if available_attributes|length > 0 %}
-                            <form action="{{ path('admin.configuration.templates.attributes.add') }}?_token={{ assignToken() }}" method="post" data-testid="template-add-attribute-form">
+                            <form action="{{ path('admin.configuration.templates.attributes.add') }}" method="post" data-testid="template-add-attribute-form">
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
                                 <input type="hidden" name="template_id" value="{{ template.id }}">
                                 <div class="input-group input-group-sm w-auto">
                                     <select name="attribute_id" class="form-select" data-testid="template-add-attribute-select">

@@ -138,7 +138,7 @@ final class ProductRelationsController
         return new JsonResponse($items);
     }
 
-    #[Route('/category/add', name: 'additional-category.add', methods: ['POST', 'GET'])]
+    #[Route('/category/add', name: 'additional-category.add', methods: ['POST'])]
     public function addAdditionalCategory(Request $request): Response
     {
         $product = ProductQuery::create()->findPk((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)));
@@ -178,7 +178,7 @@ final class ProductRelationsController
         );
     }
 
-    #[Route('/content/add', name: 'related-content.add', methods: ['POST', 'GET'])]
+    #[Route('/content/add', name: 'related-content.add', methods: ['POST'])]
     public function addRelatedContent(Request $request): Response
     {
         $product = ProductQuery::create()->findPk((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)));
@@ -218,7 +218,7 @@ final class ProductRelationsController
         );
     }
 
-    #[Route('/accessory/add', name: 'accessories.add', methods: ['POST', 'GET'])]
+    #[Route('/accessory/add', name: 'accessories.add', methods: ['POST'])]
     public function addAccessory(Request $request): Response
     {
         $product = ProductQuery::create()->findPk((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)));
@@ -258,7 +258,7 @@ final class ProductRelationsController
         );
     }
 
-    #[Route('/association/add', name: 'associations.add', methods: ['POST', 'GET'])]
+    #[Route('/association/add', name: 'associations.add', methods: ['POST'])]
     public function addAssociation(Request $request): Response
     {
         $product = $this->requestedProduct($request);

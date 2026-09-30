@@ -201,7 +201,8 @@
 
     <div class="modal fade" id="module-hook-create-modal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable">
-            <form method="post" action="{{ create_url }}?_token={{ create_token }}" data-testid="module-hook-create-form">
+            <form method="post" action="{{ create_url }}" data-testid="module-hook-create-form">
+                <input type="hidden" name="_token" value="{{ create_token }}">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h1 class="modal-title fs-5">{{ 'Add a module to a hook'|trans }}</h1>

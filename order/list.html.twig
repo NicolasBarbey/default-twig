@@ -402,9 +402,10 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <form method="post"
-                      action="{{ path('admin.order.list.cancel', { order_id: 0 }) }}?_token={{ assignToken() }}"
+                      action="{{ path('admin.order.list.cancel', { order_id: 0 }) }}"
                       data-bo-order-cancel-modal-target="form"
                       data-testid="order-cancel-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
                     <div class="modal-header">
                         <h2 class="modal-title h5" id="order-cancel-modal-title">{{ 'Cancel order'|trans }}</h2>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'Close'|trans }}"></button>

@@ -143,8 +143,11 @@ export default class extends Controller {
             });
     }
 
-    withToken(url) {
-        return `${url}${url.includes('?') ? '&' : '?'}_token=${encodeURIComponent(this.tokenValue)}`;
+    tokenBody() {
+        const body = new URLSearchParams();
+        body.set('_token', this.tokenValue);
+
+        return body;
     }
 
     async toggle(event) {
@@ -159,11 +162,15 @@ export default class extends Controller {
             : (button.dataset.labelShow || '');
 
         const id = String(event.params.id);
-        const url = this.withToken((this.toggleUrlTemplateValue || '').replace(/\/0(?=\/toggle|$)/, `/${id}`));
+        const url = (this.toggleUrlTemplateValue || '').replace(/\/0(?=\/toggle|$)/, `/${id}`);
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: this.tokenBody().toString(),
             });
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
@@ -196,11 +203,15 @@ export default class extends Controller {
             item.style.pointerEvents = 'none';
         }
 
-        const url = this.withToken((this.deleteUrlTemplateValue || '').replace(/\/0$/, `/${id}`).replace(/\/0(?=\/)/, `/${id}`));
+        const url = (this.deleteUrlTemplateValue || '').replace(/\/0$/, `/${id}`).replace(/\/0(?=\/)/, `/${id}`);
         try {
             const response = await fetch(url, {
                 method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: this.tokenBody().toString(),
             });
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);

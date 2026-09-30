@@ -1,6 +1,7 @@
 {# B.10 - product attributes & features tab (iso markup avec set-product-template + multi-select feature values + free-text) #}
 <div class="container-fluid" data-testid="product-attributes-tab">
-    <form method="post" action="{{ set_template_action }}?_token={{ assignToken() }}" class="mb-3" data-testid="product-template-form">
+    <form method="post" action="{{ set_template_action }}" class="mb-3" data-testid="product-template-form">
+        <input type="hidden" name="_token" value="{{ assignToken() }}">
         <input type="hidden" name="product_id" value="{{ product.id }}">
         <input type="hidden" name="current_tab" value="attributes">
 
@@ -25,7 +26,8 @@
     </form>
 
     {% if product_template_id > 0 %}
-        <form method="post" action="{{ attributes_form_action }}?_token={{ assignToken() }}" data-controller="bo-product-feature-batch" data-testid="product-feature-batch-form">
+        <form method="post" action="{{ attributes_form_action }}" data-controller="bo-product-feature-batch" data-testid="product-feature-batch-form">
+            <input type="hidden" name="_token" value="{{ assignToken() }}">
             <input type="hidden" name="product_id" value="{{ product.id }}">
             <input type="hidden" name="current_tab" value="attributes">
 

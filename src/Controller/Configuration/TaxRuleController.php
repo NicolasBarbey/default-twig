@@ -535,9 +535,10 @@ final class TaxRuleController
                     href: $this->urls->generate(
                         'admin.configuration.taxes-rules.set-default',
                         ['tax_rule_id' => $id],
-                    ).'?_token='.$this->tokens->assignToken(),
+                    ),
                     grantedAttribute: AccessManager::UPDATE,
                     grantedSubject: 'admin.configuration.tax',
+                    dataAttributes: ['bo-post' => ''],
                     inlineFrom: 'md',
                 );
                 $actions[] = new RowAction(

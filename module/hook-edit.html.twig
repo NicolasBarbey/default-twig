@@ -18,10 +18,11 @@
         {{ safe_hook('module-hook-edit.top', { module_hook_id: module_hook.id }) }}
         <h1 class="h3 mb-3">{{ 'Edit module hook'|trans }} <small class="text-muted">#{{ module_hook.id }}</small></h1>
 
-        <form action="{{ path('admin.module-hook.save', { module_hook_id: module_hook.id }) ~ '?_token=' ~ assignToken() }}" method="post" data-testid="module-hook-edit-form"
+        <form action="{{ path('admin.module-hook.save', { module_hook_id: module_hook.id }) }}" method="post" data-testid="module-hook-edit-form"
               data-controller="bo-module-hooks"
               data-bo-module-hooks-classnames-url-value="{{ classnames_url_template }}"
               data-bo-module-hooks-methods-url-value="{{ methods_url_template }}">
+            <input type="hidden" name="_token" value="{{ assignToken() }}">
             <div class="row">
                 <div class="col-md-6 mb-3">
                     <label class="form-label" for="module-hook-edit-module">{{ 'Module'|trans }}</label>

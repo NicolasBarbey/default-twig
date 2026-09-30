@@ -229,7 +229,8 @@
                                 {{ 'Answer a data subject request without touching the accounting record of the orders.'|trans }}
                             </p>
                             <div class="d-grid gap-2">
-                                <a href="{{ path('admin.customer.personal_data.export', { customer_id: customer.id, _token: assignToken() }) }}"
+                                <a href="{{ path('admin.customer.personal_data.export', { customer_id: customer.id }) }}"
+                                   data-bo-post
                                    class="btn btn-sm btn-outline-primary"
                                    data-testid="customer-personal-data-export">
                                     <i class="bi bi-download" aria-hidden="true"></i> {{ 'Download personal data'|trans }}

@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { backOfficeToken, tokenBody } from '../lib/post-request.js';
 
 /**
  * Drives the coupon edit form interactions:
@@ -175,6 +176,7 @@ export default class extends Controller {
         }
 
         formData.append('categoryCondition', conditionServiceId);
+        formData.append('_token', backOfficeToken());
 
         const inputs = this.conditionInputsTarget.querySelectorAll('input, select, textarea');
         inputs.forEach((input) => {
@@ -206,7 +208,12 @@ export default class extends Controller {
         }
 
         const url = this.deleteConditionUrlValue.replace('888888', String(conditionIndex));
-        fetch(url, { credentials: 'same-origin' })
+        fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: tokenBody().toString(),
+        })
             .then((response) => (response.ok ? response.text() : Promise.reject(new Error(`HTTP ${response.status}`))))
             .then(() => this.refreshSummaries())
             .catch(() => {});

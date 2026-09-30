@@ -193,7 +193,7 @@ final class AttributeController
         );
     }
 
-    #[Route('/add-to-all-templates', name: 'add-to-all', methods: ['POST', 'GET'])]
+    #[Route('/add-to-all-templates', name: 'add-to-all', methods: ['POST'])]
     public function addToAllTemplates(Request $request): Response
     {
         return $this->dispatchTemplateBulk($request, TheliaEvents::ATTRIBUTE_ADD_TO_ALL_TEMPLATES, 'Attribute added to all templates');
@@ -362,9 +362,10 @@ final class AttributeController
             new RowAction(
                 kind: 'custom',
                 label: $this->translator->trans('Add to all templates'),
-                href: $this->tokenizedUrl('admin.configuration.attributes.add-to-all', ['attribute_id' => $id]),
+                href: $this->urls->generate('admin.configuration.attributes.add-to-all', ['attribute_id' => $id]),
                 grantedAttribute: AccessManager::UPDATE,
                 grantedSubject: self::RESOURCE,
+                dataAttributes: ['bo-post' => ''],
                 inMenu: true,
             ),
             new RowAction(
@@ -373,6 +374,7 @@ final class AttributeController
                 href: $this->urls->generate('admin.configuration.attributes.rem-from-all', ['attribute_id' => $id]),
                 grantedAttribute: AccessManager::UPDATE,
                 grantedSubject: self::RESOURCE,
+                dataAttributes: ['bo-post' => ''],
                 inMenu: true,
             ),
         ];
@@ -445,16 +447,5 @@ final class AttributeController
         $cast = (string) $value;
 
         return $cast === '' ? null : $cast;
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 }

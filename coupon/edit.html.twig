@@ -35,11 +35,11 @@
          data-bo-coupon-form-automatic-mode-value="{{ trigger_mode_automatic }}"
          {% if is_update %}
          data-bo-coupon-form-coupon-id-value="{{ coupon_id }}"
-         data-bo-coupon-form-save-condition-url-value="{{ path('admin.coupon.condition.save', { couponId: coupon_id }) ~ '?_token=' ~ assignToken() }}"
+         data-bo-coupon-form-save-condition-url-value="{{ path('admin.coupon.condition.save', { couponId: coupon_id }) }}"
          data-bo-coupon-form-summaries-url-value="{{ path('admin.coupon.draw.condition.summaries.ajax', { couponId: coupon_id }) }}"
          data-bo-coupon-form-read-inputs-url-value="{{ path('admin.coupon.draw.condition.read.inputs.ajax', { conditionId: '__CONDITION__' }) }}"
          data-bo-coupon-form-update-inputs-url-value="{{ path('admin.coupon.draw.condition.update.inputs.ajax', { couponId: coupon_id, conditionIndex: 888888 }) }}"
-         data-bo-coupon-form-delete-condition-url-value="{{ path('admin.coupon.condition.delete', { couponId: coupon_id, conditionIndex: 888888 }) ~ '?_token=' ~ assignToken() }}"
+         data-bo-coupon-form-delete-condition-url-value="{{ path('admin.coupon.condition.delete', { couponId: coupon_id, conditionIndex: 888888 }) }}"
          data-bo-coupon-form-delete-confirm-value="{{ 'Do you really want to delete this condition?'|trans }}"
          data-bo-coupon-form-everyone-confirm-value="{{ 'This will make the coupon available to everyone. Continue?'|trans }}"
          {% endif %}

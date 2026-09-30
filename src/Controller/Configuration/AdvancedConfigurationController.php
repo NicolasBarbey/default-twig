@@ -65,13 +65,13 @@ final class AdvancedConfigurationController
         return new Response($this->twig->render('@BackOfficeDefaultTwig/configuration/advanced/index.html.twig'));
     }
 
-    #[Route('/flush-cache', name: '.flush-cache', methods: ['POST', 'GET'])]
+    #[Route('/flush-cache', name: '.flush-cache', methods: ['POST'])]
     public function flushCache(Request $request): RedirectResponse
     {
         return $this->dispatchCacheClear($request, $this->cacheDir, 'Application cache cleared.');
     }
 
-    #[Route('/flush-assets', name: '.flush-assets', methods: ['POST', 'GET'])]
+    #[Route('/flush-assets', name: '.flush-assets', methods: ['POST'])]
     public function flushAssets(Request $request): RedirectResponse
     {
         return $this->dispatchCacheClear(
@@ -81,7 +81,7 @@ final class AdvancedConfigurationController
         );
     }
 
-    #[Route('/flush-images-and-documents', name: '.flush-images-and-documents', methods: ['POST', 'GET'])]
+    #[Route('/flush-images-and-documents', name: '.flush-images-and-documents', methods: ['POST'])]
     public function flushImagesAndDocuments(Request $request): RedirectResponse
     {
         if ($denied = $this->access->checkAny(self::RESOURCES, AccessManager::UPDATE)) {

@@ -315,8 +315,9 @@
     {% if template_attributes is not empty %}
         <div class="modal fade" id="combination-creation-modal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-scrollable">
-                <form method="post" action="{{ path('admin.product.combination.add') }}?_token={{ assignToken() }}"
+                <form method="post" action="{{ path('admin.product.combination.add') }}"
                       data-controller="bo-combination-creation" data-testid="combination-creation-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h1 class="modal-title fs-5">{{ 'Add a combination'|trans }}</h1>
@@ -360,8 +361,9 @@
 
         <div class="modal fade" id="combination-builder-modal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                <form method="post" action="{{ path('admin.product.combination.build') }}?_token={{ assignToken() }}"
+                <form method="post" action="{{ path('admin.product.combination.build') }}"
                       data-controller="bo-combination-builder" data-testid="combination-builder-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h1 class="modal-title fs-5">{{ 'Combination builder'|trans }}</h1>

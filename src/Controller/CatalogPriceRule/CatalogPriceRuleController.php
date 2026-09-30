@@ -233,7 +233,7 @@ final class CatalogPriceRuleController
         );
     }
 
-    #[Route('/recompute', name: 'recompute', methods: ['GET', 'POST'])]
+    #[Route('/recompute', name: 'recompute', methods: ['POST'])]
     public function recompute(Request $request): Response
     {
         return $this->action->tokenAction(
@@ -251,7 +251,7 @@ final class CatalogPriceRuleController
      * Turns a flash sale into rules, turned off, and opens the first one. The sale is
      * left as it is: the merchant turns it off when the rule is ready.
      */
-    #[Route('/convert-sale/{sale_id}', name: 'convert-sale', methods: ['GET', 'POST'], requirements: ['sale_id' => '\d+'])]
+    #[Route('/convert-sale/{sale_id}', name: 'convert-sale', methods: ['POST'], requirements: ['sale_id' => '\d+'])]
     public function convertSale(int $sale_id, Request $request): Response
     {
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::CREATE)) {

@@ -183,7 +183,7 @@ final class SaleController
         );
     }
 
-    #[Route('/sales/reset-status', name: 'reset-status', methods: ['GET', 'POST'])]
+    #[Route('/sales/reset-status', name: 'reset-status', methods: ['POST'])]
     public function resetStatus(Request $request): Response
     {
         return $this->action->tokenAction(

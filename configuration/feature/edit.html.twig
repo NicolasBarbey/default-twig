@@ -21,7 +21,7 @@
         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
             <h1 class="h3 mb-0">{{ 'Feature'|trans }} <small class="text-muted">#{{ feature.id }}</small></h1>
             <div class="btn-group" role="group" aria-label="{{ 'Feature actions'|trans }}">
-                <a href="{{ path('admin.configuration.features.add-to-all', { feature_id: feature.id }) }}?_token={{ assignToken() }}" class="btn btn-outline-secondary" data-testid="feature-add-to-all">
+                <a href="{{ path('admin.configuration.features.add-to-all', { feature_id: feature.id }) }}" data-bo-post class="btn btn-outline-secondary" data-testid="feature-add-to-all">
                     <i class="bi bi-plus-square" aria-hidden="true"></i> {{ 'Add to all templates'|trans }}
                 </a>
                 <a href="{{ path('admin.configuration.features.rem-from-all', { feature_id: feature.id }) }}" data-bo-post class="btn btn-outline-secondary" data-testid="feature-rem-from-all">

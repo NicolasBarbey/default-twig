@@ -64,7 +64,7 @@ final class CustomerPersonalDataController
      * web/ or in a shared cache directory would leave the personal data of one
      * person behind a URL that outlives the session that asked for it.
      */
-    #[Route('/customer/personal-data', name: 'customer.personal_data.export', methods: ['GET'])]
+    #[Route('/customer/personal-data', name: 'customer.personal_data.export', methods: ['POST'])]
     public function export(Request $request): Response
     {
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::VIEW)) {

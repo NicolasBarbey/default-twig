@@ -182,7 +182,7 @@ final class TemplateController
         );
     }
 
-    #[Route('/duplicate', name: 'duplicate', methods: ['POST', 'GET'])]
+    #[Route('/duplicate', name: 'duplicate', methods: ['POST'])]
     public function duplicate(Request $request): Response
     {
         $sourceId = (int) ($request->query->get('source_template_id') ?? $request->request->get('source_template_id') ?? $request->query->get('template_id') ?? $request->request->get('template_id', 0));
@@ -230,7 +230,7 @@ final class TemplateController
         ]));
     }
 
-    #[Route('/features/add', name: 'features.add', methods: ['POST', 'GET'])]
+    #[Route('/features/add', name: 'features.add', methods: ['POST'])]
     public function addFeature(Request $request): Response
     {
         $template = TemplateQuery::create()->findPk((int) ($request->query->get('template_id') ?? $request->request->get('template_id', 0)));
@@ -290,7 +290,7 @@ final class TemplateController
         ]));
     }
 
-    #[Route('/attributes/add', name: 'attributes.add', methods: ['POST', 'GET'])]
+    #[Route('/attributes/add', name: 'attributes.add', methods: ['POST'])]
     public function addAttribute(Request $request): Response
     {
         $template = TemplateQuery::create()->findPk((int) ($request->query->get('template_id') ?? $request->request->get('template_id', 0)));

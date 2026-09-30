@@ -407,7 +407,7 @@ final class ProductAdvancedController
         ));
     }
 
-    #[Route('/admin/product/{productId}/set-product-template', name: 'admin.products.set-product-template', methods: ['POST', 'GET'], requirements: ['productId' => '\d+'])]
+    #[Route('/admin/product/{productId}/set-product-template', name: 'admin.products.set-product-template', methods: ['POST'], requirements: ['productId' => '\d+'])]
     public function setProductTemplate(int $productId, Request $request): Response
     {
         $product = ProductQuery::create()->findPk($productId);
@@ -486,7 +486,7 @@ final class ProductAdvancedController
         return $_format === 'json' ? new JsonResponse(['combination' => implode(',', $combinationIds), 'attributes' => $items]) : new Response('');
     }
 
-    #[Route('/admin/product/combination/add', name: 'admin.product.combination.add', methods: ['POST', 'GET'])]
+    #[Route('/admin/product/combination/add', name: 'admin.product.combination.add', methods: ['POST'])]
     public function combinationAdd(Request $request): Response
     {
         $product = ProductQuery::create()->findPk((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)));
@@ -625,7 +625,7 @@ final class ProductAdvancedController
         ));
     }
 
-    #[Route('/admin/product/combination/build', name: 'admin.product.combination.build', methods: ['POST', 'GET'])]
+    #[Route('/admin/product/combination/build', name: 'admin.product.combination.build', methods: ['POST'])]
     public function combinationBuild(Request $request): Response
     {
         $product = ProductQuery::create()->findPk((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)));

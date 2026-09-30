@@ -263,7 +263,8 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label" for="order-status-select">{{ 'Order status'|trans }}</label>
-                                <form action="{{ path('admin.order.update.status', { order_id: order.id }) }}?_token={{ token }}" method="post" data-testid="order-status-form">
+                                <form action="{{ path('admin.order.update.status', { order_id: order.id }) }}" method="post" data-testid="order-status-form">
+                                    <input type="hidden" name="_token" value="{{ token }}">
                                     <div class="input-group">
                                         <select id="order-status-select" name="status_id" class="form-select" data-testid="order-status-select" {% if allowed_statuses|length == 0 %}disabled{% endif %}>
                                             {#- The current status first, so that submitting unchanged is a no-op; then only what the graph allows. -#}
@@ -287,7 +288,8 @@
                                 {% if can_force_status and forced_only_statuses|length > 0 %}
                                     <details class="mt-2" data-testid="order-status-force">
                                         <summary class="small text-danger">{{ 'Force a status outside the allowed transitions'|trans }}</summary>
-                                        <form action="{{ path('admin.order.update.status', { order_id: order.id }) }}?_token={{ token }}" method="post" class="mt-2" data-testid="order-status-force-form">
+                                        <form action="{{ path('admin.order.update.status', { order_id: order.id }) }}" method="post" class="mt-2" data-testid="order-status-force-form">
+                                            <input type="hidden" name="_token" value="{{ token }}">
                                             <input type="hidden" name="force" value="1">
                                             <div class="input-group">
                                                 <select name="status_id" class="form-select border-danger" required aria-label="{{ 'Status to force'|trans }}" data-testid="order-status-force-select">
@@ -330,7 +332,8 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label" for="order-delivery-ref-input">{{ 'Tracking reference'|trans }}</label>
-                                <form action="{{ path('admin.order.update.deliveryRef', { order_id: order.id }) }}?_token={{ token }}" method="post" class="d-flex gap-2" data-testid="order-delivery-ref-form">
+                                <form action="{{ path('admin.order.update.deliveryRef', { order_id: order.id }) }}" method="post" class="d-flex gap-2" data-testid="order-delivery-ref-form">
+                                    <input type="hidden" name="_token" value="{{ token }}">
                                     <input type="text" id="order-delivery-ref-input" name="delivery_ref" value="{{ order.deliveryRef }}" class="form-control" placeholder="{{ 'Tracking number'|trans }}" data-testid="order-delivery-ref-input">
                                     <button type="submit" class="btn btn-primary flex-shrink-0" data-testid="order-delivery-ref-submit">{{ 'Update'|trans }}</button>
                                 </form>
@@ -552,7 +555,8 @@
     {% if cancel_status_id > 0 and not is_canceled and can_cancel %}
         <div class="modal fade" id="order-cancel-modal" tabindex="-1" aria-hidden="true" data-testid="order-cancel-modal">
             <div class="modal-dialog">
-                <form method="post" action="{{ path('admin.order.update.status', { order_id: order.id }) }}?_token={{ token }}" data-testid="order-cancel-form">
+                <form method="post" action="{{ path('admin.order.update.status', { order_id: order.id }) }}" data-testid="order-cancel-form">
+                    <input type="hidden" name="_token" value="{{ token }}">
                     <div class="modal-content">
                         <div class="modal-header">
                             <h1 class="modal-title fs-5">{{ 'Cancel order'|trans }}</h1>

@@ -46,7 +46,7 @@ final class CategoryRelationsController
     ) {
     }
 
-    #[Route('/admin/categories/related-content/add', name: 'admin.categories.related-content.add', methods: ['POST', 'GET'])]
+    #[Route('/admin/categories/related-content/add', name: 'admin.categories.related-content.add', methods: ['POST'])]
     public function addRelatedContent(Request $request): Response
     {
         $categoryId = (int) ($request->query->get('category_id') ?? $request->request->get('category_id', 0));

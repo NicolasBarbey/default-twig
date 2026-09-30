@@ -27,7 +27,7 @@
                         <p class="text-muted small">{{ 'Clear Symfony cache (templates, container, routing).'|trans }}</p>
                     </div>
                     <div class="card-footer text-end">
-                        <a href="{{ path('admin.configuration.advanced.flush-cache') }}?_token={{ assignToken() }}" class="btn btn-warning" data-testid="advanced-flush-cache">
+                        <a href="{{ path('admin.configuration.advanced.flush-cache') }}" data-bo-post class="btn btn-warning" data-testid="advanced-flush-cache">
                             <i class="bi bi-trash3" aria-hidden="true"></i> {{ 'Flush cache'|trans }}
                         </a>
                     </div>
@@ -41,7 +41,7 @@
                         <p class="text-muted small">{{ 'Clear public/assets compiled output (Webpack/Encore artifacts).'|trans }}</p>
                     </div>
                     <div class="card-footer text-end">
-                        <a href="{{ path('admin.configuration.advanced.flush-assets') }}?_token={{ assignToken() }}" class="btn btn-warning" data-testid="advanced-flush-assets">
+                        <a href="{{ path('admin.configuration.advanced.flush-assets') }}" data-bo-post class="btn btn-warning" data-testid="advanced-flush-assets">
                             <i class="bi bi-trash3" aria-hidden="true"></i> {{ 'Flush assets'|trans }}
                         </a>
                     </div>
@@ -55,7 +55,7 @@
                         <p class="text-muted small">{{ 'Clear generated images and documents cache directories.'|trans }}</p>
                     </div>
                     <div class="card-footer text-end">
-                        <a href="{{ path('admin.configuration.advanced.flush-images-and-documents') }}?_token={{ assignToken() }}" class="btn btn-warning" data-testid="advanced-flush-images">
+                        <a href="{{ path('admin.configuration.advanced.flush-images-and-documents') }}" data-bo-post class="btn btn-warning" data-testid="advanced-flush-images">
                             <i class="bi bi-trash3" aria-hidden="true"></i> {{ 'Flush images/documents'|trans }}
                         </a>
                     </div>

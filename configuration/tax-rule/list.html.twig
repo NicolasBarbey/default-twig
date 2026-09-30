@@ -89,7 +89,8 @@
                 <h2 class="h5 mb-2">{{ 'Tax rule for delivery modules'|trans }}</h2>
                 <div class="card mb-3">
                     <div class="card-body">
-                        <form method="post" action="{{ path('admin.configuration.taxes-rules.delivery.modules.update') }}?_token={{ assignToken() }}" data-testid="tax-rule-delivery-form">
+                        <form method="post" action="{{ path('admin.configuration.taxes-rules.delivery.modules.update') }}" data-testid="tax-rule-delivery-form">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
                             <label for="delivery-module-tax-rule" class="form-label">{{ 'Select a tax rule'|trans }}</label>
                             <div class="input-group">
                                 <select id="delivery-module-tax-rule" name="delivery-module-tax-rule" class="form-select">
@@ -114,7 +115,8 @@
                         {% if delivery_module_rows is empty %}
                             <p class="text-muted mb-0">{{ 'No delivery module is activated.'|trans }}</p>
                         {% else %}
-                            <form method="post" action="{{ path('admin.configuration.taxes-rules.delivery.modules.postage.update') }}?_token={{ assignToken() }}" data-testid="postage-tax-rule-form">
+                            <form method="post" action="{{ path('admin.configuration.taxes-rules.delivery.modules.postage.update') }}" data-testid="postage-tax-rule-form">
+                                <input type="hidden" name="_token" value="{{ assignToken() }}">
                                 <div class="table-responsive">
                                     <table class="table align-middle mb-3">
                                         <thead>
@@ -165,7 +167,8 @@
                 <h2 class="h5 mb-2">{{ 'Postage tax breakdown'|trans }}</h2>
                 <div class="card">
                     <div class="card-body">
-                        <form method="post" action="{{ path('admin.configuration.taxes-rules.postage.tax.strategy.update') }}?_token={{ assignToken() }}" data-testid="postage-tax-strategy-form">
+                        <form method="post" action="{{ path('admin.configuration.taxes-rules.postage.tax.strategy.update') }}" data-testid="postage-tax-strategy-form">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
                             <fieldset>
                                 <legend class="form-label">{{ 'How the postage tax is split when a cart mixes several rates'|trans }}</legend>
                                 {% for strategy in postage_tax_strategies %}

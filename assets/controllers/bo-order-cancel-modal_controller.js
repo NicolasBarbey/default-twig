@@ -39,14 +39,9 @@ export default class extends Controller {
             this.orderRefLabelTarget.textContent = orderRef;
         }
 
+        // The form carries the token in a hidden field: only its action changes.
         if (this.hasFormTarget && cancelUrl !== null) {
-            const existing = this.formTarget.getAttribute('action') || '';
-            const tokenMatch = existing.match(/[?&]_token=([^&]*)/);
-            const token = tokenMatch ? tokenMatch[1] : '';
-            this.formTarget.setAttribute(
-                'action',
-                token ? `${cancelUrl}?_token=${token}` : cancelUrl,
-            );
+            this.formTarget.setAttribute('action', cancelUrl);
         }
     }
 }

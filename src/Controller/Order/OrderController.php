@@ -160,7 +160,7 @@ final class OrderController
         )));
     }
 
-    #[Route('/admin/order/update/status', name: 'admin.order.list.update.status', methods: ['POST', 'GET'])]
+    #[Route('/admin/order/update/status', name: 'admin.order.list.update.status', methods: ['POST'])]
     public function bulkUpdateStatus(Request $request): Response
     {
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
@@ -229,7 +229,7 @@ final class OrderController
         return $redirect;
     }
 
-    #[Route('/admin/order/update/{order_id}/status', name: 'admin.order.update.status', methods: ['POST', 'GET'], requirements: ['order_id' => '\d+'])]
+    #[Route('/admin/order/update/{order_id}/status', name: 'admin.order.update.status', methods: ['POST'], requirements: ['order_id' => '\d+'])]
     public function updateStatus(int $order_id, Request $request): Response
     {
         // The right comes first: nothing about the order is said before it is checked.
@@ -294,7 +294,7 @@ final class OrderController
         );
     }
 
-    #[Route('/admin/order/list/cancel/{order_id}', name: 'admin.order.list.cancel', methods: ['POST', 'GET'], requirements: ['order_id' => '\d+'])]
+    #[Route('/admin/order/list/cancel/{order_id}', name: 'admin.order.list.cancel', methods: ['POST'], requirements: ['order_id' => '\d+'])]
     public function cancelFromList(int $order_id, Request $request): Response
     {
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
@@ -331,7 +331,7 @@ final class OrderController
         );
     }
 
-    #[Route('/admin/order/update/{order_id}/delivery-ref', name: 'admin.order.update.deliveryRef', methods: ['POST', 'GET'], requirements: ['order_id' => '\d+'])]
+    #[Route('/admin/order/update/{order_id}/delivery-ref', name: 'admin.order.update.deliveryRef', methods: ['POST'], requirements: ['order_id' => '\d+'])]
     public function updateDeliveryRef(int $order_id, Request $request): Response
     {
         $order = OrderQuery::create()->findPk($order_id);
@@ -354,7 +354,7 @@ final class OrderController
         );
     }
 
-    #[Route('/admin/order/update/{order_id}/address', name: 'admin.order.update.address', methods: ['POST', 'GET'], requirements: ['order_id' => '\d+'])]
+    #[Route('/admin/order/update/{order_id}/address', name: 'admin.order.update.address', methods: ['POST'], requirements: ['order_id' => '\d+'])]
     public function updateAddress(int $order_id, Request $request): Response
     {
         $order = OrderQuery::create()->findPk($order_id);

@@ -3,8 +3,9 @@
      data-bo-order-address-modal-states-value="{{ states|json_encode|e('html_attr') }}">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <form method="post"
-              action="{{ path('admin.order.update.address', { order_id: order.id }) }}?_token={{ token }}"
+              action="{{ path('admin.order.update.address', { order_id: order.id }) }}"
               data-testid="order-address-form">
+            <input type="hidden" name="_token" value="{{ token }}">
             <div class="modal-content">
                 <div class="modal-header">
                     <h1 class="modal-title fs-5" id="order-address-modal-label">{{ 'Edit order address'|trans }}</h1>

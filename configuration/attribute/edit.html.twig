@@ -21,7 +21,7 @@
         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
             <h1 class="h3 mb-0">{{ 'Attribute'|trans }} <small class="text-muted">#{{ attribute.id }}</small></h1>
             <div class="d-flex flex-wrap gap-2">
-                <a href="{{ path('admin.configuration.attributes.add-to-all', { attribute_id: attribute.id }) }}?_token={{ assignToken() }}" class="btn btn-outline-secondary" data-testid="attribute-add-to-all">
+                <a href="{{ path('admin.configuration.attributes.add-to-all', { attribute_id: attribute.id }) }}" data-bo-post class="btn btn-outline-secondary" data-testid="attribute-add-to-all">
                     <i class="bi bi-plus-square" aria-hidden="true"></i> {{ 'Add to all templates'|trans }}
                 </a>
                 <a href="{{ path('admin.configuration.attributes.rem-from-all', { attribute_id: attribute.id }) }}" data-bo-post class="btn btn-outline-secondary" data-testid="attribute-rem-from-all">
