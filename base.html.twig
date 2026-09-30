@@ -6,6 +6,9 @@
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <meta name="referrer" content="same-origin">
+            {# The token of the state-changing requests (POST links, drag-and-drop
+               reordering): scripts send it in the request body, never in a URL. #}
+            <meta name="bo-token" content="{{ assignToken() }}">
 
             <title>{% block title %}{{ 'Back-office'|trans }}{% endblock %} - Thelia</title>
 
@@ -28,7 +31,7 @@
         </head>
     {% endblock %}
 
-    <body class="bg-body-secondary" data-testid="{% block body_testid %}bo-page{% endblock %}" data-controller="bootstrap-bridge">
+    <body class="bg-body-secondary" data-testid="{% block body_testid %}bo-page{% endblock %}" data-controller="bootstrap-bridge bo-post-link">
         {% block body %}
             <div class="bo-layout">
                 {% block side_nav %}{% include '@BackOfficeDefaultTwig/_side_nav.html.twig' %}{% endblock %}

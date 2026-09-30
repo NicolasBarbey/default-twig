@@ -64,6 +64,7 @@ import BoTranslationsController from './controllers/bo-translations_controller.j
 import BoUnsavedChangesController from './controllers/bo-unsaved-changes_controller.js';
 import BoVirtualToggleController from './controllers/bo-virtual-toggle_controller.js';
 import BootstrapBridgeController from './controllers/bootstrap-bridge_controller.js';
+import BoPostLinkController from './controllers/bo-post-link_controller.js';
 import ConfirmModalController from './controllers/confirm-modal_controller.js';
 
 const app = Application.start();
@@ -129,6 +130,7 @@ app.register('bo-translations', BoTranslationsController);
 app.register('bo-unsaved-changes', BoUnsavedChangesController);
 app.register('bo-virtual-toggle', BoVirtualToggleController);
 app.register('bootstrap-bridge', BootstrapBridgeController);
+app.register('bo-post-link', BoPostLinkController);
 app.register('confirm-modal', ConfirmModalController);
 
 export { app };
