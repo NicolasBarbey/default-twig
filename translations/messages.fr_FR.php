@@ -257,6 +257,7 @@ return [
     'Offer this block on the product sheet' => 'Proposer ce bloc sur la fiche produit',
     'Offered' => 'Proposé',
     'Only a superadministrator can edit a superadministrator account.' => 'Seul un superadministrateur peut modifier un compte superadministrateur.',
+    'Only a superadministrator can delete a superadministrator account.' => 'Seul un superadministrateur peut supprimer un compte superadministrateur.',
     'Only a superadministrator can grant the superadministrator profile.' => 'Seul un superadministrateur peut attribuer le profil superadministrateur.',
     'Open a return' => 'Ouvrir un retour',
     'Open in an authenticator app on this device' => 'Ouvrir dans une application d\'authentification sur cet appareil',

@@ -178,6 +178,8 @@ final class TokenNeverInUrlTest extends WebIntegrationTestCase
             '/admin/products/attributes/tab?product_id='.$product->getId(),
             '/admin/catalog-price-rule',
             '/admin/configuration/advanced',
+            '/admin/configuration/administrators',
+            '/admin/account/two-factor',
             '/admin/configuration/shipping_configuration',
             '/admin/configuration/shipping_configuration/update/'.(int) $area?->getId(),
             '/admin/configuration/attributes',

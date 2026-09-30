@@ -115,7 +115,7 @@ final readonly class AccountTwoFactorController
     private function hasValidToken(Request $request): bool
     {
         try {
-            return $this->tokens->checkToken((string) ($request->request->get('_token') ?? $request->query->get('_token') ?? ''));
+            return $this->tokens->checkToken((string) $request->request->get('_token', ''));
         } catch (\Throwable) {
             return false;
         }

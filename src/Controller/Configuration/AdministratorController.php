@@ -170,6 +170,14 @@ final class AdministratorController
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
 
+        $target = AdminQuery::create()->findPk($administratorId);
+
+        if ($target instanceof Admin && $this->isAboveTheCeilingOfTheCurrentAdmin($target)) {
+            $this->flashError($request, $this->translator->trans('Only a superadministrator can delete a superadministrator account.'));
+
+            return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
+        }
+
         $event = new AdministratorEvent();
         $event->setId($administratorId);
 
@@ -195,7 +203,7 @@ final class AdministratorController
         $target = AdminQuery::create()->findPk((int) $request->request->get('administrator_id', 0));
 
         try {
-            $this->tokens->checkToken((string) ($request->request->get('_token') ?? $request->query->get('_token') ?? ''));
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
         } catch (\Throwable) {
             $this->flashError($request, $this->translator->trans('Your session has expired. Please try again.'));
 
@@ -204,6 +212,12 @@ final class AdministratorController
 
         if (!$current instanceof Admin || !$target instanceof Admin || (int) $target->getId() === (int) $current->getId()) {
             $this->flashError($request, $this->translator->trans('You cannot reset the two-step verification of this account.'));
+
+            return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
+        }
+
+        if ($this->isAboveTheCeilingOfTheCurrentAdmin($target)) {
+            $this->flashError($request, $this->translator->trans('Only a superadministrator can edit a superadministrator account.'));
 
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
@@ -319,7 +333,7 @@ final class AdministratorController
             );
         }
 
-        if ($twoFactorEnabled && $id !== $currentAdminId) {
+        if ($twoFactorEnabled && $id !== $currentAdminId && !$this->isAboveTheCeilingOfTheCurrentAdmin($admin)) {
             $actions[] = new RowAction(
                 kind: 'custom',
                 label: $this->translator->trans('Reset the two-step verification'),
@@ -331,7 +345,7 @@ final class AdministratorController
             );
         }
 
-        if ($id !== $currentAdminId) {
+        if ($id !== $currentAdminId && !$this->isAboveTheCeilingOfTheCurrentAdmin($admin)) {
             $actions[] = new RowAction(
                 kind: 'delete',
                 label: $this->translator->trans('Delete this administrator'),
@@ -447,6 +461,13 @@ final class AdministratorController
         if ((int) $target->getId() === (int) $current->getId() && $profileId !== (int) $current->getProfileId()) {
             throw new \RuntimeException($this->translator->trans('You cannot change the profile of your own account.'));
         }
+    }
+
+    private function isAboveTheCeilingOfTheCurrentAdmin(Admin $target): bool
+    {
+        $current = $this->securityContext->getAdminUser();
+
+        return $current instanceof Admin && null !== $current->getProfileId() && null === $target->getProfileId();
     }
 
     private function currentAdminId(): ?int
