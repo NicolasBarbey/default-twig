@@ -224,7 +224,7 @@ final class OrderStatusController
         }, 'Action %1$s #%2$d removed from order status %3$s');
     }
 
-    #[Route('/actions/move', name: 'actions.move', methods: ['GET', 'POST'])]
+    #[Route('/actions/move', name: 'actions.move', methods: ['POST'])]
     public function moveAction(Request $request): Response
     {
         $actionId = (int) ($request->query->get('action_id') ?? $request->request->get('action_id', 0));
@@ -335,7 +335,7 @@ final class OrderStatusController
         );
     }
 
-    #[Route('/update-position', name: 'update-position', methods: ['GET', 'POST'])]
+    #[Route('/update-position', name: 'update-position', methods: ['POST'])]
     public function updatePosition(Request $request): Response
     {
         $event = new UpdatePositionEvent(

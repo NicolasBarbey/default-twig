@@ -1,10 +1,11 @@
 import { Controller } from '@hotwired/stimulus';
+import { tokenBody } from '../lib/post-request.js';
 
 /**
  * Native HTML5 drag-and-drop reorder for tables whose <tbody> hosts
  * the controller. Each <tr> must carry a `data-row-id="<id>"` attribute.
  * On drop, POSTs the moved row's id and its new 1-based position to the
- * configured URL, then reloads the page so the server-rendered table
+ * configured URL (the token in the request body), then reloads the page so the server-rendered table
  * reflects the persisted order.
  */
 export default class extends Controller {
@@ -123,12 +124,18 @@ export default class extends Controller {
         const url = new URL(this.urlValue, window.location.origin);
         url.searchParams.set(this.paramNameValue, rowId);
         url.searchParams.set('position', String(position));
-        url.searchParams.set('_token', this.tokenValue);
+
+        // The token travels in the body, never in the URL.
+        const body = tokenBody();
+        if (this.tokenValue) {
+            body.set('_token', this.tokenValue);
+        }
 
         fetch(url.toString(), {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { Accept: 'text/html' },
+            headers: { Accept: 'text/html', 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body.toString(),
         })
             .then((response) => {
                 if (!response.ok && response.status >= 400) {

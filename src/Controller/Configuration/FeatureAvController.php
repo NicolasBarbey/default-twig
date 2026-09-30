@@ -116,7 +116,7 @@ final class FeatureAvController
         );
     }
 
-    #[Route('/update-position', name: 'update-position', methods: ['GET', 'POST'])]
+    #[Route('/update-position', name: 'update-position', methods: ['POST'])]
     public function updatePosition(Request $request): Response
     {
         $featureAvId = (int) $request->query->get('featureav_id', 0);

@@ -321,7 +321,7 @@ final class ProductController
         );
     }
 
-    #[Route('/update-position', name: 'update-position', methods: ['GET', 'POST'])]
+    #[Route('/update-position', name: 'update-position', methods: ['POST'])]
     public function updatePosition(Request $request): Response
     {
         $event = new UpdatePositionEvent(

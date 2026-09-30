@@ -94,7 +94,7 @@ final class ExportImportController
         ]));
     }
 
-    #[Route('/admin/export/position', name: 'export.position', methods: ['GET', 'POST'])]
+    #[Route('/admin/export/position', name: 'export.position', methods: ['POST'])]
     public function exportPosition(Request $request): Response
     {
         return $this->action->tokenAction(
@@ -112,7 +112,7 @@ final class ExportImportController
         );
     }
 
-    #[Route('/admin/export/position/category', name: 'export.category.position', methods: ['GET', 'POST'])]
+    #[Route('/admin/export/position/category', name: 'export.category.position', methods: ['POST'])]
     public function exportCategoryPosition(Request $request): Response
     {
         return $this->action->tokenAction(
@@ -130,7 +130,7 @@ final class ExportImportController
         );
     }
 
-    #[Route('/admin/import/position', name: 'import.position', methods: ['GET', 'POST'])]
+    #[Route('/admin/import/position', name: 'import.position', methods: ['POST'])]
     public function importPosition(Request $request): Response
     {
         return $this->action->tokenAction(
@@ -148,7 +148,7 @@ final class ExportImportController
         );
     }
 
-    #[Route('/admin/import/position/category', name: 'import.category.position', methods: ['GET', 'POST'])]
+    #[Route('/admin/import/position/category', name: 'import.category.position', methods: ['POST'])]
     public function importCategoryPosition(Request $request): Response
     {
         return $this->action->tokenAction(

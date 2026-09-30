@@ -33,7 +33,7 @@ final class TemplatePositionController
     ) {
     }
 
-    #[Route('/admin/template/update-feature-position', name: 'admin.configuration.templates.attributes.update-feature-position', methods: ['GET', 'POST'])]
+    #[Route('/admin/template/update-feature-position', name: 'admin.configuration.templates.attributes.update-feature-position', methods: ['POST'])]
     public function updateFeaturePosition(Request $request): Response
     {
         $templateId = (int) ($request->query->get('template_id') ?? $request->request->get('template_id', 0));
@@ -56,7 +56,7 @@ final class TemplatePositionController
         );
     }
 
-    #[Route('/admin/template/update-attribute-position', name: 'admin.configuration.templates.attributes.update-attribute-position', methods: ['GET', 'POST'])]
+    #[Route('/admin/template/update-attribute-position', name: 'admin.configuration.templates.attributes.update-attribute-position', methods: ['POST'])]
     public function updateAttributePosition(Request $request): Response
     {
         $templateId = (int) ($request->query->get('template_id') ?? $request->request->get('template_id', 0));

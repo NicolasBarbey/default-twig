@@ -183,7 +183,7 @@ final class ModuleHookController
         );
     }
 
-    #[Route('/admin/module-hooks/update-position', name: 'admin.module-hook.update-position', methods: ['GET', 'POST'])]
+    #[Route('/admin/module-hooks/update-position', name: 'admin.module-hook.update-position', methods: ['POST'])]
     public function updatePosition(Request $request): Response
     {
         $event = new UpdatePositionEvent(

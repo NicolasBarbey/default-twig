@@ -196,7 +196,7 @@ final class ProductAdvancedController
         return $_format === 'json' ? new JsonResponse($items) : new Response('');
     }
 
-    #[Route('/admin/product/update-association-position', name: 'admin.product.update-association-position', methods: ['GET', 'POST'])]
+    #[Route('/admin/product/update-association-position', name: 'admin.product.update-association-position', methods: ['POST'])]
     public function updateAssociationPosition(Request $request): Response
     {
         $event = new UpdatePositionEvent(
@@ -217,7 +217,7 @@ final class ProductAdvancedController
         );
     }
 
-    #[Route('/admin/product/update-content-position', name: 'admin.product.update-content-position', methods: ['GET', 'POST'])]
+    #[Route('/admin/product/update-content-position', name: 'admin.product.update-content-position', methods: ['POST'])]
     public function updateContentPosition(Request $request): Response
     {
         $event = new UpdatePositionEvent(
@@ -238,7 +238,7 @@ final class ProductAdvancedController
         );
     }
 
-    #[Route('/admin/product/update-accessory-position', name: 'admin.product.update-accessory-position', methods: ['GET', 'POST'])]
+    #[Route('/admin/product/update-accessory-position', name: 'admin.product.update-accessory-position', methods: ['POST'])]
     public function updateAccessoryPosition(Request $request): Response
     {
         $event = new UpdatePositionEvent(
@@ -367,7 +367,7 @@ final class ProductAdvancedController
         );
     }
 
-    #[Route('/admin/product/product-sale-element-position', name: 'admin.product.product-sale-element-position', methods: ['GET', 'POST'])]
+    #[Route('/admin/product/product-sale-element-position', name: 'admin.product.product-sale-element-position', methods: ['POST'])]
     public function psePosition(Request $request): Response
     {
         $event = new UpdatePositionEvent(

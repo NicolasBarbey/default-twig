@@ -160,7 +160,7 @@ final class AttributeAvController
         return new JsonResponse(['success' => true, 'title' => $title]);
     }
 
-    #[Route('/update-position', name: 'update-position', methods: ['GET', 'POST'])]
+    #[Route('/update-position', name: 'update-position', methods: ['POST'])]
     public function updatePosition(Request $request): Response
     {
         $attributeAvId = (int) $request->query->get('attributeav_id', 0);

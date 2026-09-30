@@ -173,7 +173,7 @@ final class FeatureController
         );
     }
 
-    #[Route('/update-position', name: 'update-position', methods: ['GET', 'POST'])]
+    #[Route('/update-position', name: 'update-position', methods: ['POST'])]
     public function updatePosition(Request $request): Response
     {
         $event = new UpdatePositionEvent(
@@ -199,7 +199,7 @@ final class FeatureController
         return $this->dispatchTemplateBulk($request, TheliaEvents::FEATURE_ADD_TO_ALL_TEMPLATES, 'Feature added to all templates');
     }
 
-    #[Route('/remove-from-all-templates', name: 'rem-from-all', methods: ['POST', 'GET'])]
+    #[Route('/remove-from-all-templates', name: 'rem-from-all', methods: ['POST'])]
     public function removeFromAllTemplates(Request $request): Response
     {
         return $this->dispatchTemplateBulk($request, TheliaEvents::FEATURE_REMOVE_FROM_ALL_TEMPLATES, 'Feature removed from all templates');
