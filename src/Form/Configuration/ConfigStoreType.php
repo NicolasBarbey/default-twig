@@ -37,6 +37,12 @@ use Thelia\Domain\Legal\CompanyIdentifier;
 final class ConfigStoreType extends AbstractType
 {
     /**
+     * Image types accepted as the store logo or banner. An SVG is stripped of its
+     * active content before it is stored (see ConfigStoreController).
+     */
+    public const STORE_IMAGE_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/svg+xml'];
+
+    /**
      * Characters stripped from each company identifier before it is validated and stored,
      * so that a number copied from an official document is accepted as typed.
      *
@@ -189,12 +195,12 @@ final class ConfigStoreType extends AbstractType
             ])
             ->add('logo_file', FileType::class, [
                 'required' => false,
-                'constraints' => [new Image()],
+                'constraints' => [new Image(mimeTypes: self::STORE_IMAGE_MIME_TYPES)],
                 'label' => $this->translator->trans('Store logo'),
             ])
             ->add('banner_file', FileType::class, [
                 'required' => false,
-                'constraints' => [new Image()],
+                'constraints' => [new Image(mimeTypes: self::STORE_IMAGE_MIME_TYPES)],
                 'label' => $this->translator->trans('Banner'),
                 'help' => $this->translator->trans('Banner of the website. Used in e-mails sent to customers.'),
             ]);

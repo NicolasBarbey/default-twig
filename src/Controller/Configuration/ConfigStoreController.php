@@ -30,6 +30,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Thelia\Core\File\Service\FileProcessorService;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Domain\Checkout\Enum\GuestCheckoutMode;
@@ -49,6 +50,13 @@ final class ConfigStoreController
         'banner_file' => 'banner_file',
     ];
 
+    /** The favicon keeps the narrower choice its field offers, mapped to the extensions each type may carry. */
+    private const FAVICON_TYPES = [
+        'image/png' => ['png'],
+        'image/x-icon' => ['ico'],
+        'image/vnd.microsoft.icon' => ['ico'],
+    ];
+
     public function __construct(
         private readonly AdminAccessChecker $access,
         private readonly AdminFormValidator $validator,
@@ -59,6 +67,7 @@ final class ConfigStoreController
         private readonly UrlGeneratorInterface $urls,
         private readonly TranslatorInterface $translator,
         private readonly CountryStateProvider $countryStates,
+        private readonly FileProcessorService $fileProcessor,
     ) {
     }
 
@@ -175,12 +184,23 @@ final class ConfigStoreController
         $uploadDir = $this->storeMediaUploadDir();
         $filesystem = new Filesystem();
 
+        /** @var array<string, UploadedFile> $uploads */
+        $uploads = [];
         foreach (self::MEDIA_FIELDS as $field => $configKey) {
             $file = $form->get($field)->getData();
-            if (!$file instanceof UploadedFile) {
-                continue;
+            if ($file instanceof UploadedFile) {
+                $uploads[$configKey] = $file;
             }
+        }
 
+        // Every file goes through the upload policy and the sanitizer, as any other image
+        // upload does, before any of them is stored.
+        foreach ($uploads as $configKey => $file) {
+            $this->fileProcessor->validateUpload($file, 'image', $configKey === 'favicon_file' ? self::FAVICON_TYPES : null);
+            $this->fileProcessor->sanitizeUpload($file);
+        }
+
+        foreach ($uploads as $configKey => $file) {
             $previous = ConfigQuery::read($configKey);
             if (\is_string($previous) && $previous !== '') {
                 $previousPath = $uploadDir.\DIRECTORY_SEPARATOR.$previous;
