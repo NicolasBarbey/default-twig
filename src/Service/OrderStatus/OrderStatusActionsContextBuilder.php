@@ -22,7 +22,6 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Model\OrderStatus;
-use Thelia\Tools\TokenProvider;
 
 /**
  * What the Actions tab of a status shows: its actions as table rows, the
@@ -35,7 +34,6 @@ final readonly class OrderStatusActionsContextBuilder
         private OrderStatusRepository $statusRepository,
         private OrderStatusActionPresenter $presenter,
         private UrlGeneratorInterface $urls,
-        private TokenProvider $tokens,
         private TranslatorInterface $translator,
     ) {
     }
@@ -55,7 +53,7 @@ final readonly class OrderStatusActionsContextBuilder
 
         foreach ($actions as $action) {
             $row = $this->presenter->row($action, $titles, $failures[(int) $action->getId()] ?? 0);
-            $row['toggle_url'] = $this->urls->generate('admin.order-status.actions.toggle', ['action_id' => $row['id'], '_token' => $this->tokens->assignToken()]);
+            $row['toggle_url'] = $this->urls->generate('admin.order-status.actions.toggle', ['action_id' => $row['id']]);
             $row['_actions'] = [
                 new RowAction(
                     kind: 'delete',

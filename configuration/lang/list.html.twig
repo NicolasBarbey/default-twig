@@ -104,11 +104,11 @@
 
                             <div class="d-flex justify-content-end gap-2 mt-2">
                                 {% if one_domain_per_lang %}
-                                    <a href="{{ path('admin.configuration.languages.domain.deactivation') }}" class="btn btn-outline-danger" data-testid="lang-domain-deactivate">
+                                    <a href="{{ path('admin.configuration.languages.domain.deactivation') }}" data-bo-post class="btn btn-outline-danger" data-testid="lang-domain-deactivate">
                                         <i class="bi bi-x-circle" aria-hidden="true"></i> {{ 'Deactivate'|trans }}
                                     </a>
                                 {% else %}
-                                    <a href="{{ path('admin.configuration.languages.domain.activation') }}" class="btn btn-outline-success" data-testid="lang-domain-activate">
+                                    <a href="{{ path('admin.configuration.languages.domain.activation') }}" data-bo-post class="btn btn-outline-success" data-testid="lang-domain-activate">
                                         <i class="bi bi-check-circle" aria-hidden="true"></i> {{ 'Activate'|trans }}
                                     </a>
                                 {% endif %}

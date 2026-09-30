@@ -149,7 +149,7 @@ final class LangController
         );
     }
 
-    #[Route('/toggleDefault/{lang_id}', name: 'toggleDefault', requirements: ['lang_id' => '\d+'])]
+    #[Route('/toggleDefault/{lang_id}', name: 'toggleDefault', requirements: ['lang_id' => '\d+'], methods: ['POST'])]
     public function toggleDefault(int $lang_id, Request $request): Response
     {
         return $this->action->tokenAction(
@@ -164,7 +164,7 @@ final class LangController
         );
     }
 
-    #[Route('/toggleActive/{lang_id}', name: 'toggleActive', requirements: ['lang_id' => '\d+'])]
+    #[Route('/toggleActive/{lang_id}', name: 'toggleActive', requirements: ['lang_id' => '\d+'], methods: ['POST'])]
     public function toggleActive(int $lang_id, Request $request): Response
     {
         return $this->action->tokenAction(
@@ -179,7 +179,7 @@ final class LangController
         );
     }
 
-    #[Route('/toggleVisible/{lang_id}', name: 'toggleVisible', requirements: ['lang_id' => '\d+'])]
+    #[Route('/toggleVisible/{lang_id}', name: 'toggleVisible', requirements: ['lang_id' => '\d+'], methods: ['POST'])]
     public function toggleVisible(int $lang_id, Request $request): Response
     {
         return $this->action->tokenAction(
@@ -242,13 +242,13 @@ final class LangController
         );
     }
 
-    #[Route('/domain/activate', name: 'domain.activation', methods: ['GET'])]
+    #[Route('/domain/activate', name: 'domain.activation', methods: ['POST'])]
     public function activateDomain(Request $request): Response
     {
         return $this->switchDomainPerLang(true, $request);
     }
 
-    #[Route('/domain/deactivate', name: 'domain.deactivation', methods: ['GET'])]
+    #[Route('/domain/deactivate', name: 'domain.deactivation', methods: ['POST'])]
     public function deactivateDomain(Request $request): Response
     {
         return $this->switchDomainPerLang(false, $request);
@@ -259,6 +259,8 @@ final class LangController
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
             return $denied;
         }
+
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
 
         if ($activate && ($missing = $this->frontLanguagesWithoutUrl()) !== []) {
             $this->flashError($request, $this->translator->trans(
@@ -428,9 +430,9 @@ final class LangController
             'visible' => (bool) $lang->getVisible(),
             'active' => (bool) $lang->getActive(),
             'default' => $isDefault,
-            'toggle_visible_url' => $this->tokenizedUrl('admin.configuration.languages.toggleVisible', ['lang_id' => $id]),
-            'toggle_active_url' => $this->tokenizedUrl('admin.configuration.languages.toggleActive', ['lang_id' => $id]),
-            'toggle_default_url' => $this->tokenizedUrl('admin.configuration.languages.toggleDefault', ['lang_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate('admin.configuration.languages.toggleVisible', ['lang_id' => $id]),
+            'toggle_active_url' => $this->urls->generate('admin.configuration.languages.toggleActive', ['lang_id' => $id]),
+            'toggle_default_url' => $this->urls->generate('admin.configuration.languages.toggleDefault', ['lang_id' => $id]),
             '_actions' => $actions,
         ];
     }
@@ -495,16 +497,5 @@ final class LangController
         }
 
         return $options;
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 }

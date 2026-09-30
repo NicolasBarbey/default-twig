@@ -104,8 +104,8 @@ final class HookController
                 'title' => (string) $hook->getTitle(),
                 'native' => (bool) $hook->getNative(),
                 'active' => (bool) $hook->getActivate(),
-                'toggle_native_url' => $this->tokenizedUrl('admin.hook.toggle-native', ['hook_id' => (int) $hook->getId(), 'type' => $type]),
-                'toggle_active_url' => $this->tokenizedUrl('admin.hook.toggle-activation', ['hook_id' => (int) $hook->getId(), 'type' => $type]),
+                'toggle_native_url' => $this->urls->generate('admin.hook.toggle-native', ['hook_id' => (int) $hook->getId(), 'type' => $type]),
+                'toggle_active_url' => $this->urls->generate('admin.hook.toggle-activation', ['hook_id' => (int) $hook->getId(), 'type' => $type]),
                 '_actions' => [
                     new RowAction(
                         kind: 'edit',
@@ -246,7 +246,7 @@ final class HookController
         );
     }
 
-    #[Route('/admin/hook/toggle-activation', name: 'admin.hook.toggle-activation', methods: ['GET', 'POST'])]
+    #[Route('/admin/hook/toggle-activation', name: 'admin.hook.toggle-activation', methods: ['POST'])]
     public function toggleActivation(Request $request): Response
     {
         return $this->action->tokenAction(
@@ -261,7 +261,7 @@ final class HookController
         );
     }
 
-    #[Route('/admin/hook/toggle-native', name: 'admin.hook.toggle-native', methods: ['GET', 'POST'])]
+    #[Route('/admin/hook/toggle-native', name: 'admin.hook.toggle-native', methods: ['POST'])]
     public function toggleNative(Request $request): Response
     {
         return $this->action->tokenAction(
@@ -421,16 +421,5 @@ final class HookController
         $defaultLang = LangQuery::create()->findOneByByDefault(1);
 
         return $defaultLang?->getLocale() ?? 'en_US';
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 }

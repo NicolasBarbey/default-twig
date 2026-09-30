@@ -211,7 +211,7 @@ final class CategoryController
         );
     }
 
-    #[Route('/toggle-online', name: 'set-default', methods: ['GET', 'POST'])]
+    #[Route('/toggle-online', name: 'set-default', methods: ['POST'])]
     public function toggleOnline(Request $request): Response
     {
         $categoryId = (int) ($request->query->get('category_id') ?? $request->request->get('category_id', 0));

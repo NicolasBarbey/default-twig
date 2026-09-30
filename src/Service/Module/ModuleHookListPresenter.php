@@ -23,7 +23,6 @@ use Thelia\Model\Module;
 use Thelia\Model\ModuleHook;
 use Thelia\Model\ModuleHookQuery;
 use Thelia\Model\ModuleQuery;
-use Thelia\Tools\TokenProvider;
 
 /**
  * Builds the "Module hooks" page data grouped by hook, mirroring the legacy
@@ -34,7 +33,6 @@ final readonly class ModuleHookListPresenter
 {
     public function __construct(
         private UrlGeneratorInterface $urls,
-        private TokenProvider $tokens,
         private TranslatorInterface $translator,
     ) {
     }
@@ -95,7 +93,7 @@ final readonly class ModuleHookListPresenter
                     'hook_active' => $hookActive,
                     'can_toggle' => $moduleActive && $hookActive && !$byModule,
                     'edit_url' => $this->urls->generate('admin.module-hook.update', ['module_hook_id' => $moduleHookId]),
-                    'toggle_url' => $this->tokenizedUrl('admin.module-hook.toggle-activation', ['module_hook_id' => $moduleHookId]),
+                    'toggle_url' => $this->urls->generate('admin.module-hook.toggle-activation', ['module_hook_id' => $moduleHookId]),
                     'delete_url' => $this->urls->generate('admin.module-hook.delete'),
                 ];
             }
@@ -139,16 +137,5 @@ final readonly class ModuleHookListPresenter
             TemplateDefinition::EMAIL => $this->translator->trans('Email'),
             default => $this->translator->trans('Other'),
         };
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 }

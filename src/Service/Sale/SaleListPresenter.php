@@ -18,14 +18,12 @@ use BackOfficeDefaultTwigBundle\Repository\SaleRepository;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Model\Sale;
-use Thelia\Tools\TokenProvider;
 
 final readonly class SaleListPresenter
 {
     public function __construct(
         private SaleRepository $sales,
         private UrlGeneratorInterface $urls,
-        private TokenProvider $tokens,
         private TranslatorInterface $translator,
     ) {
     }
@@ -67,8 +65,8 @@ final readonly class SaleListPresenter
                 'offset_type_label' => $this->offsetTypeLabel((int) $sale->getPriceOffsetType()),
                 'products_count' => $sale->getSaleProductList()->count(),
                 'edit_url' => $this->urls->generate('admin.sale.update', ['sale_id' => $id]),
-                'toggle_url' => $this->tokenizedUrl('admin.sale.toggle', ['sale_id' => $id]),
-                'convert_url' => $this->tokenizedUrl('admin.catalog-price-rule.convert-sale', ['sale_id' => $id]),
+                'toggle_url' => $this->urls->generate('admin.sale.toggle', ['sale_id' => $id]),
+                'convert_url' => $this->urls->generate('admin.catalog-price-rule.convert-sale', ['sale_id' => $id]),
             ];
         }
 
@@ -76,15 +74,14 @@ final readonly class SaleListPresenter
     }
 
     /**
-     * @return array{reset_url: string, check_url: string, delete_url: string, delete_token: string}
+     * @return array{reset_url: string, check_url: string, delete_url: string}
      */
     public function globalActions(): array
     {
         return [
-            'reset_url' => $this->tokenizedUrl('admin.sale.reset-status', []),
-            'check_url' => $this->tokenizedUrl('admin.sale.check-activation', []),
+            'reset_url' => $this->urls->generate('admin.sale.reset-status', []),
+            'check_url' => $this->urls->generate('admin.sale.check-activation', []),
             'delete_url' => $this->urls->generate('admin.sale.delete'),
-            'delete_token' => $this->tokens->assignToken(),
         ];
     }
 
@@ -93,15 +90,5 @@ final readonly class SaleListPresenter
         return $type === Sale::OFFSET_TYPE_AMOUNT
             ? $this->translator->trans('Constant amount')
             : $this->translator->trans('Percentage');
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-
-        return $url.(str_contains($url, '?') ? '&' : '?').'_token='.$this->tokens->assignToken();
     }
 }

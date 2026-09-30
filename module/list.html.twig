@@ -35,7 +35,8 @@
                     <i class="bi bi-diagram-3" aria-hidden="true"></i> {{ 'Attachment points'|trans }}
                 </a>
                 {% if is_granted('UPDATE', 'admin.module') %}
-                    <form method="post" action="{{ path('admin.module.refresh') }}?_token={{ assignToken() }}" class="d-inline">
+                    <form method="post" action="{{ path('admin.module.refresh') }}" class="d-inline">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
                         <button type="submit" class="btn btn-outline-secondary btn-sm" data-testid="modules-refresh">
                             <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> {{ 'Check'|trans }}
                         </button>
@@ -186,6 +187,7 @@
                     <span class="bo-module-row__toggle">
                         {% if module.toggle_url %}
                             <a href="{{ module.toggle_url }}"
+                               data-bo-post
                                class="bo-switch {{ module.activated ? 'bo-switch--on' : '' }}"
                                role="switch"
                                aria-checked="{{ module.activated ? 'true' : 'false' }}"

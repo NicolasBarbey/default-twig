@@ -301,7 +301,7 @@ final class ProductController
         );
     }
 
-    #[Route('/toggle-online', name: 'set-default', methods: ['GET', 'POST'])]
+    #[Route('/toggle-online', name: 'set-default', methods: ['POST'])]
     public function toggleOnline(Request $request): Response
     {
         $productId = (int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0));
@@ -594,7 +594,7 @@ final class ProductController
             'stock_html' => $this->pricingPresenter->stock($pricing),
             'visible' => (bool) $product->getVisible(),
             'position' => (int) $product->getPosition(),
-            'toggle_visible_url' => $this->tokenizedUrl('admin.products.set-default', ['product_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate('admin.products.set-default', ['product_id' => $id]),
             '_actions' => $actions,
         ];
     }
@@ -841,16 +841,5 @@ final class ProductController
         }
 
         return (int) $value;
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 }

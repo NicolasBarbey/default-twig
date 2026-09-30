@@ -164,7 +164,7 @@ final class SaleController
         );
     }
 
-    #[Route('/sales/toggle/{sale_id}', name: 'toggle', methods: ['GET', 'POST'], requirements: ['sale_id' => '\d+'])]
+    #[Route('/sales/toggle/{sale_id}', name: 'toggle', methods: ['POST'], requirements: ['sale_id' => '\d+'])]
     public function toggle(int $sale_id, Request $request): Response
     {
         $sale = $this->sales->findById($sale_id);
@@ -197,7 +197,7 @@ final class SaleController
         );
     }
 
-    #[Route('/sales/check-activation', name: 'check-activation', methods: ['GET', 'POST'])]
+    #[Route('/sales/check-activation', name: 'check-activation', methods: ['POST'])]
     public function checkActivation(Request $request): Response
     {
         return $this->action->tokenAction(

@@ -165,7 +165,7 @@ final class ContentController
         );
     }
 
-    #[Route('/toggle-online', name: 'toggle-online', methods: ['GET', 'POST'])]
+    #[Route('/toggle-online', name: 'toggle-online', methods: ['POST'])]
     public function toggleOnline(Request $request): Response
     {
         $content = ContentQuery::create()->findPk((int) ($request->query->get('content_id') ?? $request->request->get('content_id', 0)));

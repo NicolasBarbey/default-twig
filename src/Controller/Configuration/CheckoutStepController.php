@@ -117,7 +117,7 @@ final class CheckoutStepController
         return new Response($this->twig->render(self::LIST_TEMPLATE, $this->buildListContext($request)));
     }
 
-    #[Route('/toggle-active', name: 'toggle-active', methods: ['GET', 'POST'])]
+    #[Route('/toggle-active', name: 'toggle-active', methods: ['POST'])]
     public function toggleActive(Request $request): Response
     {
         return $this->action->tokenAction(
@@ -278,7 +278,7 @@ final class CheckoutStepController
             // drawn: what the merchant clicked is "turn this off", not "flip it".
             'toggle_active_url' => $step->isMandatory()
                 ? null
-                : $this->tokenizedUrl(self::TOGGLE_ACTIVE_ROUTE, [
+                : $this->urls->generate(self::TOGGLE_ACTIVE_ROUTE, [
                     self::CODE_PARAMETER => $code,
                     self::ACTIVE_PARAMETER => $step->isActive() ? 0 : 1,
                 ]),
@@ -307,16 +307,5 @@ final class CheckoutStepController
             self::ACTIVE_PARAMETER,
             $request->query->getBoolean(self::ACTIVE_PARAMETER),
         );
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 }

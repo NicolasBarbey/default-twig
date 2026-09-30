@@ -159,7 +159,7 @@ final class ConsentController
         );
     }
 
-    #[Route('/toggle-active', name: 'toggle-active', methods: ['GET', 'POST'])]
+    #[Route('/toggle-active', name: 'toggle-active', methods: ['POST'])]
     public function toggleActive(Request $request): Response
     {
         $consentId = (int) ($request->query->get('consent_id') ?? $request->request->get('consent_id', 0));
@@ -318,7 +318,7 @@ final class ConsentController
             'active' => $consent->isActive(),
             // Every consent can be turned off, the terms and conditions included: a shop
             // whose theme cannot display the box has to be able to stop asking for it.
-            'toggle_active_url' => $this->tokenizedUrl('admin.consent.toggle-active', ['consent_id' => $id]),
+            'toggle_active_url' => $this->urls->generate('admin.consent.toggle-active', ['consent_id' => $id]),
             'position' => (int) $consent->getPosition(),
             '_actions' => $actions,
         ];
@@ -375,17 +375,6 @@ final class ConsentController
         }
 
         return $map;
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 
     private function defaultLocale(): string

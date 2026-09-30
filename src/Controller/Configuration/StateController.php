@@ -42,7 +42,6 @@ use Thelia\Model\Map\CountryI18nTableMap;
 use Thelia\Model\Map\StateI18nTableMap;
 use Thelia\Model\State;
 use Thelia\Model\StateQuery;
-use Thelia\Tools\TokenProvider;
 use Twig\Environment;
 
 #[Route('/admin/configuration/states', name: 'admin.configuration.states.')]
@@ -63,7 +62,6 @@ final class StateController
         private readonly UrlGeneratorInterface $urls,
         private readonly TranslatorInterface $translator,
         private readonly EditLocaleResolver $editLocale,
-        private readonly TokenProvider $tokens,
     ) {
     }
 
@@ -188,7 +186,7 @@ final class StateController
         );
     }
 
-    #[Route('/toggle-visibility', name: 'toggle-visibility', methods: ['GET', 'POST'])]
+    #[Route('/toggle-visibility', name: 'toggle-visibility', methods: ['POST'])]
     public function toggleVisibility(Request $request): Response
     {
         $state = StateQuery::create()->findPk((int) ($request->query->get('state_id') ?? $request->request->get('state_id', 0)));
@@ -277,7 +275,7 @@ final class StateController
             'isocode' => (string) $state->getIsocode(),
             'country' => (string) $state->getCountry()->getTitle(),
             'visible' => (bool) $state->getVisible(),
-            'toggle_visible_url' => $this->tokenizedUrl('admin.configuration.states.toggle-visibility', ['state_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate('admin.configuration.states.toggle-visibility', ['state_id' => $id]),
             '_actions' => $actions,
         ];
     }
@@ -311,17 +309,6 @@ final class StateController
         }
 
         return $map;
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 
     private function defaultLocale(): string

@@ -4,7 +4,10 @@
 {%- set iconOn = column.options.icon_on|default('bi-check-circle-fill text-success') -%}
 {%- set iconOff = column.options.icon_off|default('bi-circle text-secondary') -%}
 {% if href %}
+    {# A toggle changes state: the link is sent as a POST carrying the token
+       (bo-post-link controller), never followed as a GET. #}
     <a href="{{ href }}"
+       data-bo-post
        class="bo-toggle"
        data-testid="datatable-{{ column.key }}-toggle{{ idSuffix|default('') }}"
        data-state="{{ state }}"

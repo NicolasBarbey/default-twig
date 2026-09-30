@@ -18,7 +18,6 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Domain\Pricing\Rule\Overview\CatalogPriceRuleOverviewQuery;
 use Thelia\Model\CatalogPriceRule;
-use Thelia\Tools\TokenProvider;
 
 /**
  * The rows of the rule list, from the core overview: one fixed set of statements for
@@ -36,7 +35,6 @@ final readonly class CatalogPriceRuleListPresenter
     public function __construct(
         private CatalogPriceRuleOverviewQuery $overview,
         private UrlGeneratorInterface $urls,
-        private TokenProvider $tokens,
         private TranslatorInterface $translator,
     ) {
     }
@@ -70,7 +68,7 @@ final readonly class CatalogPriceRuleListPresenter
                 'dirty' => (bool) $rule->getDirty(),
                 'unknown_criterion_types' => $line->unknownCriterionTypes,
                 'edit_url' => $this->urls->generate('admin.catalog-price-rule.update', ['rule_id' => $id]),
-                'toggle_url' => $this->tokenizedUrl('admin.catalog-price-rule.toggle', ['rule_id' => $id]),
+                'toggle_url' => $this->urls->generate('admin.catalog-price-rule.toggle', ['rule_id' => $id]),
             ];
         }
 
@@ -96,9 +94,8 @@ final readonly class CatalogPriceRuleListPresenter
     public function globalActions(): array
     {
         return [
-            'recompute_url' => $this->tokenizedUrl('admin.catalog-price-rule.recompute', []),
+            'recompute_url' => $this->urls->generate('admin.catalog-price-rule.recompute', []),
             'delete_url' => $this->urls->generate('admin.catalog-price-rule.delete'),
-            'delete_token' => $this->tokens->assignToken(),
         ];
     }
 
@@ -119,12 +116,5 @@ final readonly class CatalogPriceRuleListPresenter
             CatalogPriceRule::EFFECT_TYPE_FIXED_PRICE => $this->translator->trans('Fixed price'),
             default => $this->translator->trans('%percent%% off', ['%percent%' => rtrim(rtrim(number_format((float) $rule->getPercentageValue(), 2, '.', ''), '0'), '.')]),
         };
-    }
-
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-
-        return $url.(str_contains($url, '?') ? '&' : '?').'_token='.$this->tokens->assignToken();
     }
 }

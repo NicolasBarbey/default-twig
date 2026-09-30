@@ -164,7 +164,7 @@ final class ModuleHookController
         );
     }
 
-    #[Route('/admin/module-hooks/toggle-activation/{module_hook_id}', name: 'admin.module-hook.toggle-activation', methods: ['GET', 'POST'], requirements: ['module_hook_id' => '\d+'])]
+    #[Route('/admin/module-hooks/toggle-activation/{module_hook_id}', name: 'admin.module-hook.toggle-activation', methods: ['POST'], requirements: ['module_hook_id' => '\d+'])]
     public function toggleActivation(int $module_hook_id, Request $request): Response
     {
         $moduleHook = ModuleHookQuery::create()->findPk($module_hook_id);

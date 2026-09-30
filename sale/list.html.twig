@@ -19,11 +19,11 @@
     <div class="container-fluid" data-testid="sales-page">
         {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: 'Sales & promotions'|trans } %}
             {% block actions %}
-                <a href="{{ global_actions.check_url }}" class="btn btn-outline-secondary btn-sm" data-testid="sales-check-activation"
+                <a href="{{ global_actions.check_url }}" data-bo-post class="btn btn-outline-secondary btn-sm" data-testid="sales-check-activation"
                    title="{{ 'Refresh the active status of every sale according to its dates.'|trans }}">
                     <i class="bi bi-arrow-repeat" aria-hidden="true"></i> {{ 'Check activation'|trans }}
                 </a>
-                <a href="{{ global_actions.reset_url }}" class="btn btn-outline-secondary btn-sm" data-testid="sales-reset-status"
+                <a href="{{ global_actions.reset_url }}" data-bo-post class="btn btn-outline-secondary btn-sm" data-testid="sales-reset-status"
                    title="{{ 'Remove the sale flag from every product before recomputing it.'|trans }}">
                     <i class="bi bi-eraser" aria-hidden="true"></i> {{ 'Reset status'|trans }}
                 </a>
@@ -62,10 +62,10 @@
                 'end_date': row.end_date ?? '-',
                 'offset_type': row.offset_type_label,
                 'products': row.products_count,
-                'status_html': '<a href="' ~ row.toggle_url|e ~ '" class="text-decoration-none" data-testid="sale-toggle-' ~ row.id ~ '">' ~ (row.active ? '<span class="badge bg-success">' ~ 'Active'|trans ~ '</span>' : '<span class="badge bg-secondary">' ~ 'Inactive'|trans ~ '</span>') ~ '</a>',
+                'status_html': '<a href="' ~ row.toggle_url|e ~ '" data-bo-post class="text-decoration-none" data-testid="sale-toggle-' ~ row.id ~ '">' ~ (row.active ? '<span class="badge bg-success">' ~ 'Active'|trans ~ '</span>' : '<span class="badge bg-secondary">' ~ 'Inactive'|trans ~ '</span>') ~ '</a>',
                 '_actions': [
                     row_action('edit', 'Edit'|trans, row.edit_url),
-                    row_action('custom', 'Convert to a catalog price rule'|trans, row.convert_url, null, 'CREATE', 'admin.catalog-price-rule', {'testid': 'sale-convert-' ~ row.id}, true),
+                    row_action('custom', 'Convert to a catalog price rule'|trans, row.convert_url, null, 'CREATE', 'admin.catalog-price-rule', {'testid': 'sale-convert-' ~ row.id, 'bo-post': ''}, true),
                     row_action('delete', 'Delete'|trans, null, '#sale-delete-modal', null, null, {'sale-id': row.id}),
                 ],
             }]) %}
@@ -131,8 +131,7 @@
     {{ component('BoConfirmDialog', {
         id: 'sale-delete-modal',
         title: 'Delete sale',
-        formAction: global_actions.delete_url ~ '?_token=' ~ global_actions.delete_token,
-        token: false,
+        formAction: global_actions.delete_url,
         message: 'Do you really want to delete this sale?',
         testid: 'sale-delete',
         hook: 'sale.delete-form',

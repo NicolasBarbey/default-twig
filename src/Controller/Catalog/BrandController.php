@@ -187,7 +187,7 @@ final class BrandController
         );
     }
 
-    #[Route('/toggle-online', name: 'toggle-online', methods: ['GET', 'POST'])]
+    #[Route('/toggle-online', name: 'toggle-online', methods: ['POST'])]
     public function toggleOnline(Request $request): Response
     {
         $brand = $this->brandRepository->findById((int) ($request->query->get('brand_id') ?? $request->request->get('brand_id', 0)));
@@ -410,7 +410,7 @@ final class BrandController
             'title' => (string) $brand->getTitle(),
             'visible' => (bool) $brand->getVisible(),
             'position' => (int) $brand->getPosition(),
-            'toggle_visible_url' => $this->tokenizedUrl('admin.brand.toggle-online', ['brand_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate('admin.brand.toggle-online', ['brand_id' => $id]),
             '_actions' => $actions,
         ];
     }
@@ -439,16 +439,5 @@ final class BrandController
         }
 
         return (int) $value;
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 }

@@ -184,7 +184,7 @@ final class FolderController
         );
     }
 
-    #[Route('/toggle-online', name: 'toggle-online', methods: ['GET', 'POST'])]
+    #[Route('/toggle-online', name: 'toggle-online', methods: ['POST'])]
     public function toggleOnline(Request $request): Response
     {
         $folder = FolderQuery::create()->findPk((int) ($request->query->get('folder_id') ?? $request->request->get('folder_id', 0)));
@@ -347,7 +347,7 @@ final class FolderController
             'position' => $content->hasVirtualColumn(ContentRepository::FOLDER_POSITION_COLUMN)
                 ? (int) $content->getVirtualColumn(ContentRepository::FOLDER_POSITION_COLUMN)
                 : (int) $content->getPosition(),
-            'toggle_visible_url' => $this->tokenizedUrl('admin.content.toggle-online', ['content_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate('admin.content.toggle-online', ['content_id' => $id]),
             '_actions' => [
                 new RowAction(kind: 'edit', label: $this->translator->trans('Edit'), href: $editUrl, grantedAttribute: AccessManager::UPDATE, grantedSubject: AdminResources::CONTENT),
                 new RowAction(kind: 'delete', label: $this->translator->trans('Delete'), modalTarget: '#content-delete-modal', grantedAttribute: AccessManager::DELETE, grantedSubject: AdminResources::CONTENT, dataAttributes: ['content-id' => $id, 'content-label' => $title]),
@@ -381,7 +381,7 @@ final class FolderController
             'visible' => (bool) $folder->getVisible(),
             'position' => (int) $folder->getPosition(),
             'children_url' => $browseUrl,
-            'toggle_visible_url' => $this->tokenizedUrl('admin.folders.toggle-online', ['folder_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate('admin.folders.toggle-online', ['folder_id' => $id]),
             '_actions' => $actions,
         ];
     }
@@ -445,16 +445,5 @@ final class FolderController
         $cast = (string) $value;
 
         return $cast === '' ? null : $cast;
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 }

@@ -93,7 +93,7 @@
                                         <td class="text-center"><input type="checkbox" name="onsale[{{ loop.index0 }}]" value="1" {% if row.onsale %}checked{% endif %}></td>
                                         <td class="text-center"><input type="checkbox" name="isnew[{{ loop.index0 }}]" value="1" {% if row.isnew %}checked{% endif %}></td>
                                         <td class="text-center">
-                                            <a href="{{ path('admin.product.combination.toggle-visibility', { pse_id: row.id }) }}?_token={{ assignToken() }}&amp;product_id={{ product.id }}"
+                                            <a href="{{ path('admin.product.combination.toggle-visibility', { pse_id: row.id, product_id: product.id }) }}" data-bo-post
                                                class="btn btn-sm {% if row.visible %}btn-success{% else %}btn-outline-secondary{% endif %}"
                                                title="{{ row.visible ? 'Visible'|trans : 'Hidden'|trans }}"
                                                data-testid="combinations-toggle-visible-{{ row.id }}">

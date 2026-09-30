@@ -155,7 +155,7 @@ final class CurrencyController
         );
     }
 
-    #[Route('/set-default', name: 'set-default', methods: ['GET'])]
+    #[Route('/set-default', name: 'set-default', methods: ['POST'])]
     public function setDefault(Request $request): Response
     {
         $event = new CurrencyUpdateEvent((int) $request->query->get('currency_id', '0'));
@@ -173,7 +173,7 @@ final class CurrencyController
         );
     }
 
-    #[Route('/set-visible', name: 'set-visible', methods: ['GET'])]
+    #[Route('/set-visible', name: 'set-visible', methods: ['POST'])]
     public function setVisible(Request $request): Response
     {
         $event = new CurrencyUpdateEvent((int) $request->query->get('currency_id', '0'));
@@ -410,11 +410,11 @@ final class CurrencyController
             'position' => $currency->getPosition(),
             'visible' => (bool) $currency->getVisible(),
             'default' => $isDefault,
-            'toggle_visible_url' => $this->tokenizedUrl('admin.configuration.currencies.set-visible', [
+            'toggle_visible_url' => $this->urls->generate('admin.configuration.currencies.set-visible', [
                 'currency_id' => $id,
                 'visible' => $currency->getVisible() ? 0 : 1,
             ]),
-            'toggle_default_url' => $this->tokenizedUrl('admin.configuration.currencies.set-default', ['currency_id' => $id]),
+            'toggle_default_url' => $this->urls->generate('admin.configuration.currencies.set-default', ['currency_id' => $id]),
             '_actions' => $actions,
         ];
     }
@@ -451,16 +451,5 @@ final class CurrencyController
         }
 
         return $names;
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 }

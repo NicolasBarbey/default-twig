@@ -219,7 +219,7 @@ final class CatalogPriceRuleController
         );
     }
 
-    #[Route('/toggle/{rule_id}', name: 'toggle', methods: ['GET', 'POST'], requirements: ['rule_id' => '\d+'])]
+    #[Route('/toggle/{rule_id}', name: 'toggle', methods: ['POST'], requirements: ['rule_id' => '\d+'])]
     public function toggle(int $rule_id, Request $request): Response
     {
         return $this->action->tokenAction(

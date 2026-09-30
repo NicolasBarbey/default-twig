@@ -129,7 +129,7 @@ final readonly class CategoryListPresenter
             'visible' => (bool) $category->getVisible(),
             'position' => (int) $category->getPosition(),
             'parent' => (int) $category->getParent(),
-            'toggle_visible_url' => $this->tokenizedUrl('admin.categories.set-default', ['category_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate('admin.categories.set-default', ['category_id' => $id]),
             'children_url' => $browseUrl,
             '_actions' => $this->buildCategoryActions($category, $id, $title, $browseUrl),
         ];
@@ -215,7 +215,7 @@ final readonly class CategoryListPresenter
             ),
             'visible' => (bool) $product->getVisible(),
             'position' => (int) $product->getPosition(),
-            'toggle_visible_url' => $this->tokenizedUrl('admin.products.set-default', ['product_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate('admin.products.set-default', ['product_id' => $id]),
             '_actions' => [
                 new RowAction(
                     kind: 'edit',
@@ -237,16 +237,5 @@ final readonly class CategoryListPresenter
                 ),
             ],
         ];
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 }

@@ -152,7 +152,7 @@ final class ProductAssociationTypeController
         );
     }
 
-    #[Route('/toggle-visible', name: 'toggle-visible', methods: ['GET', 'POST'])]
+    #[Route('/toggle-visible', name: 'toggle-visible', methods: ['POST'])]
     public function toggleVisible(Request $request): Response
     {
         return $this->action->tokenAction(
@@ -327,7 +327,7 @@ final class ProductAssociationTypeController
             'reciprocal' => $type->isReciprocal(),
             'relation_count' => $relationCount,
             'visible' => $type->isVisible(),
-            'toggle_visible_url' => $this->tokenizedUrl('admin.product-association-type.toggle-visible', ['product_association_type_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate('admin.product-association-type.toggle-visible', ['product_association_type_id' => $id]),
             'position' => (int) $type->getPosition(),
             '_actions' => $actions,
         ];
@@ -346,17 +346,6 @@ final class ProductAssociationTypeController
         ], [
             'include_id' => true,
         ]);
-    }
-
-    /**
-     * @param array<string, scalar> $parameters
-     */
-    private function tokenizedUrl(string $route, array $parameters): string
-    {
-        $url = $this->urls->generate($route, $parameters);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
     }
 
     private function defaultLocale(): string

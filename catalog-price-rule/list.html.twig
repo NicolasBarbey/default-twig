@@ -19,7 +19,7 @@
     <div class="container-fluid" data-testid="catalog-price-rules-page">
         {% embed '@BackOfficeDefaultTwig/_page_header.html.twig' with { title: 'Catalog price rules'|trans } %}
             {% block actions %}
-                <a href="{{ global_actions.recompute_url }}" class="btn btn-outline-secondary btn-sm" data-testid="catalog-price-rule-recompute"
+                <a href="{{ global_actions.recompute_url }}" data-bo-post class="btn btn-outline-secondary btn-sm" data-testid="catalog-price-rule-recompute"
                    title="{{ 'Finish the rules whose prices are still pending, and drop the stored prices already over.'|trans }}">
                     <i class="bi bi-arrow-repeat" aria-hidden="true"></i> {{ 'Recompute pending prices'|trans }}
                 </a>
@@ -58,7 +58,7 @@
                 'start_date': row.start_date ?? '-',
                 'end_date': row.end_date ?? ('Until turned off'|trans),
                 'products': row.product_count,
-                'state_html': '<a href="' ~ row.toggle_url|e ~ '" class="text-decoration-none" data-testid="catalog-price-rule-toggle-' ~ row.id ~ '" title="' ~ (row.active ? 'Turn off'|trans : 'Turn on'|trans)|e ~ '"><span class="badge bg-' ~ row.state_color ~ '" data-state="' ~ row.state ~ '">' ~ row.state_label|e ~ '</span></a>',
+                'state_html': '<a href="' ~ row.toggle_url|e ~ '" data-bo-post class="text-decoration-none" data-testid="catalog-price-rule-toggle-' ~ row.id ~ '" title="' ~ (row.active ? 'Turn off'|trans : 'Turn on'|trans)|e ~ '"><span class="badge bg-' ~ row.state_color ~ '" data-state="' ~ row.state ~ '">' ~ row.state_label|e ~ '</span></a>',
                 '_actions': [
                     row_action('edit', 'Edit'|trans, row.edit_url),
                     row_action('delete', 'Delete'|trans, null, '#catalog-price-rule-delete-modal', null, null, {'rule-id': row.id}),
@@ -122,8 +122,7 @@
     {{ component('BoConfirmDialog', {
         id: 'catalog-price-rule-delete-modal',
         title: 'Delete rule',
-        formAction: global_actions.delete_url ~ '?_token=' ~ global_actions.delete_token,
-        token: false,
+        formAction: global_actions.delete_url,
         message: 'Do you really want to delete this rule? The products it covers get their catalog price back at once.',
         testid: 'catalog-price-rule-delete',
         hook: 'catalog-price-rule.delete-form',

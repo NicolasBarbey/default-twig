@@ -23,7 +23,6 @@ use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\Module;
 use Thelia\Module\BaseModule;
-use Thelia\Tools\TokenProvider;
 
 final readonly class ModuleListPresenter
 {
@@ -31,7 +30,6 @@ final readonly class ModuleListPresenter
         private ModuleRepository $modules,
         private ModuleCapabilityChecker $capabilities,
         private UrlGeneratorInterface $urls,
-        private TokenProvider $tokens,
         private TranslatorInterface $translator,
     ) {
     }
@@ -168,10 +166,7 @@ final readonly class ModuleListPresenter
             return null;
         }
 
-        $url = $this->urls->generate('admin.module.toggle-activation', ['module_id' => $id]);
-        $separator = str_contains($url, '?') ? '&' : '?';
-
-        return $url.$separator.'_token='.$this->tokens->assignToken();
+        return $this->urls->generate('admin.module.toggle-activation', ['module_id' => $id]);
     }
 
     /**

@@ -303,7 +303,7 @@ final class TaxRuleController
         );
     }
 
-    #[Route('/update/set_default/{tax_rule_id}', name: 'set-default', methods: ['POST', 'GET'], requirements: ['tax_rule_id' => '\d+'])]
+    #[Route('/update/set_default/{tax_rule_id}', name: 'set-default', methods: ['POST'], requirements: ['tax_rule_id' => '\d+'])]
     public function setDefault(int $tax_rule_id, Request $request): Response
     {
         $event = new TaxRuleEvent();

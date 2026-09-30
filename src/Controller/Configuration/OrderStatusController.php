@@ -206,7 +206,7 @@ final class OrderStatusController
         return $redirect;
     }
 
-    #[Route('/actions/{action_id}/toggle', name: 'actions.toggle', methods: ['GET', 'POST'], requirements: ['action_id' => '\d+'])]
+    #[Route('/actions/{action_id}/toggle', name: 'actions.toggle', methods: ['POST'], requirements: ['action_id' => '\d+'])]
     public function toggleAction(int $action_id, Request $request): Response
     {
         return $this->actionWrite($action_id, $request, function (\Thelia\Model\OrderStatusAction $action): void {

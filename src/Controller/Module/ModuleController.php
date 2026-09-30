@@ -180,7 +180,7 @@ final class ModuleController
         return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['module_id' => $moduleId]));
     }
 
-    #[Route('/module/toggle-activation/{module_id}', name: 'module.toggle-activation', methods: ['GET', 'POST'], requirements: ['module_id' => '\d+'])]
+    #[Route('/module/toggle-activation/{module_id}', name: 'module.toggle-activation', methods: ['POST'], requirements: ['module_id' => '\d+'])]
     public function toggleActivation(int $module_id, Request $request): Response
     {
         if (ModuleQuery::create()->findPk($module_id) === null) {

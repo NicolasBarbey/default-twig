@@ -350,7 +350,7 @@ final class ProductAdvancedController
         return new JsonResponse(['prices' => $prices]);
     }
 
-    #[Route('/admin/product/product-sale-element-visibility', name: 'admin.product.product-sale-element-visibility', methods: ['GET', 'POST'])]
+    #[Route('/admin/product/product-sale-element-visibility', name: 'admin.product.product-sale-element-visibility', methods: ['POST'])]
     public function pseToggleVisibility(Request $request): Response
     {
         $pseId = (int) ($request->query->get('product_sale_element_id') ?? $request->request->get('product_sale_element_id', 0));
@@ -510,7 +510,7 @@ final class ProductAdvancedController
         );
     }
 
-    #[Route('/admin/product/combination/toggle-visibility/{pse_id}', name: 'admin.product.combination.toggle-visibility', methods: ['GET', 'POST'], requirements: ['pse_id' => '\d+'])]
+    #[Route('/admin/product/combination/toggle-visibility/{pse_id}', name: 'admin.product.combination.toggle-visibility', methods: ['POST'], requirements: ['pse_id' => '\d+'])]
     public function combinationToggleVisibility(int $pse_id, Request $request): Response
     {
         return $this->action->tokenAction(
