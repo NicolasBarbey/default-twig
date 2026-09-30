@@ -59,6 +59,8 @@ use Thelia\Model\ProductDocument;
 use Thelia\Model\ProductDocumentQuery;
 use Thelia\Model\ProductImage;
 use Thelia\Model\ProductImageQuery;
+use Thelia\Model\ProductPrice;
+use Thelia\Model\ProductPriceQuery;
 use Thelia\Model\ProductQuery;
 use Thelia\Model\ProductSaleElements;
 use Thelia\Model\ProductSaleElementsProductDocument;
@@ -580,14 +582,15 @@ final class ProductAdvancedController
                 continue;
             }
 
+            $storedPrice = $this->storedPrice($pseId, $currency);
             $event = new ProductSaleElementUpdateEvent($product, $pseId);
             $event
                 ->setReference((string) ($refs[$index] ?? ''))
-                ->setPrice((float) ($prices[$index] ?? 0))
+                ->setPrice((float) ($prices[$index] ?? $storedPrice?->getPrice() ?? 0))
                 ->setCurrencyId($currency)
                 ->setWeight((float) ($weights[$index] ?? 0))
                 ->setQuantity((float) ($quantities[$index] ?? 0))
-                ->setSalePrice((float) ($salePrices[$index] ?? 0))
+                ->setSalePrice((float) ($salePrices[$index] ?? $storedPrice?->getPromoPrice() ?? 0))
                 ->setOnsale(isset($onsale[$index]) ? 1 : 0)
                 ->setIsnew(isset($isnew[$index]) ? 1 : 0)
                 ->setIsdefault($defaultPse === $pseId)
@@ -716,14 +719,15 @@ final class ProductAdvancedController
         $pseId = (int) $form->get('product_sale_element_id', 0);
         if ($pseId > 0) {
             $currency = (int) $form->get('currency', $this->defaultCurrencyId());
+            $storedPrice = $this->storedPrice($pseId, $currency);
             $event = new ProductSaleElementUpdateEvent($product, $pseId);
             $event
                 ->setReference((string) $form->get('reference', ''))
-                ->setPrice((float) $form->get('price', 0))
+                ->setPrice((float) ($form->get('price') ?? $storedPrice?->getPrice() ?? 0))
                 ->setCurrencyId($currency)
                 ->setWeight((float) $form->get('weight', 0))
                 ->setQuantity((float) $form->get('quantity', 0))
-                ->setSalePrice((float) $form->get('sale_price', 0))
+                ->setSalePrice((float) ($form->get('sale_price') ?? $storedPrice?->getPromoPrice() ?? 0))
                 ->setOnsale($form->get('onsale') !== null ? 1 : 0)
                 ->setIsnew($form->get('isnew') !== null ? 1 : 0)
                 ->setIsdefault(true)
@@ -1001,6 +1005,14 @@ final class ProductAdvancedController
         $defaultCurrency = CurrencyQuery::create()->findOneByByDefault(1);
 
         return (int) ($defaultCurrency?->getId() ?? 1);
+    }
+
+    private function storedPrice(int $pseId, int $currencyId): ?ProductPrice
+    {
+        return ProductPriceQuery::create()
+            ->filterByProductSaleElementsId($pseId)
+            ->filterByCurrencyId($currencyId)
+            ->findOne();
     }
 
     /**

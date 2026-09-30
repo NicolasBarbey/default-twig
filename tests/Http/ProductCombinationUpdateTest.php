@@ -110,6 +110,28 @@ final class ProductCombinationUpdateTest extends WebIntegrationTestCase
         $this->assertCombinationUntouched($pse);
     }
 
+    public function testTheCombinationsFormSavesAndKeepsAPriceItDidNotSend(): void
+    {
+        $this->loginFullAdmin();
+        [$product, $pse] = $this->productWithACombination();
+
+        $this->client->request('POST', self::COMBINATIONS_URL, [
+            '_token' => $this->tokenOf($product, 'combinations-form'),
+            'product_id' => $product->getId(),
+            'tax_rule' => $product->getTaxRuleId(),
+            'product_sale_element_id' => [$pse->getId()],
+            'reference' => [$pse->getRef()],
+            'quantity' => [42],
+            'weight' => [1.5],
+        ]);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        self::assertSame(42.0, (float) $this->freshSaleElement($pse)->getQuantity(), 'The submitted stock is saved.');
+        $price = $this->storedPrice($pse);
+        self::assertSame(25.0, (float) $price->getPrice(), 'A price the form did not send keeps its stored value.');
+        self::assertSame(20.0, (float) $price->getPromoPrice(), 'A sale price the form did not send keeps its stored value.');
+    }
+
     public function testTheDefaultPriceCannotBeUpdatedThroughAGet(): void
     {
         $this->loginFullAdmin();
@@ -149,6 +171,28 @@ final class ProductCombinationUpdateTest extends WebIntegrationTestCase
         self::assertSame(403, $this->client->getResponse()->getStatusCode(), 'The token is read from the form body only.');
 
         $this->assertCombinationUntouched($pse);
+    }
+
+    public function testTheDefaultPriceFormSavesAndKeepsAPriceItDidNotSend(): void
+    {
+        $this->loginFullAdmin();
+        [$product, $pse] = $this->productWithoutCombination();
+
+        $this->client->request('POST', self::DEFAULT_PRICE_URL, [
+            '_token' => $this->tokenOf($product, 'default-pse-form'),
+            'product_id' => $product->getId(),
+            'product_sale_element_id' => $pse->getId(),
+            'reference' => $pse->getRef(),
+            'tax_rule' => $product->getTaxRuleId(),
+            'quantity' => 43,
+            'weight' => 1.5,
+        ]);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        self::assertSame(43.0, (float) $this->freshSaleElement($pse)->getQuantity(), 'The submitted stock is saved.');
+        $price = $this->storedPrice($pse);
+        self::assertSame(25.0, (float) $price->getPrice(), 'A price the form did not send keeps its stored value.');
+        self::assertSame(20.0, (float) $price->getPromoPrice(), 'A sale price the form did not send keeps its stored value.');
     }
 
     private function loginFullAdmin(): void
