@@ -67,6 +67,7 @@
                       data-testid="profile-resource-access-form"
                       data-controller="bo-permission-matrix">
                     <input type="hidden" name="profile_id" value="{{ profile.id }}">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
                     <div class="card">
                         <div class="table-responsive">
                             <table class="table table-striped align-middle mb-0">
@@ -133,6 +134,7 @@
                       data-testid="profile-module-access-form"
                       data-controller="bo-permission-matrix">
                     <input type="hidden" name="profile_id" value="{{ profile.id }}">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
                     <div class="card">
                         <div class="table-responsive">
                             <table class="table table-striped align-middle mb-0">

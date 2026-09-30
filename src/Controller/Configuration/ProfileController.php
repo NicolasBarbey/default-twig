@@ -39,6 +39,7 @@ use Thelia\Model\ModuleQuery;
 use Thelia\Model\Profile;
 use Thelia\Model\ProfileQuery;
 use Thelia\Model\ResourceQuery;
+use Thelia\Tools\TokenProvider;
 use Twig\Environment;
 
 #[Route('/admin/configuration/profiles', name: 'admin.configuration.profiles.')]
@@ -58,6 +59,7 @@ final class ProfileController
         private readonly TranslatorInterface $translator,
         private readonly EventDispatcherInterface $events,
         private readonly EditLocaleResolver $editLocale,
+        private readonly TokenProvider $tokens,
     ) {
     }
 
@@ -159,6 +161,8 @@ final class ProfileController
             return $denied;
         }
 
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
+
         $profileId = (int) $request->request->get('profile_id', 0);
         $resources = (array) $request->request->all('resource');
 
@@ -178,6 +182,8 @@ final class ProfileController
             return $denied;
         }
 
+        $this->tokens->checkToken((string) $request->request->get('_token', ''));
+
         $profileId = (int) $request->request->get('profile_id', 0);
         $modules = (array) $request->request->all('module');
 
@@ -190,7 +196,7 @@ final class ProfileController
         return new RedirectResponse($this->urls->generate('admin.configuration.profiles.update', ['profile_id' => $profileId]));
     }
 
-    #[Route('/delete', name: 'delete', methods: ['POST', 'GET'])]
+    #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
         $event = new ProfileEvent();
