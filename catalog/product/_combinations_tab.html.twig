@@ -32,7 +32,8 @@
 
         <div class="card-body">
             {% if has_combinations %}
-                <form method="post" action="{{ path('admin.product.combination.update') }}?_token={{ assignToken() }}" data-testid="combinations-form">
+                <form method="post" action="{{ path('admin.product.combination.update') }}" data-testid="combinations-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
                     <input type="hidden" name="product_id" value="{{ product.id }}">
                     <input type="hidden" name="tax_rule" value="{{ tax_rule_id }}">
                     <input type="hidden" name="currency" value="{{ currency.id }}">
@@ -155,10 +156,11 @@
                         </div>
                     {% endif %}
 
-                    <form method="post" action="{{ path('admin.product.combination.defaut-price.update') }}?_token={{ assignToken() }}"
+                    <form method="post" action="{{ path('admin.product.combination.defaut-price.update') }}"
                           data-testid="default-pse-form"
                           data-controller="bo-pse-price-with-tax"
                           data-bo-pse-price-with-tax-calc-url-value="{{ path('admin.product.calculate-price') }}">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
                         <input type="hidden" name="product_id" value="{{ product.id }}">
                         <input type="hidden" name="product_sale_element_id" value="{{ default_pse.id }}">
                         <input type="hidden" name="isdefault" value="1">

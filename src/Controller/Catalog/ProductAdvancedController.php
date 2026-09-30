@@ -543,33 +543,36 @@ final class ProductAdvancedController
         );
     }
 
-    #[Route('/admin/product/combinations/update', name: 'admin.product.combination.update', methods: ['POST', 'GET'])]
+    #[Route('/admin/product/combinations/update', name: 'admin.product.combination.update', methods: ['POST'])]
     public function combinationUpdate(Request $request, EventDispatcherInterface $events): Response
     {
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
             return $denied;
         }
 
-        $productId = (int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0));
+        $form = $request->request;
+        $this->tokens->checkToken((string) $form->get('_token', ''));
+
+        $productId = (int) $form->get('product_id', 0);
         $product = ProductQuery::create()->findPk($productId);
         if ($product === null) {
             return new RedirectResponse($this->urls->generate('admin.products.default'));
         }
 
         $currency = $this->defaultCurrencyId();
-        $taxRule = (int) ($request->query->get('tax_rule') ?? $request->request->get('tax_rule', (int) $product->getTaxRuleId()));
-        $useExchangeRate = (int) ($request->query->get('use_exchange_rate') ?? $request->request->get('use_exchange_rate', 0));
-        $defaultPse = (int) ($request->query->get('default_pse') ?? $request->request->get('default_pse', 0));
+        $taxRule = (int) $form->get('tax_rule', (int) $product->getTaxRuleId());
+        $useExchangeRate = (int) $form->get('use_exchange_rate', 0);
+        $defaultPse = (int) $form->get('default_pse', 0);
 
-        $ids = $request->query->all('product_sale_element_id') ?: $request->request->all('product_sale_element_id');
-        $refs = $request->query->all('reference') ?: $request->request->all('reference');
-        $prices = $request->query->all('price') ?: $request->request->all('price');
-        $weights = $request->query->all('weight') ?: $request->request->all('weight');
-        $quantities = $request->query->all('quantity') ?: $request->request->all('quantity');
-        $salePrices = $request->query->all('sale_price') ?: $request->request->all('sale_price');
-        $eans = $request->query->all('ean_code') ?: $request->request->all('ean_code');
-        $onsale = $request->query->all('onsale') ?: $request->request->all('onsale');
-        $isnew = $request->query->all('isnew') ?: $request->request->all('isnew');
+        $ids = $form->all('product_sale_element_id');
+        $refs = $form->all('reference');
+        $prices = $form->all('price');
+        $weights = $form->all('weight');
+        $quantities = $form->all('quantity');
+        $salePrices = $form->all('sale_price');
+        $eans = $form->all('ean_code');
+        $onsale = $form->all('onsale');
+        $isnew = $form->all('isnew');
 
         foreach ($ids as $index => $rawId) {
             $pseId = (int) $rawId;
@@ -694,35 +697,39 @@ final class ProductAdvancedController
         return $combinations;
     }
 
-    #[Route('/admin/product/default-price/update', name: 'admin.product.combination.defaut-price.update', methods: ['POST', 'GET'])]
+    #[Route('/admin/product/default-price/update', name: 'admin.product.combination.defaut-price.update', methods: ['POST'])]
     public function combinationDefaultPriceUpdate(Request $request, EventDispatcherInterface $events): Response
     {
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
             return $denied;
         }
 
-        $productId = (int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0));
+        $form = $request->request;
+        $this->tokens->checkToken((string) $form->get('_token', ''));
+
+        $productId = (int) $form->get('product_id', 0);
         $product = ProductQuery::create()->findPk($productId);
         if ($product === null) {
             return new RedirectResponse($this->urls->generate('admin.products.default'));
         }
 
-        $pseId = (int) ($request->query->get('product_sale_element_id') ?? $request->request->get('product_sale_element_id', 0));
+        $pseId = (int) $form->get('product_sale_element_id', 0);
         if ($pseId > 0) {
+            $currency = (int) $form->get('currency', $this->defaultCurrencyId());
             $event = new ProductSaleElementUpdateEvent($product, $pseId);
             $event
-                ->setReference((string) ($request->query->get('reference') ?? $request->request->get('reference', '')))
-                ->setPrice((float) ($request->query->get('price') ?? $request->request->get('price', 0)))
-                ->setCurrencyId((int) ($request->query->get('currency') ?? $request->request->get('currency', $this->defaultCurrencyId())))
-                ->setWeight((float) ($request->query->get('weight') ?? $request->request->get('weight', 0)))
-                ->setQuantity((float) ($request->query->get('quantity') ?? $request->request->get('quantity', 0)))
-                ->setSalePrice((float) ($request->query->get('sale_price') ?? $request->request->get('sale_price', 0)))
-                ->setOnsale(($request->query->get('onsale') ?? $request->request->get('onsale')) !== null ? 1 : 0)
-                ->setIsnew(($request->query->get('isnew') ?? $request->request->get('isnew')) !== null ? 1 : 0)
+                ->setReference((string) $form->get('reference', ''))
+                ->setPrice((float) $form->get('price', 0))
+                ->setCurrencyId($currency)
+                ->setWeight((float) $form->get('weight', 0))
+                ->setQuantity((float) $form->get('quantity', 0))
+                ->setSalePrice((float) $form->get('sale_price', 0))
+                ->setOnsale($form->get('onsale') !== null ? 1 : 0)
+                ->setIsnew($form->get('isnew') !== null ? 1 : 0)
                 ->setIsdefault(true)
-                ->setEanCode((string) ($request->query->get('ean_code') ?? $request->request->get('ean_code', '')))
-                ->setTaxRuleId((int) ($request->query->get('tax_rule') ?? $request->request->get('tax_rule', (int) $product->getTaxRuleId())))
-                ->setFromDefaultCurrency((int) ($request->query->get('use_exchange_rate') ?? $request->request->get('use_exchange_rate', 0)));
+                ->setEanCode((string) $form->get('ean_code', ''))
+                ->setTaxRuleId((int) $form->get('tax_rule', (int) $product->getTaxRuleId()))
+                ->setFromDefaultCurrency((int) $form->get('use_exchange_rate', 0));
 
             $events->dispatch($event, TheliaEvents::PRODUCT_UPDATE_PRODUCT_SALE_ELEMENT);
         }
