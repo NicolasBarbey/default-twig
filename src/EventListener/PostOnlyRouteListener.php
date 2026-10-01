@@ -54,7 +54,9 @@ final readonly class PostOnlyRouteListener
             return;
         }
 
-        $context = (new RequestContext())->fromRequest($request);
+        // A copy of the router's own context keeps its parameters, among them the
+        // functions a route condition calls (service(), env()).
+        $context = (clone $this->router->getContext())->fromRequest($request);
         $allowedMethods = $this->allowedMethodsWhenRefused($request->getPathInfo(), $context);
         if ($allowedMethods !== ['POST'] || !$this->isThemeRoute($request->getPathInfo(), $context)) {
             return;
