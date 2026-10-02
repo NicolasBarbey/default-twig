@@ -308,7 +308,7 @@ final class GiftWrappingController
             // figure, and the currency it is charged in is the buyer's, not the merchant's.
             'price' => rtrim(rtrim(number_format((float) $giftWrapping->getPrice(), 2, '.', ''), '0'), '.') ?: '0',
             'free' => $giftWrapping->isFree(),
-            'tax_rule' => (string) $giftWrapping->getTaxRule()?->setLocale((string) $giftWrapping->getLocale())->getTitle(),
+            'tax_rule' => (string) $giftWrapping->getTaxRule()->setLocale((string) $giftWrapping->getLocale())->getTitle(),
             'active' => $giftWrapping->isActive(),
             'toggle_active_url' => $this->tokenizedUrl('admin.gift-wrapping.toggle-active', ['gift_wrapping_id' => $id]),
             'position' => (int) $giftWrapping->getPosition(),
