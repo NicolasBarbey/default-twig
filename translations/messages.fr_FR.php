@@ -1679,7 +1679,7 @@ return [
     'Sales' => 'Promotions',
     'Sales & promotions' => 'Promotions',
     'Sales management' => 'Gestion des promotions',
-    'Save' => ' Enregistrer',
+    'Save' => 'Enregistrer',
     'Save a domain for every language served in front office, then activate.' => 'Enregistrez un domaine pour chaque langue servie en front office, puis activez.',
     'Save all combinations' => 'Enregistrer toutes les combinaisons',
     'Save and close' => 'Enregistrer et fermer',

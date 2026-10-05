@@ -192,15 +192,26 @@
                                 {% do form.virtual_document_id.setRendered %}
                             </div>
                             {{ safe_hook('product.modification.form-right.bottom', { product_id: product.id }) }}
+                            {% set edit_toolbar = {
+                                closeUrl: path('admin.products.default'),
+                                closeAttributes: { 'data-bo-unsaved-changes-target': 'link' },
+                                closeFirst: false,
+                                closeIcon: 'bi-x-lg',
+                                saveIcon: 'bi-check-lg',
+                                saveCloseIcon: 'bi-x-lg',
+                                saveVariant: 'success',
+                                saveCloseVariant: 'info',
+                                iconAfterLabel: true,
+                                align: 'start'
+                            } %}
+                            {{ component('BoSaveModeToolbar', edit_toolbar|merge({ wrapperClass: 'mb-3', testid: 'product-edit-top' })) }}
                         </div>
                     </div>
                     {{ safe_hook('product.modification.form_bottom', { product_id: product.id }) }}
                     {{ form_widget(form.id) }}
                     {{ form_widget(form.locale) }}
                     {{ safe_hook('product.update-form', { product: product.id }) }}
-                    <button type="submit" class="btn btn-primary" data-testid="product-edit-submit">
-                        <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}
-                    </button>
+                    {{ component('BoSaveModeToolbar', edit_toolbar|merge({ testid: 'product-edit' })) }}
                 {{ form_widget(form._token) }}
                 {# module fields added through the legacy form bridge are rendered by the module hooks, not auto-dumped #}
                 {{ form_end(form, {render_rest: false}) }}

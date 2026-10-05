@@ -123,6 +123,7 @@ final class ContentController
         ]);
 
         $contentId = (int) $request->request->get('content_id', 0);
+        $closeAfterSave = $request->request->get('save_mode') === 'close';
 
         return $this->action->submit(
             resource: self::RESOURCE,
@@ -131,9 +132,10 @@ final class ContentController
             eventName: TheliaEvents::CONTENT_UPDATE,
             eventFactory: $this->updateEvent(...),
             actionLabel: 'Content update',
-            successRoute: self::EDIT_ROUTE,
-            successParameters: ['content_id' => $contentId],
+            successRoute: $closeAfterSave ? self::LIST_ROUTE : self::EDIT_ROUTE,
+            successParameters: $closeAfterSave ? [] : ['content_id' => $contentId],
             renderError: fn (): RedirectResponse => new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['content_id' => $contentId])),
+            successParametersResolver: $closeAfterSave ? fn (ContentUpdateEvent $event): array => ['folder_id' => (int) $event->getDefaultFolder()] : null,
         );
     }
 

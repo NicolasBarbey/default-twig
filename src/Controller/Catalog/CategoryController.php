@@ -170,6 +170,7 @@ final class CategoryController
         ]);
 
         $categoryId = (int) $request->request->get('category_id', 0);
+        $closeAfterSave = $request->request->get('save_mode') === 'close';
 
         return $this->action->submit(
             resource: self::RESOURCE,
@@ -178,9 +179,10 @@ final class CategoryController
             eventName: TheliaEvents::CATEGORY_UPDATE,
             eventFactory: $this->updateEvent(...),
             actionLabel: 'Category update',
-            successRoute: self::EDIT_ROUTE,
-            successParameters: ['category_id' => $categoryId],
+            successRoute: $closeAfterSave ? self::LIST_ROUTE : self::EDIT_ROUTE,
+            successParameters: $closeAfterSave ? [] : ['category_id' => $categoryId],
             renderError: fn (): RedirectResponse => new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['category_id' => $categoryId])),
+            successParametersResolver: $closeAfterSave ? fn (CategoryUpdateEvent $event): array => ['category_id' => (int) $event->getParent()] : null,
             describeForLog: $this->describeUpdated(...),
         );
     }

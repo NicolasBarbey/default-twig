@@ -90,6 +90,7 @@
                 {% form_theme form with bo_form_themes only %}
                 {{ form_start(form, { action: path('admin.folders.save', { folder_id: folder.id }), method: 'post', attr: { 'data-testid': 'folder-edit-form' } }) }}
                     <input type="hidden" name="folder_id" value="{{ folder.id }}">
+
                     <div class="row">
                         <div class="col-md-8">
                             <div class="mb-3">
@@ -121,14 +122,24 @@
                                 {{ form_widget(form.parent, { attr: { class: 'form-control' } }) }}
                             </div>
                             {{ safe_hook('folder.modification.form-right.bottom', { folder_id: folder.id }) }}
+                            {% set edit_toolbar = {
+                                closeUrl: path('admin.folders.default', { folder_id: folder.parent }),
+                                closeFirst: false,
+                                closeIcon: 'bi-x-lg',
+                                saveIcon: 'bi-check-lg',
+                                saveCloseIcon: 'bi-x-lg',
+                                saveVariant: 'success',
+                                saveCloseVariant: 'info',
+                                iconAfterLabel: true,
+                                align: 'start'
+                            } %}
+                            {{ component('BoSaveModeToolbar', edit_toolbar|merge({ wrapperClass: 'mb-3', testid: 'folder-edit-top' })) }}
                         </div>
                     </div>
                     {{ form_widget(form.id) }}
                     {{ form_widget(form.locale) }}
                     {{ safe_hook('folder.update-form', { folder: folder.id }) }}
-                    <button type="submit" class="btn btn-primary" data-testid="folder-edit-submit">
-                        <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}
-                    </button>
+                    {{ component('BoSaveModeToolbar', edit_toolbar|merge({ testid: 'folder-edit' })) }}
                 {{ form_widget(form._token) }}
                 {# module fields added through the legacy form bridge are rendered by the module hooks, not auto-dumped #}
                 {{ form_end(form, {render_rest: false}) }}

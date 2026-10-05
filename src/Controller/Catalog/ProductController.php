@@ -260,6 +260,7 @@ final class ProductController
         ]);
 
         $productId = (int) $request->request->get('product_id', 0);
+        $closeAfterSave = $request->request->get('save_mode') === 'close';
 
         return $this->action->submit(
             resource: self::RESOURCE,
@@ -268,8 +269,8 @@ final class ProductController
             eventName: TheliaEvents::PRODUCT_UPDATE,
             eventFactory: $this->updateEvent(...),
             actionLabel: 'Product update',
-            successRoute: self::EDIT_ROUTE,
-            successParameters: ['product_id' => $productId],
+            successRoute: $closeAfterSave ? self::LIST_ROUTE : self::EDIT_ROUTE,
+            successParameters: $closeAfterSave ? [] : ['product_id' => $productId],
             renderError: fn (): RedirectResponse => new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['product_id' => $productId])),
             describeForLog: $this->describeUpdated(...),
         );

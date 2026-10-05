@@ -100,6 +100,7 @@
                 {% form_theme form with bo_form_themes only %}
                 {{ form_start(form, { action: path('admin.categories.save', { category_id: category.id }), method: 'post', attr: { 'data-testid': 'category-edit-form' } }) }}
                     <input type="hidden" name="category_id" value="{{ category.id }}">
+
                     <div class="row">
                         <div class="col-md-8">
                             <div class="mb-3">
@@ -146,14 +147,24 @@
                                 {% do form.default_template_id.setRendered %}
                             </div>
                             {{ safe_hook('category.modification.form-right.bottom', { category_id: category.id }) }}
+                            {% set edit_toolbar = {
+                                closeUrl: path('admin.categories.default', { category_id: category.parent }),
+                                closeFirst: false,
+                                closeIcon: 'bi-x-lg',
+                                saveIcon: 'bi-check-lg',
+                                saveCloseIcon: 'bi-x-lg',
+                                saveVariant: 'success',
+                                saveCloseVariant: 'info',
+                                iconAfterLabel: true,
+                                align: 'start'
+                            } %}
+                            {{ component('BoSaveModeToolbar', edit_toolbar|merge({ wrapperClass: 'mb-3', testid: 'category-edit-top' })) }}
                         </div>
                     </div>
                     {{ form_widget(form.id) }}
                     {{ form_widget(form.locale) }}
                     {{ safe_hook('category.update-form', { category: category.id }) }}
-                    <button type="submit" class="btn btn-primary" data-testid="category-edit-submit">
-                        <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}
-                    </button>
+                    {{ component('BoSaveModeToolbar', edit_toolbar|merge({ testid: 'category-edit' })) }}
                 {{ form_widget(form._token) }}
                 {# module fields added through the legacy form bridge are rendered by the module hooks, not auto-dumped #}
                 {{ form_end(form, {render_rest: false}) }}

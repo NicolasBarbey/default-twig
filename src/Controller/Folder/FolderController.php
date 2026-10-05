@@ -145,6 +145,7 @@ final class FolderController
         ]);
 
         $folderId = (int) $request->request->get('folder_id', 0);
+        $closeAfterSave = $request->request->get('save_mode') === 'close';
 
         return $this->action->submit(
             resource: self::RESOURCE,
@@ -153,9 +154,10 @@ final class FolderController
             eventName: TheliaEvents::FOLDER_UPDATE,
             eventFactory: $this->updateEvent(...),
             actionLabel: 'Folder update',
-            successRoute: self::EDIT_ROUTE,
-            successParameters: ['folder_id' => $folderId],
+            successRoute: $closeAfterSave ? self::LIST_ROUTE : self::EDIT_ROUTE,
+            successParameters: $closeAfterSave ? [] : ['folder_id' => $folderId],
             renderError: fn (): RedirectResponse => new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['folder_id' => $folderId])),
+            successParametersResolver: $closeAfterSave ? fn (FolderUpdateEvent $event): array => ['folder_id' => (int) $event->getParent()] : null,
         );
     }
 
