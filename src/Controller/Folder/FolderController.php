@@ -22,6 +22,7 @@ use BackOfficeDefaultTwigBundle\Repository\FolderRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\I18n\EditLocaleResolver;
+use BackOfficeDefaultTwigBundle\Service\Listing\FolderListQuery;
 use BackOfficeDefaultTwigBundle\Service\Listing\ListingThumbnailPresenter;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\ListSort;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
@@ -203,6 +204,7 @@ final class FolderController
             eventName: TheliaEvents::FOLDER_TOGGLE_VISIBILITY,
             actionLabel: 'Folder visibility',
             successRoute: self::LIST_ROUTE,
+            successParameters: FolderListQuery::fromRequest($request)->toListParams((int) $folder->getParent()),
         );
     }
 
@@ -229,14 +231,18 @@ final class FolderController
     #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
+        $folderId = (int) ($request->query->get('folder_id') ?? $request->request->get('folder_id', 0));
+        $parentId = (int) FolderQuery::create()->findPk($folderId)?->getParent();
+
         return $this->action->tokenAction(
             resource: self::RESOURCE,
             access: AccessManager::DELETE,
             request: $request,
-            event: new FolderDeleteEvent((int) ($request->query->get('folder_id') ?? $request->request->get('folder_id', 0))),
+            event: new FolderDeleteEvent($folderId),
             eventName: TheliaEvents::FOLDER_DELETE,
             actionLabel: 'Folder deletion',
             successRoute: self::LIST_ROUTE,
+            successParameters: FolderListQuery::fromRequest($request)->toListParams($parentId),
         );
     }
 
@@ -273,12 +279,13 @@ final class FolderController
     private function buildListContext(int $parentId, ?Request $request = null): array
     {
         $locale = $this->defaultLocale();
-        $sort = $request !== null
-            ? ListSort::fromRequest($request, ['id', 'title', 'visible', 'position'], 'position')
-            : new ListSort('position', 'asc');
+        $listQuery = $request !== null
+            ? FolderListQuery::fromRequest($request)
+            : new FolderListQuery(new ListSort(FolderListQuery::DEFAULT_SORT, 'asc'), 1);
+        $sort = $listQuery->sort;
         $rows = [];
         foreach ($this->folderRepository->findChildrenSorted($parentId, $locale, $sort->field, $sort->direction) as $folder) {
-            $rows[] = $this->folderToRow($folder);
+            $rows[] = $this->folderToRow($folder, $listQuery);
         }
 
         $createForm = $this->formFactory->createNamed('thelia_folder_creation', FolderType::class, [
@@ -304,14 +311,16 @@ final class FolderController
             'update_position_token' => $this->tokens->assignToken(),
             'sort_field' => $sort->field,
             'sort_direction' => $sort->direction,
-        ] + $this->buildContentSection($parentId, $request !== null ? max(1, (int) $request->query->get('content_page', 1)) : 1, $locale);
+            'list_query_params' => $listQuery->toQueryParams(),
+        ] + $this->buildContentSection($parentId, $listQuery, $locale);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function buildContentSection(int $folderId, int $page, string $locale): array
+    private function buildContentSection(int $folderId, FolderListQuery $listQuery, string $locale): array
     {
+        $page = $listQuery->contentPage;
         $total = $folderId > 0 ? $this->contentRepository->countInFolder($folderId) : 0;
         if ($total === 0) {
             return ['content_rows' => [], 'content_total' => 0, 'content_pages' => 0, 'content_current_page' => 1];
@@ -322,7 +331,7 @@ final class FolderController
 
         $rows = [];
         foreach ($this->contentRepository->findInFolderPage($folderId, $locale, ($page - 1) * self::CONTENT_PAGE_SIZE, self::CONTENT_PAGE_SIZE) as $content) {
-            $rows[] = $this->contentToRow($content);
+            $rows[] = $this->contentToRow($content, $folderId, $listQuery);
         }
 
         return ['content_rows' => $rows, 'content_total' => $total, 'content_pages' => $pages, 'content_current_page' => $page];
@@ -331,7 +340,7 @@ final class FolderController
     /**
      * @return array<string, mixed>
      */
-    private function contentToRow(Content $content): array
+    private function contentToRow(Content $content, int $folderId, FolderListQuery $listQuery): array
     {
         $id = (int) $content->getId();
         $title = (string) $content->getTitle();
@@ -350,7 +359,7 @@ final class FolderController
             'position' => $content->hasVirtualColumn(ContentRepository::FOLDER_POSITION_COLUMN)
                 ? (int) $content->getVirtualColumn(ContentRepository::FOLDER_POSITION_COLUMN)
                 : (int) $content->getPosition(),
-            'toggle_visible_url' => $this->urls->generate('admin.content.toggle-online', ['content_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate('admin.content.toggle-online', ['content_id' => $id] + $listQuery->toListParams($folderId)),
             '_actions' => [
                 new RowAction(kind: 'edit', label: $this->translator->trans('Edit'), href: $editUrl, grantedAttribute: AccessManager::UPDATE, grantedSubject: AdminResources::CONTENT),
                 new RowAction(kind: 'delete', label: $this->translator->trans('Delete'), modalTarget: '#content-delete-modal', grantedAttribute: AccessManager::DELETE, grantedSubject: AdminResources::CONTENT, dataAttributes: ['content-id' => $id, 'content-label' => $title]),
@@ -361,7 +370,7 @@ final class FolderController
     /**
      * @return array<string, mixed>
      */
-    private function folderToRow(Folder $folder): array
+    private function folderToRow(Folder $folder, FolderListQuery $listQuery): array
     {
         $id = (int) $folder->getId();
         $actions = [
@@ -384,7 +393,7 @@ final class FolderController
             'visible' => (bool) $folder->getVisible(),
             'position' => (int) $folder->getPosition(),
             'children_url' => $browseUrl,
-            'toggle_visible_url' => $this->urls->generate('admin.folders.toggle-online', ['folder_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate('admin.folders.toggle-online', ['folder_id' => $id] + $listQuery->toQueryParams()),
             '_actions' => $actions,
         ];
     }

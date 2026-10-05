@@ -158,7 +158,7 @@
     {{ component('BoConfirmDialog', {
         id: 'folder-delete-modal',
         title: 'Delete folder',
-        formAction: path('admin.folders.delete'),
+        formAction: path('admin.folders.delete', list_query_params),
         message: 'Do you really want to delete this folder? Subfolders and products are not deleted but become orphaned.',
         testid: 'folder-delete',
         hook: 'folder.delete-form',
@@ -203,7 +203,7 @@
         {{ component('BoConfirmDialog', {
             id: 'content-delete-modal',
             title: 'Delete content',
-            formAction: path('admin.content.delete'),
+            formAction: path('admin.content.delete', list_query_params|merge({ folder_id: parent_id })),
             message: 'Do you really want to delete this content?',
             testid: 'content-delete',
             hook: 'content.delete-form',

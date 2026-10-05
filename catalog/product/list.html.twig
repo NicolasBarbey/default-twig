@@ -444,7 +444,7 @@
     {{ component('BoConfirmDialog', {
         id: 'product-delete-modal',
         title: 'Delete product',
-        formAction: path('admin.products.delete'),
+        formAction: path('admin.products.delete', query_params|merge({ page: current_page })),
         message: 'Do you really want to delete this product?',
         testid: 'product-delete',
         hook: 'product.delete-form',

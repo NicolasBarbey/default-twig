@@ -20,6 +20,7 @@ use BackOfficeDefaultTwigBundle\Repository\FolderRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\I18n\EditLocaleResolver;
+use BackOfficeDefaultTwigBundle\Service\Listing\FolderListQuery;
 use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -173,7 +174,7 @@ final class ContentController
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
 
-        $folderId = (int) $content->getDefaultFolderId();
+        $folderId = (int) ($request->query->get('folder_id') ?? $content->getDefaultFolderId());
 
         return $this->action->tokenAction(
             resource: self::RESOURCE,
@@ -183,7 +184,7 @@ final class ContentController
             eventName: TheliaEvents::CONTENT_TOGGLE_VISIBILITY,
             actionLabel: 'Content visibility',
             successRoute: self::LIST_ROUTE,
-            successParameters: ['folder_id' => $folderId],
+            successParameters: FolderListQuery::fromRequest($request)->toListParams($folderId),
         );
     }
 
@@ -211,14 +212,18 @@ final class ContentController
     #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
+        $contentId = (int) ($request->query->get('content_id') ?? $request->request->get('content_id', 0));
+        $folderId = (int) ($request->query->get('folder_id') ?? ContentQuery::create()->findPk($contentId)?->getDefaultFolderId());
+
         return $this->action->tokenAction(
             resource: self::RESOURCE,
             access: AccessManager::DELETE,
             request: $request,
-            event: new ContentDeleteEvent((int) ($request->query->get('content_id') ?? $request->request->get('content_id', 0))),
+            event: new ContentDeleteEvent($contentId),
             eventName: TheliaEvents::CONTENT_DELETE,
             actionLabel: 'Content deletion',
             successRoute: self::LIST_ROUTE,
+            successParameters: FolderListQuery::fromRequest($request)->toListParams($folderId),
         );
     }
 

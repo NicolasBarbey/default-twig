@@ -21,6 +21,7 @@ use BackOfficeDefaultTwigBundle\Repository\CategoryRepository;
 use BackOfficeDefaultTwigBundle\Repository\ProductRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
+use BackOfficeDefaultTwigBundle\Service\Catalog\CategoryListPresenter;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductFilterPresenter;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductFilters;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductPricingPresenter;
@@ -72,6 +73,7 @@ final class ProductController
 {
     private const RESOURCE = AdminResources::PRODUCT;
     private const LIST_ROUTE = 'admin.products.default';
+    private const CATEGORY_LIST_ROUTE = 'admin.categories.default';
     private const EDIT_ROUTE = 'admin.products.update';
     private const LIST_TEMPLATE = '@BackOfficeDefaultTwig/catalog/product/list.html.twig';
     private const EDIT_TEMPLATE = '@BackOfficeDefaultTwig/catalog/product/edit.html.twig';
@@ -318,7 +320,8 @@ final class ProductController
             event: new ProductToggleVisibilityEvent($product),
             eventName: TheliaEvents::PRODUCT_TOGGLE_VISIBILITY,
             actionLabel: 'Product visibility',
-            successRoute: self::LIST_ROUTE,
+            successRoute: $this->listRoute($request),
+            successParameters: $this->listParameters($request),
         );
     }
 
@@ -352,8 +355,39 @@ final class ProductController
             event: new ProductDeleteEvent((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0))),
             eventName: TheliaEvents::PRODUCT_DELETE,
             actionLabel: 'Product deletion',
-            successRoute: self::LIST_ROUTE,
+            successRoute: $this->listRoute($request),
+            successParameters: $this->listParameters($request),
         );
+    }
+
+    /**
+     * The list an action of a product row was sent from: the category list
+     * when it says so, the product list otherwise.
+     */
+    private function listRoute(Request $request): string
+    {
+        return $this->isFromCategoryList($request) ? self::CATEGORY_LIST_ROUTE : self::LIST_ROUTE;
+    }
+
+    /**
+     * The page, filters and sort of that list, as its URL carried them.
+     *
+     * @return array<string, mixed>
+     */
+    private function listParameters(Request $request): array
+    {
+        $page = max(1, (int) $request->query->get('page', 1));
+
+        if ($this->isFromCategoryList($request)) {
+            return ['category_id' => (int) $request->query->get('category_id', 0), 'page' => $page];
+        }
+
+        return ['page' => $page] + ProductFilters::fromRequest($request)->toQueryParams();
+    }
+
+    private function isFromCategoryList(Request $request): bool
+    {
+        return $request->query->get(CategoryListPresenter::ORIGIN_PARAMETER) === CategoryListPresenter::ORIGIN;
     }
 
     private function buildCreateForm(Request $request): FormInterface
@@ -532,7 +566,7 @@ final class ProductController
         foreach ($products as $product) {
             \assert($product instanceof Product);
             $product->setLocale($locale);
-            $rows[] = $this->productToRow($product, $pricing[(int) $product->getId()] ?? null);
+            $rows[] = $this->productToRow($product, $pricing[(int) $product->getId()] ?? null, $filters, $page);
         }
 
         return [
@@ -547,7 +581,7 @@ final class ProductController
     /**
      * @return array<string, mixed>
      */
-    private function productToRow(Product $product, ?ProductPricingSnapshot $pricing): array
+    private function productToRow(Product $product, ?ProductPricingSnapshot $pricing, ProductFilters $filters, int $page): array
     {
         $id = (int) $product->getId();
         $pricing ??= new ProductPricingSnapshot();
@@ -595,7 +629,10 @@ final class ProductController
             'stock_html' => $this->pricingPresenter->stock($pricing),
             'visible' => (bool) $product->getVisible(),
             'position' => (int) $product->getPosition(),
-            'toggle_visible_url' => $this->urls->generate('admin.products.set-default', ['product_id' => $id]),
+            'toggle_visible_url' => $this->urls->generate(
+                'admin.products.set-default',
+                ['product_id' => $id, 'page' => $page] + $filters->toQueryParams(),
+            ),
             '_actions' => $actions,
         ];
     }

@@ -231,7 +231,7 @@ final class CategoryController
             eventName: TheliaEvents::CATEGORY_TOGGLE_VISIBILITY,
             actionLabel: 'Category visibility',
             successRoute: self::LIST_ROUTE,
-            successParameters: ['category_id' => (int) $category->getParent()],
+            successParameters: ['category_id' => (int) $category->getParent(), 'page' => $this->listPage($request)],
         );
     }
 
@@ -344,8 +344,16 @@ final class CategoryController
             eventName: TheliaEvents::CATEGORY_DELETE,
             actionLabel: 'Category deletion',
             successRoute: self::LIST_ROUTE,
-            successParameters: ['category_id' => $parentId],
+            successParameters: ['category_id' => $parentId, 'page' => $this->listPage($request)],
         );
+    }
+
+    /**
+     * The page of products of the category list the action was sent from.
+     */
+    private function listPage(Request $request): int
+    {
+        return max(1, (int) $request->query->get('page', 1));
     }
 
     private function createEvent(FormInterface $validated): CategoryCreateEvent

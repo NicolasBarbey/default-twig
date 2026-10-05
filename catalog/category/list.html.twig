@@ -157,7 +157,7 @@
     {{ component('BoConfirmDialog', {
         id: 'category-delete-modal',
         title: 'Delete category',
-        formAction: path('admin.categories.delete'),
+        formAction: path('admin.categories.delete', category_action_params),
         message: 'Do you really want to delete this category? Its subcategories and the products it owns will also be deleted.',
         testid: 'category-delete',
         hook: 'category.delete-form',
@@ -170,7 +170,7 @@
         {{ component('BoConfirmDialog', {
             id: 'category-product-delete-modal',
             title: 'Delete product',
-            formAction: path('admin.products.delete'),
+            formAction: path('admin.products.delete', product_action_params),
             message: 'Do you really want to delete this product?',
             testid: 'category-product-delete',
             hook: 'product.delete-form',
