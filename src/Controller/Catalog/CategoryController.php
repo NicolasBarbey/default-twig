@@ -109,6 +109,7 @@ final class CategoryController
             eventFactory: $this->createEvent(...),
             actionLabel: 'Category creation',
             successRoute: self::EDIT_ROUTE,
+            successParametersResolver: static fn (CategoryCreateEvent $event): array => ['category_id' => (int) $event->getCategory()?->getId()],
             renderError: fn (): RedirectResponse => new RedirectResponse($this->urls->generate(self::LIST_ROUTE)),
             describeForLog: $this->describeCreated(...),
         );
@@ -182,7 +183,7 @@ final class CategoryController
             successRoute: $closeAfterSave ? self::LIST_ROUTE : self::EDIT_ROUTE,
             successParameters: $closeAfterSave ? [] : ['category_id' => $categoryId],
             renderError: fn (): RedirectResponse => new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['category_id' => $categoryId])),
-            successParametersResolver: $closeAfterSave ? fn (CategoryUpdateEvent $event): array => ['category_id' => (int) $event->getParent()] : null,
+            successParametersResolver: $closeAfterSave ? static fn (CategoryUpdateEvent $event): array => ['category_id' => (int) $event->getParent()] : null,
             describeForLog: $this->describeUpdated(...),
         );
     }

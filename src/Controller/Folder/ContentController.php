@@ -78,6 +78,7 @@ final class ContentController
             eventFactory: $this->createEvent(...),
             actionLabel: 'Content creation',
             successRoute: self::EDIT_ROUTE,
+            successParametersResolver: static fn (ContentCreateEvent $event): array => ['content_id' => (int) $event->getContent()?->getId()],
             renderError: fn (): RedirectResponse => new RedirectResponse($this->urls->generate(self::LIST_ROUTE)),
         );
     }
@@ -135,7 +136,7 @@ final class ContentController
             successRoute: $closeAfterSave ? self::LIST_ROUTE : self::EDIT_ROUTE,
             successParameters: $closeAfterSave ? [] : ['content_id' => $contentId],
             renderError: fn (): RedirectResponse => new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['content_id' => $contentId])),
-            successParametersResolver: $closeAfterSave ? fn (ContentUpdateEvent $event): array => ['folder_id' => (int) $event->getDefaultFolder()] : null,
+            successParametersResolver: $closeAfterSave ? static fn (ContentUpdateEvent $event): array => ['folder_id' => (int) $event->getDefaultFolder()] : null,
         );
     }
 

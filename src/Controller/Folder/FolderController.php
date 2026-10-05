@@ -103,6 +103,7 @@ final class FolderController
             eventFactory: $this->createEvent(...),
             actionLabel: 'Folder creation',
             successRoute: self::EDIT_ROUTE,
+            successParametersResolver: static fn (FolderCreateEvent $event): array => ['folder_id' => (int) $event->getFolder()?->getId()],
             renderError: fn (): RedirectResponse => new RedirectResponse($this->urls->generate(self::LIST_ROUTE)),
         );
     }
@@ -157,7 +158,7 @@ final class FolderController
             successRoute: $closeAfterSave ? self::LIST_ROUTE : self::EDIT_ROUTE,
             successParameters: $closeAfterSave ? [] : ['folder_id' => $folderId],
             renderError: fn (): RedirectResponse => new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['folder_id' => $folderId])),
-            successParametersResolver: $closeAfterSave ? fn (FolderUpdateEvent $event): array => ['folder_id' => (int) $event->getParent()] : null,
+            successParametersResolver: $closeAfterSave ? static fn (FolderUpdateEvent $event): array => ['folder_id' => (int) $event->getParent()] : null,
         );
     }
 
