@@ -158,19 +158,19 @@
                                 iconAfterLabel: true,
                                 align: 'start'
                             } %}
-                            {{ component('BoSaveModeToolbar', edit_toolbar|merge({ wrapperClass: 'mb-3', testid: 'category-edit-top' })) }}
+                            {% set edit_dates = 'Category created on %date_create. Last modification on %date_change'|trans({
+                                '%date_create': category.createdAt ? category.createdAt|format_datetime('medium', 'short') : '-',
+                                '%date_change': category.updatedAt ? category.updatedAt|format_datetime('medium', 'short') : '-',
+                            }) %}
+                            {{ component('BoSaveModeToolbar', edit_toolbar|merge({ wrapperClass: 'mb-2', testid: 'category-edit-top' })) }}
+                            <p class="small text-muted mb-3" data-testid="category-edit-dates-top">{{ edit_dates }}</p>
                         </div>
                     </div>
                     {{ form_widget(form.id) }}
                     {{ form_widget(form.locale) }}
                     {{ safe_hook('category.update-form', { category: category.id }) }}
                     {{ component('BoSaveModeToolbar', edit_toolbar|merge({ testid: 'category-edit' })) }}
-                    <p class="small text-muted mt-2 mb-0" data-testid="category-edit-dates">
-                        {{ 'Category created on %date_create. Last modification on %date_change'|trans({
-                            '%date_create': category.createdAt ? category.createdAt|format_datetime('medium', 'short') : '-',
-                            '%date_change': category.updatedAt ? category.updatedAt|format_datetime('medium', 'short') : '-',
-                        }) }}
-                    </p>
+                    <p class="small text-muted mt-2 mb-0" data-testid="category-edit-dates">{{ edit_dates }}</p>
                 {{ form_widget(form._token) }}
                 {# module fields added through the legacy form bridge are rendered by the module hooks, not auto-dumped #}
                 {{ form_end(form, {render_rest: false}) }}
