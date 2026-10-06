@@ -140,6 +140,12 @@
                     {{ form_widget(form.locale) }}
                     {{ safe_hook('folder.update-form', { folder: folder.id }) }}
                     {{ component('BoSaveModeToolbar', edit_toolbar|merge({ testid: 'folder-edit' })) }}
+                    <p class="small text-muted mt-2 mb-0" data-testid="folder-edit-dates">
+                        {{ 'Folder created on %date_create. Last modification on %date_change'|trans({
+                            '%date_create': folder.createdAt ? folder.createdAt|format_datetime('medium', 'short') : '-',
+                            '%date_change': folder.updatedAt ? folder.updatedAt|format_datetime('medium', 'short') : '-',
+                        }) }}
+                    </p>
                 {{ form_widget(form._token) }}
                 {# module fields added through the legacy form bridge are rendered by the module hooks, not auto-dumped #}
                 {{ form_end(form, {render_rest: false}) }}

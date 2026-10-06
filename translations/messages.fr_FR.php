@@ -2452,4 +2452,8 @@ return [
     'Move up' => 'Monter',
     'Move down' => 'Descendre',
     'Change the position' => 'Modifier la position',
+    'Product created on %date_create. Last modification on %date_change' => 'Produit créé le %date_create. Dernière modification le %date_change',
+    'Category created on %date_create. Last modification on %date_change' => 'Catégorie créée le %date_create. Dernière modification le %date_change',
+    'Folder created on %date_create. Last modification on %date_change' => 'Dossier créé le %date_create. Dernière modification le %date_change',
+    'Content created on %date_create. Last modification on %date_change' => 'Contenu créé le %date_create. Dernière modification le %date_change',
 ];
