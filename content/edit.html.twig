@@ -148,7 +148,7 @@
                             {{ form_widget(form.locale) }}
                             {{ safe_hook('content.update-form', { content: content.id }) }}
                             {{ component('BoSaveModeToolbar', edit_toolbar|merge({ testid: 'content-edit' })) }}
-                            <p class="small text-muted mt-2 mb-0" data-testid="content-edit-dates">{{ edit_dates }}</p>
+                            <p class="small text-muted mt-3 mb-0" data-testid="content-edit-dates">{{ edit_dates }}</p>
                         {{ form_widget(form._token) }}
                         {# module fields added through the legacy form bridge are rendered by the module hooks, not auto-dumped #}
                         {{ form_end(form, {render_rest: false}) }}
