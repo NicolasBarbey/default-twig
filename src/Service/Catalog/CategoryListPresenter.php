@@ -68,6 +68,8 @@ final readonly class CategoryListPresenter
             'breadcrumb_path' => $breadcrumbPath,
             'update_position_url' => $this->urls->generate('admin.categories.update-position'),
             'update_position_token' => $this->tokens->assignToken(),
+            'product_update_position_url' => $this->urls->generate('admin.products.update-position', ['category_id' => $parentId]),
+            'product_update_position_token' => $this->tokens->assignToken(),
             'category_action_params' => ['page' => $productPage],
             'product_action_params' => $this->productActionParameters($parentId, $productPage),
         ] + $this->buildProductSection($parentId, $productPage, $locale);
@@ -232,7 +234,7 @@ final readonly class CategoryListPresenter
                 htmlspecialchars($title, \ENT_QUOTES | \ENT_SUBSTITUTE, 'UTF-8'),
             ),
             'visible' => (bool) $product->getVisible(),
-            'position' => (int) $product->getPosition(),
+            'position' => (int) $product->getVirtualColumn(ProductRepository::CATEGORY_POSITION_COLUMN),
             'toggle_visible_url' => $this->urls->generate('admin.products.set-default', ['product_id' => $id] + $this->productActionParameters($categoryId, $page)),
             '_actions' => [
                 new RowAction(

@@ -332,6 +332,9 @@ final class ProductController
             (int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)),
             (int) ($request->query->get('mode') ?? $request->request->get('mode', UpdatePositionEvent::POSITION_ABSOLUTE)),
             (int) ($request->query->get('position') ?? $request->request->get('position', 0)),
+            // A product's position lives in each of its categories: without the category,
+            // the core finds no row to move.
+            (int) ($request->query->get('category_id') ?? $request->request->get('category_id', 0)),
         );
 
         return $this->action->tokenAction(

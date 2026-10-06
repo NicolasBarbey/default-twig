@@ -47,6 +47,7 @@ import BoOrderAddressModalController from './controllers/bo-order-address-modal_
 import BoOrderCancelModalController from './controllers/bo-order-cancel-modal_controller.js';
 import BoOverflowDropdownController from './controllers/bo-overflow-dropdown_controller.js';
 import BoPermissionMatrixController from './controllers/bo-permission-matrix_controller.js';
+import BoPositionController from './controllers/bo-position_controller.js';
 import BoPrefillModalController from './controllers/bo-prefill-modal_controller.js';
 import BoPricePreviewController from './controllers/bo-price-preview_controller.js';
 import BoPrintIframeController from './controllers/bo-print-iframe_controller.js';
@@ -116,6 +117,7 @@ app.register('bo-order-address-modal', BoOrderAddressModalController);
 app.register('bo-order-cancel-modal', BoOrderCancelModalController);
 app.register('bo-overflow-dropdown', BoOverflowDropdownController);
 app.register('bo-permission-matrix', BoPermissionMatrixController);
+app.register('bo-position', BoPositionController);
 app.register('bo-prefill-modal', BoPrefillModalController);
 app.register('bo-catalog-price-rule-form', BoCatalogPriceRuleFormController);
 app.register('bo-price-preview', BoPricePreviewController);
