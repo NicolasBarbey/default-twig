@@ -1,9 +1,9 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * Searches the catalogue by reference or title for a product to relate, in one
- * field. The server answers with the products this block can still take, so the
- * product itself and those already related under this type never show up.
+ * Searches for an item to relate (a product by reference or title, a content by
+ * title) in one field. The server answers with the items this block can still
+ * take, so the edited object itself and what is already related never show up.
  *
  * Picking a suggestion only fills the hidden field the form posts and enables the
  * add button: the relation is written when the operator clicks +, so a stray

@@ -44,8 +44,6 @@ use Thelia\Model\Category;
 use Thelia\Model\CategoryAssociatedContentQuery;
 use Thelia\Model\CategoryQuery;
 use Thelia\Model\ContentQuery;
-use Thelia\Model\Folder;
-use Thelia\Model\FolderQuery;
 use Thelia\Model\LangQuery;
 use Thelia\Model\TemplateQuery;
 use Thelia\Tools\TokenProvider;
@@ -150,11 +148,9 @@ final class CategoryController
             'available_templates' => $this->availableTemplates($uiLocale),
             'current_tab' => (string) $request->query->get('current_tab', 'general'),
             'edit_language_id' => (int) $editLang->getId(),
-            'folder_tree' => $this->folderTree($locale),
             'assigned_contents' => $this->assignedContents($category, $locale),
-            'available_related_content_url' => $this->urls->generate('admin.category.available-related-content', ['categoryId' => (int) $category->getId(), 'folderId' => 0, '_format' => 'json']),
+            'available_related_content_url' => $this->urls->generate('admin.category.available-related-content', ['categoryId' => (int) $category->getId(), 'locale' => $locale]),
             'delete_related_content_token' => $this->tokens->assignToken(),
-            'selected_folder_id' => (int) $request->query->get('folder_id', 0),
             'choice_filter' => $this->choiceFilterPresenter->forCategory($categoryId, $locale),
             'breadcrumb_path' => $this->categories->buildBreadcrumbPath($parentCategory, $uiLocale),
             'prev_url' => $navigation['previous'] !== null ? $this->urls->generate(self::EDIT_ROUTE, ['category_id' => $navigation['previous']]) : null,
@@ -495,29 +491,6 @@ final class CategoryController
         }
 
         return $rows;
-    }
-
-    /**
-     * @return list<array{id: int, title: string, level: int}>
-     */
-    private function folderTree(string $locale, int $parentId = 0, int $level = 0): array
-    {
-        $items = [];
-        $folders = FolderQuery::create()
-            ->filterByParent($parentId)
-            ->orderByPosition()
-            ->find();
-
-        foreach ($folders as $folder) {
-            \assert($folder instanceof Folder);
-            $folder->setLocale($locale);
-            $items[] = ['id' => (int) $folder->getId(), 'title' => (string) $folder->getTitle(), 'level' => $level];
-            foreach ($this->folderTree($locale, (int) $folder->getId(), $level + 1) as $child) {
-                $items[] = $child;
-            }
-        }
-
-        return $items;
     }
 
     /**

@@ -2545,16 +2545,16 @@ tr.bo-order-row--urgent {
     color: var(--bs-secondary-color);
 }
 
-// ---------- Product relation picker ----------
-// Search field of a relation block on the product sheet. It borrows the tag
-// picker's menu and options, but floats the menu over the table below instead
-// of pushing it down at every keystroke.
+// ---------- Relation picker ----------
+// Search field of a relation block, for related products and related contents.
+// It borrows the tag picker's menu and options, but floats the menu over the
+// table below instead of pushing it down at every keystroke.
 
-.bo-product-relation-picker {
+.bo-relation-picker {
     position: relative;
 }
 
-.bo-product-relation-picker__menu {
+.bo-relation-picker__menu {
     position: absolute;
     inset-inline: 0;
     top: 100%;

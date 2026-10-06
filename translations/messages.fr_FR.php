@@ -2447,4 +2447,6 @@ return [
     'The delivery dates could not be saved. Please try again.' => 'Les dates de livraison n\'ont pas pu être enregistrées. Veuillez réessayer.',
     'Search by reference or title…' => 'Rechercher par référence ou titre…',
     'No matching product.' => 'Aucun produit correspondant.',
+    'Search by title…' => 'Rechercher par titre…',
+    'No matching content.' => 'Aucun contenu correspondant.',
 ];

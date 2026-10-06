@@ -14,7 +14,7 @@ import BoTwoFactorCodeController from './controllers/bo-two-factor-code_controll
 import BoTwoFactorQrController from './controllers/bo-two-factor-qr_controller.js';
 import BoBulkActionPickerController from './controllers/bo-bulk-action-picker_controller.js';
 import BoBulkSelectController from './controllers/bo-bulk-select_controller.js';
-import BoProductRelationPickerController from './controllers/bo-product-relation-picker_controller.js';
+import BoRelationPickerController from './controllers/bo-relation-picker_controller.js';
 import BoCategoryTreeController from './controllers/bo-category-tree_controller.js';
 import BoChartController from './controllers/bo-chart_controller.js';
 import BoCombinationBuilderController from './controllers/bo-combination-builder_controller.js';
@@ -83,7 +83,7 @@ app.register('bo-two-factor-code', BoTwoFactorCodeController);
 app.register('bo-two-factor-qr', BoTwoFactorQrController);
 app.register('bo-bulk-action-picker', BoBulkActionPickerController);
 app.register('bo-bulk-select', BoBulkSelectController);
-app.register('bo-product-relation-picker', BoProductRelationPickerController);
+app.register('bo-relation-picker', BoRelationPickerController);
 app.register('bo-category-tree', BoCategoryTreeController);
 app.register('bo-chart', BoChartController);
 app.register('bo-combination-builder', BoCombinationBuilderController);

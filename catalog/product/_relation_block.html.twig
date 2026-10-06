@@ -5,16 +5,16 @@
             <p class="text-muted">{{ relation.description ?? '' }}</p>
 
             <form method="post" action="{{ relation.add_url }}" class="mb-3" data-testid="{{ relation.id_prefix }}-form"
-                  data-controller="bo-product-relation-picker"
-                  data-bo-product-relation-picker-url-value="{{ relation.available_url }}"
-                  data-bo-product-relation-picker-empty-label-value="{{ 'No matching product.'|trans }}">
+                  data-controller="bo-relation-picker"
+                  data-bo-relation-picker-url-value="{{ relation.available_url }}"
+                  data-bo-relation-picker-empty-label-value="{{ 'No matching product.'|trans }}">
                 <input type="hidden" name="product_id" value="{{ product.id }}">
                 <input type="hidden" name="type_code" value="{{ relation.type_code }}">
                 <input type="hidden" name="current_tab" value="related">
                 <input type="hidden" name="_token" value="{{ token }}">
-                <input type="hidden" name="associated_product_id" value="" data-bo-product-relation-picker-target="value">
+                <input type="hidden" name="associated_product_id" value="" data-bo-relation-picker-target="value">
                 <label for="{{ relation.id_prefix }}-search" class="form-label">{{ 'Product'|trans }}</label>
-                <div class="bo-product-relation-picker">
+                <div class="bo-relation-picker">
                     <div class="input-group">
                         <input type="text"
                                id="{{ relation.id_prefix }}-search"
@@ -26,19 +26,19 @@
                                aria-controls="{{ relation.id_prefix }}-menu"
                                placeholder="{{ 'Search by reference or title…'|trans }}"
                                data-testid="{{ relation.id_prefix }}-search"
-                               data-bo-product-relation-picker-target="input"
-                               data-action="input->bo-product-relation-picker#search focus->bo-product-relation-picker#open blur->bo-product-relation-picker#close keydown->bo-product-relation-picker#key">
+                               data-bo-relation-picker-target="input"
+                               data-action="input->bo-relation-picker#search focus->bo-relation-picker#open blur->bo-relation-picker#close keydown->bo-relation-picker#key">
                         <button type="submit" class="btn btn-primary" disabled
                                 aria-label="{{ 'Add'|trans }}"
                                 data-testid="{{ relation.id_prefix }}-add"
-                                data-bo-product-relation-picker-target="submit">
+                                data-bo-relation-picker-target="submit">
                             <i class="bi bi-plus-lg" aria-hidden="true"></i>
                         </button>
                     </div>
-                    <ul class="bo-tag-picker__menu bo-product-relation-picker__menu d-none"
+                    <ul class="bo-tag-picker__menu bo-relation-picker__menu d-none"
                         id="{{ relation.id_prefix }}-menu"
                         role="listbox"
-                        data-bo-product-relation-picker-target="menu"></ul>
+                        data-bo-relation-picker-target="menu"></ul>
                 </div>
                 <small class="form-text text-muted">{{ 'Select a product and click + to add it to this block'|trans }}</small>
             </form>
