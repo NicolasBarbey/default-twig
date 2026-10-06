@@ -2445,4 +2445,6 @@ return [
     'Delivery closure creation' => 'Création d\'une fermeture',
     'Delivery closure deletion' => 'Suppression d\'une fermeture',
     'The delivery dates could not be saved. Please try again.' => 'Les dates de livraison n\'ont pas pu être enregistrées. Veuillez réessayer.',
+    'Search by reference or title…' => 'Rechercher par référence ou titre…',
+    'No matching product.' => 'Aucun produit correspondant.',
 ];
