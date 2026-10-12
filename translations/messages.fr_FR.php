@@ -2445,4 +2445,12 @@ return [
     'Delivery closure creation' => 'Création d\'une fermeture',
     'Delivery closure deletion' => 'Suppression d\'une fermeture',
     'The delivery dates could not be saved. Please try again.' => 'Les dates de livraison n\'ont pas pu être enregistrées. Veuillez réessayer.',
+    'Public pages cache' => 'Cache des pages publiques',
+    'Shared cache of the public pages' => 'Cache partagé des pages publiques',
+    'Lets a proxy in front of the shop keep the pages of anonymous visitors. It needs a proxy configured to purge on catalogue changes.' => 'Permet à un proxy placé devant la boutique de garder les pages des visiteurs anonymes. Il faut un proxy configuré pour purger lors des changements du catalogue.',
+    'Disabled — no page is announced as shareable' => 'Désactivé — aucune page n\'est annoncée comme partageable',
+    'Announce — pages state how long a shared cache may keep them, cookies untouched' => 'Annonce — les pages indiquent combien de temps un cache partagé peut les garder, cookies inchangés',
+    'Enabled — also remove the cookies of an anonymous page so a proxy can keep it' => 'Activé — retire aussi les cookies d\'une page anonyme pour qu\'un proxy puisse la garder',
+    'Shared cache lifetime (seconds)' => 'Durée du cache partagé (secondes)',
+    'How long a shared cache may keep a public page. An invalid value falls back to 300 seconds.' => 'Durée pendant laquelle un cache partagé peut garder une page publique. Une valeur invalide revient à 300 secondes.',
 ];
