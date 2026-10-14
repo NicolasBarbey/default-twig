@@ -192,15 +192,32 @@
                                 {% do form.virtual_document_id.setRendered %}
                             </div>
                             {{ safe_hook('product.modification.form-right.bottom', { product_id: product.id }) }}
+                            {% set edit_toolbar = {
+                                closeUrl: path('admin.products.default'),
+                                closeAttributes: { 'data-bo-unsaved-changes-target': 'link' },
+                                closeFirst: false,
+                                closeIcon: 'bi-x-lg',
+                                saveIcon: 'bi-check-lg',
+                                saveCloseIcon: 'bi-x-lg',
+                                saveVariant: 'success',
+                                saveCloseVariant: 'info',
+                                iconAfterLabel: true,
+                                align: 'start'
+                            } %}
+                            {% set edit_dates = 'Product created on %date_create. Last modification on %date_change'|trans({
+                                '%date_create': product.createdAt ? product.createdAt|format_datetime('medium', 'short') : '-',
+                                '%date_change': product.updatedAt ? product.updatedAt|format_datetime('medium', 'short') : '-',
+                            }) %}
+                            {{ component('BoSaveModeToolbar', edit_toolbar|merge({ wrapperClass: 'mb-2', testid: 'product-edit-top' })) }}
+                            <p class="small text-muted mb-3" data-testid="product-edit-dates-top">{{ edit_dates }}</p>
                         </div>
                     </div>
                     {{ safe_hook('product.modification.form_bottom', { product_id: product.id }) }}
                     {{ form_widget(form.id) }}
                     {{ form_widget(form.locale) }}
                     {{ safe_hook('product.update-form', { product: product.id }) }}
-                    <button type="submit" class="btn btn-primary" data-testid="product-edit-submit">
-                        <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}
-                    </button>
+                    {{ component('BoSaveModeToolbar', edit_toolbar|merge({ testid: 'product-edit' })) }}
+                    <p class="small text-muted mt-3 mb-0" data-testid="product-edit-dates">{{ edit_dates }}</p>
                 {{ form_widget(form._token) }}
                 {# module fields added through the legacy form bridge are rendered by the module hooks, not auto-dumped #}
                 {{ form_end(form, {render_rest: false}) }}
