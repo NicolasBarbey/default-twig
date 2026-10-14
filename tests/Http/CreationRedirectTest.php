@@ -38,7 +38,7 @@ final class CreationRedirectTest extends WebIntegrationTestCase
     {
         parent::setUp();
 
-        if (ConfigQuery::read('active-admin-template') !== BackOfficeDefaultTwigBundle::templateName()) {
+        if (ConfigQuery::read('active-admin-template') !== BackOfficeDefaultTwigBundle::ACTIVE_TEMPLATE_NAME) {
             self::markTestSkipped(
                 'The Twig back-office is not the active admin template of the test shop: its routes are not registered.',
             );
