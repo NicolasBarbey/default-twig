@@ -421,6 +421,7 @@ return [
     'The platforms a product video address may come from. An address from a platform left unticked is refused.' => 'Les plateformes dont peut provenir l\'adresse d\'une vidéo produit. Une adresse issue d\'une plateforme décochée est refusée.',
     'The shop never restocks a returned item automatically.' => 'La boutique ne remet jamais un article retourné en stock automatiquement.',
     'The shop restocks every received item: the choice is not offered line by line.' => 'La boutique remet en stock tout article reçu : le choix ne se fait pas ligne par ligne.',
+    'A French VAT number is FR, a two character key, then the 9 digits of the SIREN.' => 'Un numéro de TVA français se compose de FR, d\'une clé de deux caractères, puis des 9 chiffres du SIREN.',
     'The SIREN of this VAT number does not match the first 9 digits of the SIRET number.' => 'Le SIREN de ce numéro de TVA ne correspond pas aux 9 premiers chiffres du numéro SIRET.',
     'The SIRET number must contain 14 digits and its checksum must be valid.' => 'Le numéro SIRET doit contenir 14 chiffres et sa clé de contrôle doit être valide.',
     'The intra-community VAT number must start with a two letter country code followed by 2 to 13 alphanumeric characters.' => 'Le numéro de TVA intracommunautaire doit commencer par un code pays de deux lettres suivi de 2 à 13 caractères alphanumériques.',
