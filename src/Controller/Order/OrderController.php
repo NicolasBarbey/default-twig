@@ -27,8 +27,9 @@ use BackOfficeDefaultTwigBundle\Service\Order\OrderFilters;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderHistoryContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderListRowPresenter;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderRoundingRule;
-use BackOfficeDefaultTwigBundle\Service\OrderReturn\OrderReturnContextBuilder;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderShipmentContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderStatusChangeContextBuilder;
+use BackOfficeDefaultTwigBundle\Service\OrderReturn\OrderReturnContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Pdf\OrderPdfRenderer;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -90,6 +91,7 @@ final class OrderController
         private readonly AdminLogger $adminLogger,
         private readonly RequestStack $requestStack,
         private readonly OrderHistoryContextBuilder $historyContextBuilder,
+        private readonly OrderShipmentContextBuilder $shipmentContextBuilder,
     ) {
     }
 
@@ -142,8 +144,10 @@ final class OrderController
             $this->detailContextBuilder->build($order, $locale),
             $this->returnContextBuilder->build($order, $locale),
             $this->historyContextBuilder->build($order, $historyPage, $locale),
+            $this->shipmentContextBuilder->build($order, $locale),
             [
                 'order' => $order,
+                'active_tab' => 'shipments' === $request->query->get('tab') ? 'shipments' : 'cart',
                 'order_items' => $this->orderItemsPage($order_id, $itemsPage, $itemsPerPage),
                 'items_total' => $itemsTotal,
                 'items_page' => $itemsPage,
