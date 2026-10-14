@@ -410,4 +410,12 @@ return [
     'Shipment %reference% shipped' => 'Shipment %reference% shipped',
     'Shipment %reference% shipped, tracking number %tracking%' => 'Shipment %reference% shipped, tracking number %tracking%',
     'No tracking number' => 'No tracking number',
+    'Public pages cache' => 'Public pages cache',
+    'Shared cache of the public pages' => 'Shared cache of the public pages',
+    'Lets a proxy in front of the shop keep the pages of anonymous visitors. It needs a proxy configured to purge on catalogue changes.' => 'Lets a proxy in front of the shop keep the pages of anonymous visitors. It needs a proxy configured to purge on catalogue changes.',
+    'Disabled — no page is announced as shareable' => 'Disabled — no page is announced as shareable',
+    'Announce — pages state how long a shared cache may keep them, cookies untouched' => 'Announce — pages state how long a shared cache may keep them, cookies untouched',
+    'Enabled — also remove the cookies of an anonymous page so a proxy can keep it' => 'Enabled — also remove the cookies of an anonymous page so a proxy can keep it',
+    'Shared cache lifetime (seconds)' => 'Shared cache lifetime (seconds)',
+    'How long a shared cache may keep a public page. An invalid value falls back to 300 seconds.' => 'How long a shared cache may keep a public page. An invalid value falls back to 300 seconds.',
 ];
