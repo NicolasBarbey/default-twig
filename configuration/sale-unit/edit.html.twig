@@ -1,0 +1,83 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Edit sale unit'|trans }} - {{ sale_unit.title|default(sale_unit.code) }}{% endblock %}
+{% block body_testid %}configuration-sale-unit-edit{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.index') }}">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.sale-unit.default') }}">{{ 'Sale units'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ sale_unit.title|default(sale_unit.code) }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {% form_theme form with bo_form_themes only %}
+
+    {{ safe_hook('sale-unit-edit.top', { sale_unit_id: sale_unit.id }) }}
+
+    <div class="container-fluid" data-testid="sale-unit-edit-page">
+        <h1 class="h3 mb-2">{{ 'Sale unit'|trans }} <small class="text-muted"><code>{{ sale_unit.code }}</code> - #{{ sale_unit.id }}</small></h1>
+        <p class="text-muted small mb-3" data-testid="sale-unit-orders">
+            {% if sale_unit_orders > 0 %}
+                {{ '%count% order(s) were placed on this sale unit.'|trans({ '%count%': sale_unit_orders }) }}
+            {% else %}
+                {{ 'No order was placed on this sale unit yet.'|trans }}
+            {% endif %}
+        </p>
+
+        <div class="mb-3">
+            {{ component('BoLanguageSwitcher', { currentLanguageId: edit_language_id }) }}
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                {{ form_start(form, { action: path('admin.sale-unit.save', { sale_unit_id: sale_unit.id }), method: 'post', attr: { 'data-testid': 'sale-unit-edit-form' } }) }}
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            {{ form_label(form.code) }}
+                            {{ form_widget(form.code, { attr: { class: 'form-control' } }) }}
+                            <div class="form-text">{{ 'A deployment or an API caller may refer to the sale unit by its code: change it with them.'|trans }}</div>
+                        </div>
+                        <div class="col-md-8">
+                            {{ form_label(form.url) }}
+                            {{ form_widget(form.url, { attr: { class: 'form-control' } }) }}
+                            <div class="form-text">{{ 'The domain of its storefront. Leave it empty for a sale unit chosen by the visitor or by an API caller.'|trans }}</div>
+                        </div>
+                        <div class="col-12">
+                            {{ form_label(form.title) }}
+                            {{ form_widget(form.title, { attr: { class: 'form-control' } }) }}
+                        </div>
+                        <div class="col-12">
+                            {{ form_label(form.description) }}
+                            {{ form_widget(form.description, { attr: { class: 'form-control', rows: 4 } }) }}
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                {{ form_widget(form.active, { attr: { class: 'form-check-input' } }) }}
+                                {{ form_label(form.active, null, { label_attr: { class: 'form-check-label' } }) }}
+                            </div>
+                            <div class="form-text">{{ 'An inactive sale unit is never served. As soon as one sale unit is active, the shop sells from its sale units.'|trans }}</div>
+                        </div>
+                    </div>
+                    {{ form_widget(form.id) }}
+                    {{ form_widget(form.locale) }}
+                    {{ safe_hook('sale-unit.update-form', { sale_unit_id: sale_unit.id }) }}
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <a href="{{ path('admin.sale-unit.default') }}" class="btn btn-outline-secondary">{{ 'Back'|trans }}</a>
+                        <button type="submit" class="btn btn-primary" data-testid="sale-unit-edit-submit"><i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}</button>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+
+    {{ safe_hook('sale-unit-edit.bottom', { sale_unit_id: sale_unit.id }) }}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ safe_hook('sale-unit.edit-js', { sale_unit_id: sale_unit.id }) }}
+{% endblock %}

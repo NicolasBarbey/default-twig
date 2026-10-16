@@ -217,6 +217,24 @@
                         </fieldset>
                     </div>
 
+                    {% if filters.sale_unit_options %}
+                        <div class="col-md-6 col-lg-4">
+                            <fieldset data-testid="order-filter-sale-unit">
+                                <legend class="form-label">{{ 'Sale unit'|trans }}</legend>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for option in filters.sale_unit_options %}
+                                        {% set checked = option.id in filters.selected_sale_unit_ids %}
+                                        <label class="bo-order-filters__pill" data-checked="{{ checked ? 'true' : 'false' }}">
+                                            <input type="checkbox" class="visually-hidden" name="sale_unit_ids[]"
+                                                   value="{{ option.id }}" {{ checked ? 'checked' : '' }}>
+                                            <i class="bi bi-shop-window me-1" aria-hidden="true"></i>{{ option.title }}
+                                        </label>
+                                    {% endfor %}
+                                </div>
+                            </fieldset>
+                        </div>
+                    {% endif %}
+
                     <div class="col-md-6 col-lg-4">
                         <fieldset>
                             <legend class="form-label">{{ 'Number of items'|trans }}</legend>
@@ -369,6 +387,10 @@
                 column_html('date_html', 'Date'|trans, 'start', 'created_at', visibleFrom: 'lg'),
                 column_actions('_actions', 'Actions'|trans),
             ] %}
+            {% if filters.sale_unit_options %}
+                {#- Right after the status, where it is read without scrolling; absent from a single shop. -#}
+                {% set order_columns = order_columns|slice(0, 4)|merge([column_text('sale_unit', 'Sale unit'|trans, visibleFrom: 'lg')])|merge(order_columns|slice(4)) %}
+            {% endif %}
             {% if is_granted('UPDATE', 'admin.order') %}
                 {% set order_columns = [column_select('_select', 'Select this order'|trans, 'id', 'ref', stateKey: 'status_id')]|merge(order_columns) %}
             {% endif %}

@@ -41,6 +41,7 @@ final readonly class OrderFilterPresenter
         $paymentModules = $this->catalog->paymentModules($locale);
         $deliveryModules = $this->catalog->deliveryModules($locale);
         $countries = $this->catalog->deliveryCountries($locale);
+        $saleUnits = $this->catalog->saleUnits($locale);
 
         $statusIndex = $this->indexById($statuses);
         $paymentIndex = $this->indexById($paymentModules);
@@ -57,6 +58,7 @@ final readonly class OrderFilterPresenter
                 $paymentIndex,
                 $deliveryIndex,
                 $countryIndex,
+                $this->indexById($saleUnits),
             ),
             'clear_all_url' => $this->urls->generate(self::LIST_ROUTE),
 
@@ -64,12 +66,14 @@ final readonly class OrderFilterPresenter
             'payment_module_options' => $paymentModules,
             'delivery_module_options' => $deliveryModules,
             'country_options' => $countries,
+            'sale_unit_options' => $saleUnits,
             'tristate_options' => $this->tristateOptions(),
 
             'selected_status_ids' => $filters->statusIds,
             'selected_payment_module_ids' => $filters->paymentModuleIds,
             'selected_delivery_module_ids' => $filters->deliveryModuleIds,
             'selected_country_id' => $filters->countryId,
+            'selected_sale_unit_ids' => $filters->saleUnitIds,
 
             'created_from_input' => $filters->createdFrom?->format('Y-m-d') ?? '',
             'created_to_input' => $filters->createdTo?->format('Y-m-d') ?? '',
@@ -96,6 +100,7 @@ final readonly class OrderFilterPresenter
      * @param array<int, array{id: int, title: string, code: string}>                $paymentIndex
      * @param array<int, array{id: int, title: string, code: string}>                $deliveryIndex
      * @param array<int, array{id: int, title: string, flag: string, iso: string}>   $countryIndex
+     * @param array<int, array{id: int, code: string, title: string, active: bool}>  $saleUnitIndex
      *
      * @return list<array{key: string, label: string, value: string, remove_url: string}>
      */
@@ -105,6 +110,7 @@ final readonly class OrderFilterPresenter
         array $paymentIndex,
         array $deliveryIndex,
         array $countryIndex,
+        array $saleUnitIndex,
     ): array {
         $chips = [];
 
@@ -162,6 +168,15 @@ final readonly class OrderFilterPresenter
                 OrderFilters::KEY_COUNTRY_ID,
                 $this->translator->trans('Delivery country'),
                 trim($country['flag'].' '.$country['title']),
+            );
+        }
+
+        if ($filters->saleUnitIds !== []) {
+            $chips[] = $this->chip(
+                $filters,
+                OrderFilters::KEY_SALE_UNIT_IDS,
+                $this->translator->trans('Sale unit'),
+                $this->joinTitles($filters->saleUnitIds, $saleUnitIndex),
             );
         }
 
@@ -369,6 +384,9 @@ final readonly class OrderFilterPresenter
             ++$count;
         }
         if ($filters->countryId !== null) {
+            ++$count;
+        }
+        if ($filters->saleUnitIds !== []) {
             ++$count;
         }
         if ($filters->minItems !== null || $filters->maxItems !== null) {

@@ -47,6 +47,7 @@ final readonly class OrderListRowPresenter
         private OrderRepository $orderRepository,
         private ModuleRepository $moduleRepository,
         private OrderStatusTransitionGuard $transitionGuard,
+        private OrderSaleUnits $saleUnits,
     ) {
     }
 
@@ -76,23 +77,25 @@ final readonly class OrderListRowPresenter
         $itemCounts = $this->orderRepository->countItemsByOrder($orderIds);
         $totals = $this->orderRepository->findTotalAmountByOrder($orderIds);
         $moduleTitles = $this->moduleRepository->findLocalizedTitles($locale);
+        $saleUnitTitles = $this->saleUnits->titlesById($locale);
 
         $rows = [];
         foreach ($page as $order) {
-            $rows[] = $this->present($order, $locale, $itemCounts, $totals, $moduleTitles);
+            $rows[] = $this->present($order, $locale, $itemCounts, $totals, $moduleTitles, $saleUnitTitles);
         }
 
         return $rows;
     }
 
     /**
-     * @param array<int, int>     $itemCounts   number of lines per order id, when the caller has them
-     * @param array<int, float>   $totals       amount per order id, when the caller has them
-     * @param array<int, ?string> $moduleTitles module titles per module id, when the caller has them
+     * @param array<int, int>     $itemCounts     number of lines per order id, when the caller has them
+     * @param array<int, float>   $totals         amount per order id, when the caller has them
+     * @param array<int, ?string> $moduleTitles   module titles per module id, when the caller has them
+     * @param array<int, string>  $saleUnitTitles sale unit titles per sale unit id, when the caller has them
      *
      * @return array<string, mixed>
      */
-    public function present(Order $order, string $locale, array $itemCounts = [], array $totals = [], array $moduleTitles = []): array
+    public function present(Order $order, string $locale, array $itemCounts = [], array $totals = [], array $moduleTitles = [], array $saleUnitTitles = []): array
     {
         $orderId = (int) $order->getId();
         $status = OrderStatusQuery::create()->findPk((int) $order->getStatusId());
@@ -140,10 +143,26 @@ final readonly class OrderListRowPresenter
             'delivery_html' => $this->renderDelivery($order, $deliveryTitle),
             'amount' => $this->formatAmount($order, $totals),
             'date_html' => $this->renderDate($order),
+            'sale_unit' => $this->saleUnitTitle($order, $saleUnitTitles, $locale),
             'is_urgent' => $isUrgent,
             '_row_class' => $isUrgent ? 'bo-order-row--urgent' : '',
             '_actions' => $this->buildActions($orderId, $canCancel, (string) $order->getRef()),
         ];
+    }
+
+    /**
+     * Empty for a national order, and on a single shop.
+     *
+     * @param array<int, string> $saleUnitTitles
+     */
+    private function saleUnitTitle(Order $order, array $saleUnitTitles, string $locale): string
+    {
+        $saleUnitId = $order->getSaleUnitId();
+        if (null === $saleUnitId) {
+            return '';
+        }
+
+        return $saleUnitTitles[$saleUnitId] ?? (string) $this->saleUnits->titleOf($order, $locale);
     }
 
     private function renderRef(string $ref, bool $isUrgent, string $href): string

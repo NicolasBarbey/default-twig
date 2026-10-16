@@ -19,10 +19,12 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\File\ProductVideoPresenter;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationIdentifierNotices;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationsTabContextBuilder;
+use BackOfficeDefaultTwigBundle\Service\Product\SaleUnitValuesContextBuilder;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 use Symfony\Component\Routing\Attribute\Route;
@@ -102,6 +104,8 @@ final class ProductAdvancedController
         private readonly ProductVideoPresenter $videoPresenter,
         private readonly CombinationIdentifierNotices $identifierNotices,
         private readonly TranslatorInterface $translator,
+        private readonly SaleUnitValuesContextBuilder $saleUnitValuesContextBuilder,
+        private readonly RequestStack $requestStack,
     ) {
     }
 
@@ -672,10 +676,23 @@ final class ProductAdvancedController
         }
 
         $currencyId = (int) ($request->attributes->get('currency_id') ?? $request->query->get('currency_id', 0));
+        $context = $this->combinationsTabContextBuilder->build($product, $currencyId > 0 ? $currencyId : null);
+
+        // The tab is a sub-request: the sale unit picked on the product sheet is in the
+        // query of the page itself.
+        $saleUnitId = (int) ($request->query->get('sale_unit_id') ?? $this->requestStack->getMainRequest()?->query->get('sale_unit_id', 0));
+        $context['sale_unit_values'] = $this->access->canView(AdminResources::SALE_UNIT)
+            ? $this->saleUnitValuesContextBuilder->build(
+                $context['pse_rows'],
+                $context['currency']['id'],
+                $saleUnitId > 0 ? $saleUnitId : null,
+                $request->getLocale(),
+            )
+            : null;
 
         return new Response($this->twig->render(
             '@BackOfficeDefaultTwig/catalog/product/_combinations_tab.html.twig',
-            $this->combinationsTabContextBuilder->build($product, $currencyId > 0 ? $currencyId : null),
+            $context,
         ));
     }
 

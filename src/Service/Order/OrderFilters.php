@@ -50,6 +50,7 @@ final readonly class OrderFilters
     public const KEY_SEARCH = 'search';
     public const KEY_PERIOD = 'period';
     public const KEY_CUSTOMER_ID = 'customer_id';
+    public const KEY_SALE_UNIT_IDS = 'sale_unit_ids';
 
     /** @var list<array{code: string, label: string, icon: string}> */
     public const QUICK_CHIPS = [
@@ -62,6 +63,7 @@ final readonly class OrderFilters
      * @param list<int> $statusIds
      * @param list<int> $paymentModuleIds
      * @param list<int> $deliveryModuleIds
+     * @param list<int> $saleUnitIds
      */
     public function __construct(
         public array $statusIds = [],
@@ -81,6 +83,7 @@ final readonly class OrderFilters
         public string $sort = self::DEFAULT_SORT,
         public string $direction = self::DEFAULT_DIRECTION,
         public string $period = self::PERIOD_ALL,
+        public array $saleUnitIds = [],
     ) {
     }
 
@@ -155,6 +158,7 @@ final readonly class OrderFilters
             sort: $sort,
             direction: $direction,
             period: $period,
+            saleUnitIds: self::parseIntArray($query->all('sale_unit_ids')),
         );
     }
 
@@ -172,7 +176,8 @@ final readonly class OrderFilters
             && $this->minItems === null
             && $this->maxItems === null
             && $this->hasCoupon === null
-            && $this->hasTracking === null;
+            && $this->hasTracking === null
+            && $this->saleUnitIds === [];
     }
 
     /**
@@ -223,6 +228,9 @@ final readonly class OrderFilters
         if ($this->hasTracking !== null) {
             $params['tracking'] = $this->hasTracking ? self::TRISTATE_WITH : self::TRISTATE_WITHOUT;
         }
+        if ($this->saleUnitIds !== []) {
+            $params['sale_unit_ids'] = $this->saleUnitIds;
+        }
         if ($this->search !== '') {
             $params['q'] = $this->search;
         }
@@ -272,6 +280,7 @@ final readonly class OrderFilters
             self::KEY_COUPON => ['hasCoupon' => null],
             self::KEY_TRACKING => ['hasTracking' => null],
             self::KEY_SEARCH => ['search' => ''],
+            self::KEY_SALE_UNIT_IDS => ['saleUnitIds' => []],
             default => [],
         };
 
@@ -306,6 +315,10 @@ final readonly class OrderFilters
 
         if ($this->customerId !== null) {
             $query->filterByCustomerId($this->customerId);
+        }
+
+        if ($this->saleUnitIds !== []) {
+            $query->filterBySaleUnitId($this->saleUnitIds, Criteria::IN);
         }
 
         $this->applyCouponFilter($query);
@@ -566,6 +579,7 @@ final readonly class OrderFilters
             sort: \array_key_exists('sort', $overrides) ? $overrides['sort'] : $this->sort,
             direction: \array_key_exists('direction', $overrides) ? $overrides['direction'] : $this->direction,
             period: \array_key_exists('period', $overrides) ? $overrides['period'] : $this->period,
+            saleUnitIds: \array_key_exists('saleUnitIds', $overrides) ? $overrides['saleUnitIds'] : $this->saleUnitIds,
         );
     }
 

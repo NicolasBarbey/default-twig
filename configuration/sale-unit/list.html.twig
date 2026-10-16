@@ -1,0 +1,111 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Sale units'|trans }}{% endblock %}
+{% block body_testid %}configuration-sale-units{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.index') }}">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Sale units'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    {{ safe_hook('sale-unit.top') }}
+
+    <div class="container-fluid" data-testid="sale-units-page">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">{{ 'Sale units'|trans }}</h1>
+            {% if is_granted('CREATE', 'admin.sale-unit') %}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sale-unit-create-modal" data-testid="sale-unit-create-button">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add a sale unit'|trans }}
+                </button>
+            {% endif %}
+        </div>
+
+        <p class="text-muted">
+            {{ 'A sale unit is a storefront or a store selling the shared catalog with its own prices, stocks and orders. While no sale unit is active, the shop works as a single shop.'|trans }}
+        </p>
+
+        {{ component('BoDataTable', {
+            id: 'sale-units',
+            columns: [
+                column('id', 'ID'|trans, 'start', 'id', hideBelow: 'md'),
+                column('title', 'Title'|trans, 'start', 'title'),
+                column('code', 'Code'|trans, 'start', 'code', hideBelow: 'lg'),
+                column('url', 'Site address'|trans, 'start', 'url', hideBelow: 'lg'),
+                column_toggle('active', 'Active'|trans, 'toggle_active_url'),
+                column('position', 'Position'|trans, 'center', 'position', hideBelow: 'lg'),
+                column_actions('_actions', 'Actions'|trans),
+            ],
+            rows: rows,
+            emptyMessage: 'No sale unit defined yet: the shop sells as a single shop.'|trans,
+            extraColumnsHeaderHook: 'sale-unit.table-header',
+            extraColumnsHook: 'sale-unit.table-row',
+            rowHookArgs: { sale_unit_id: 'id' },
+            sortField: sort_field,
+            sortDirection: sort_direction,
+            tbodyAttributes: {
+                'data-controller': 'bo-sortable',
+                'data-bo-sortable-url-value': update_position_url,
+                'data-bo-sortable-token-value': update_position_token,
+                'data-bo-sortable-param-name-value': 'sale_unit_id',
+            },
+        }) }}
+    </div>
+
+    {{ safe_hook('sale-unit.bottom') }}
+
+    {% component 'BoCreateDialog' with {
+        id: 'sale-unit-create-modal',
+        title: 'Create a new sale unit',
+        form: create_form,
+        formAction: path('admin.sale-unit.create'),
+        submitLabel: 'Create',
+        testid: 'sale-unit-create',
+        size: '',
+    } %}
+        {% block fields %}
+            <div class="mb-3">
+                {{ form_label(create_form.code) }}
+                {{ form_widget(create_form.code, { attr: { class: 'form-control' } }) }}
+                <div class="form-text">{{ 'The name a deployment or an API caller refers to the sale unit by. Letters, digits, dots, dashes and underscores.'|trans }}</div>
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.title) }}
+                {{ form_widget(create_form.title, { attr: { class: 'form-control' } }) }}
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.url) }}
+                {{ form_widget(create_form.url, { attr: { class: 'form-control' } }) }}
+                <div class="form-text">{{ 'The domain of its storefront. Leave it empty for a sale unit chosen by the visitor or by an API caller.'|trans }}</div>
+            </div>
+            <div class="mb-3">
+                {{ form_label(create_form.description) }}
+                {{ form_widget(create_form.description, { attr: { class: 'form-control', rows: 3 } }) }}
+            </div>
+            <div class="form-check mb-3">
+                {{ form_widget(create_form.active, { attr: { class: 'form-check-input' } }) }}
+                {{ form_label(create_form.active, null, { label_attr: { class: 'form-check-label' } }) }}
+            </div>
+            {{ form_widget(create_form.locale) }}
+        {% endblock %}
+    {% endcomponent %}
+
+    {{ component('BoConfirmDialog', {
+        id: 'sale-unit-delete-modal',
+        title: 'Delete sale unit',
+        formAction: path('admin.sale-unit.delete'),
+        message: 'Do you really want to delete this sale unit? Its own prices and stocks are deleted with it. A sale unit orders were placed on cannot be deleted: turn it off instead.',
+        testid: 'sale-unit-delete',
+        prefillTrigger: 'data-sale-unit-id',
+        prefillInput: 'sale_unit_id',
+    }) }}
+{% endblock %}
+
+{% block scripts_extra %}
+    {{ safe_hook('sale-unit.js', { location: 'sale-unit-js' }) }}
+{% endblock %}

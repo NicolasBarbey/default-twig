@@ -47,7 +47,18 @@ final class OrderFilterCatalog
         private readonly OrderRepository $orders,
         private readonly ModuleRepository $modules,
         private readonly CountryRepository $countries,
+        private readonly OrderSaleUnits $saleUnits,
     ) {
+    }
+
+    /**
+     * Empty on a single shop: the filter and the column are then left out of the list.
+     *
+     * @return list<array{id: int, code: string, title: string, active: bool}>
+     */
+    public function saleUnits(string $locale): array
+    {
+        return $this->saleUnits->options($locale);
     }
 
     /**

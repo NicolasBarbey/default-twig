@@ -1,0 +1,74 @@
+{#- The prices and stocks one sale unit keeps of the combinations of the product.
+    An empty field is the national value, shown in its place; emptying a field gives
+    the combination back to the national value. -#}
+{% set values = sale_unit_values %}
+<div class="card mb-3" data-testid="sale-unit-values-section">
+    <div class="card-header d-flex justify-content-between align-items-end gap-2 flex-wrap">
+        <div>
+            <h2 class="h6 mb-1">{{ 'Prices and stock per sale unit'|trans }}</h2>
+            <p class="small text-muted mb-0">{{ 'An empty field takes the value shown in grey, the national one unless said otherwise. Empty a field to go back to it.'|trans }}</p>
+        </div>
+        <div>
+            <label class="form-label mb-1" for="sale-unit-values-switcher">{{ 'Sale unit'|trans }}</label>
+            <select class="form-select form-select-sm" style="width:auto" id="sale-unit-values-switcher"
+                    data-testid="sale-unit-values-switcher"
+                    onchange="window.location.assign(this.value)">
+                {% for option in values.sale_units %}
+                    <option value="{{ path('admin.products.update', { product_id: product.id, current_tab: 'pse', sale_unit_id: option.id, combinations_currency_id: values.currency_id }) }}"{% if option.id == values.sale_unit.id %} selected{% endif %}>
+                        {{ option.title }}{% if not option.active %} ({{ 'inactive'|trans }}){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    <div class="card-body">
+        <form method="post" action="{{ path('admin.product.sale-unit-values.save') }}" data-testid="sale-unit-values-form">
+            <input type="hidden" name="_token" value="{{ assignToken() }}">
+            <input type="hidden" name="product_id" value="{{ product.id }}">
+            <input type="hidden" name="sale_unit_id" value="{{ values.sale_unit.id }}">
+            <input type="hidden" name="currency_id" value="{{ values.currency_id }}">
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle" data-testid="sale-unit-values-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{{ 'Combination'|trans }}</th>
+                            <th>{{ 'Reference'|trans }}</th>
+                            <th class="text-end">{{ 'Price'|trans }} ({{ currency.symbol }})</th>
+                            <th class="text-end">{{ 'Sale price'|trans }} ({{ currency.symbol }})</th>
+                            <th class="text-end">{{ 'Stock'|trans }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in values.rows %}
+                            <tr data-testid="sale-unit-values-row-{{ row.id }}">
+                                <td><small>{{ row.label == 'default' ? 'Default combination'|trans : row.label }}</small></td>
+                                <td><small class="text-muted">{{ row.ref }}</small></td>
+                                {% for field in row.fields %}
+                                    <td class="text-end">
+                                        <input type="text" inputmode="decimal" autocomplete="off"
+                                               name="{{ field.name }}[{{ row.id }}]" value="{{ field.value }}"
+                                               placeholder="{{ field.placeholder }}"
+                                               class="form-control form-control-sm text-end ms-auto" style="max-width:9rem"
+                                               aria-label="{{ (field.name == 'price' ? 'Price' : field.name == 'promo_price' ? 'Sale price' : 'Stock')|trans }} - {{ row.ref }}"
+                                               data-testid="sale-unit-values-{{ field.name }}-{{ row.id }}">
+                                        <small class="d-block text-muted" data-testid="sale-unit-values-{{ field.name }}-source-{{ row.id }}">
+                                            {{ field.hint|trans(field.hint_parameters) }}
+                                        </small>
+                                    </td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="small text-muted">{{ 'The sale price applies while the combination is on sale. Left empty next to a price, the sale unit sells at that price.'|trans }}</p>
+
+            {% if is_granted('UPDATE', 'admin.sale-unit') and is_granted('UPDATE', 'admin.product') %}
+                <button type="submit" class="btn btn-primary" data-testid="sale-unit-values-submit">
+                    <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save the values of this sale unit'|trans }}
+                </button>
+            {% endif %}
+        </form>
+    </div>
+</div>

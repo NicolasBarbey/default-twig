@@ -30,6 +30,9 @@
                     {% if order.createdAt %}
                         <span data-testid="order-created-at"><i class="bi bi-calendar3"></i> {{ order.createdAt|date('d/m/Y H:i') }}</span>
                     {% endif %}
+                    {% if sale_unit_title|default(null) %}
+                        <span data-testid="order-sale-unit"><i class="bi bi-shop-window" aria-hidden="true"></i> {{ 'Sale unit: %title%'|trans({ '%title%': sale_unit_title }) }}</span>
+                    {% endif %}
                 </div>
                 {#- In the header, not in a tab: changing the status is the most frequent action on an order. -#}
                 <form action="{{ path('admin.order.update.status', { order_id: order.id }) }}" method="post" class="mt-2" data-testid="order-status-form">

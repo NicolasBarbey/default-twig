@@ -10,7 +10,7 @@
                             data-testid="combinations-currency-switcher"
                             onchange="window.location.assign(this.value)">
                         {% for option in available_currencies %}
-                            <option value="{{ path('admin.products.update', { product_id: product.id, current_tab: 'pse', combinations_currency_id: option.id }) }}"{% if option.id == currency.id %} selected{% endif %}>{{ option.code }} ({{ option.symbol }})</option>
+                            <option value="{{ path('admin.products.update', { product_id: product.id, current_tab: 'pse', combinations_currency_id: option.id, sale_unit_id: sale_unit_values.sale_unit.id|default(null) }) }}"{% if option.id == currency.id %} selected{% endif %}>{{ option.code }} ({{ option.symbol }})</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -348,6 +348,10 @@
             {% endif %}
         </div>
     </div>
+
+    {% if sale_unit_values|default(null) is not null %}
+        {{ include('@BackOfficeDefaultTwig/catalog/product/_sale_unit_values.html.twig') }}
+    {% endif %}
 
     {% component 'BoConfirmDialog' with {
         id: 'pse-delete-modal',
