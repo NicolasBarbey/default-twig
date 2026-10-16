@@ -15,7 +15,9 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Tests\Query;
 
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Tests\Support\QueryCounter;
+use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\Order;
 use Thelia\Model\OrderProduct;
@@ -44,7 +46,7 @@ final class OrderListTotalsTest extends IntegrationTestCase
     {
         parent::setUp();
 
-        $this->orders = new OrderRepository();
+        $this->orders = new OrderRepository(new OrderAccess(new AdminSaleUnitScope()));
     }
 
     protected function tearDown(): void

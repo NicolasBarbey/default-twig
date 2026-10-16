@@ -14,8 +14,10 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Controller\Order;
 
+use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Service\Pdf\OrderPdfRenderer;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,7 +33,6 @@ use Thelia\Domain\Shipping\DTO\ShipmentLine;
 use Thelia\Domain\Shipping\Exception\ShipmentNotAllowedException;
 use Thelia\Domain\Shipping\Service\OrderShipmentManager;
 use Thelia\Log\Tlog;
-use Thelia\Model\OrderQuery;
 use Thelia\Model\OrderShipment;
 use Thelia\Model\OrderShipmentQuery;
 use Thelia\Tools\TokenProvider;
@@ -58,6 +59,8 @@ final class OrderShipmentController
         private readonly UrlGeneratorInterface $urls,
         private readonly TranslatorInterface $translator,
         private readonly RequestStack $requestStack,
+        private readonly OrderRepository $orders,
+        private readonly OrderAccess $orderAccess,
     ) {
     }
 
@@ -68,11 +71,13 @@ final class OrderShipmentController
             return $denied;
         }
 
-        $order = OrderQuery::create()->findPk($order_id);
+        $order = $this->orders->findById($order_id);
 
         if ($order === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
+
+        $this->orderAccess->assertReaches($order);
 
         try {
             $this->tokens->checkToken((string) $request->request->get('_token', ''));
@@ -147,6 +152,8 @@ final class OrderShipmentController
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
 
+        $this->assertShipmentReached($shipment);
+
         return $this->pdfRenderer->render((int) $shipment->getOrderId(), OrderPdfRenderer::KIND_DELIVERY, 1 === $browser, $shipment_id);
     }
 
@@ -164,6 +171,8 @@ final class OrderShipmentController
         if ($shipment === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
+
+        $this->assertShipmentReached($shipment);
 
         $orderId = (int) $shipment->getOrderId();
 
@@ -186,6 +195,18 @@ final class OrderShipmentController
         }
 
         return $this->backToOrder($orderId);
+    }
+
+    /**
+     * A parcel belongs to the unit of its order: another unit's does not exist for the administrator.
+     */
+    private function assertShipmentReached(OrderShipment $shipment): void
+    {
+        $order = $this->orders->findById((int) $shipment->getOrderId());
+
+        if (null !== $order) {
+            $this->orderAccess->assertReaches($order);
+        }
     }
 
     private function backToOrder(int $orderId): RedirectResponse

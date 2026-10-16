@@ -17,6 +17,7 @@ namespace BackOfficeDefaultTwigBundle\Controller\Order;
 use BackOfficeDefaultTwigBundle\Repository\OrderReturnRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Service\OrderReturn\OrderReturnDetailPresenter;
 use BackOfficeDefaultTwigBundle\Service\OrderReturn\OrderReturnFilterPresenter;
 use BackOfficeDefaultTwigBundle\Service\OrderReturn\OrderReturnFilters;
@@ -71,6 +72,7 @@ final class OrderReturnController
         private readonly OrderReturnListRowPresenter $rowPresenter,
         private readonly OrderReturnFilterPresenter $filterPresenter,
         private readonly OrderReturnDetailPresenter $detailPresenter,
+        private readonly OrderAccess $orderAccess,
     ) {
     }
 
@@ -109,7 +111,7 @@ final class OrderReturnController
             return $denied;
         }
 
-        $orderReturn = $this->returns->findById($order_return_id);
+        $orderReturn = $this->reachableReturn($order_return_id);
 
         if ($orderReturn === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
@@ -144,7 +146,7 @@ final class OrderReturnController
     {
         $this->assertFeatureEnabled();
 
-        $orderReturn = $this->returns->findById($order_return_id);
+        $orderReturn = $this->reachableReturn($order_return_id);
 
         if ($orderReturn === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
@@ -187,7 +189,7 @@ final class OrderReturnController
             return $denied;
         }
 
-        $orderReturn = $this->returns->findById($order_return_id);
+        $orderReturn = $this->reachableReturn($order_return_id);
 
         if ($orderReturn === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
@@ -212,7 +214,7 @@ final class OrderReturnController
     {
         $this->assertFeatureEnabled();
 
-        $orderReturn = $this->returns->findById($order_return_id);
+        $orderReturn = $this->reachableReturn($order_return_id);
 
         if ($orderReturn === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
@@ -252,6 +254,10 @@ final class OrderReturnController
         $this->assertFeatureEnabled();
 
         $order = $this->returns->findOrder($order_id);
+
+        if ($order !== null) {
+            $this->orderAccess->assertReaches($order);
+        }
 
         if ($order === null) {
             return new RedirectResponse($this->urls->generate('admin.order.list'));
@@ -384,6 +390,20 @@ final class OrderReturnController
      * The screens follow the shop setting the API of the core follows: while the
      * feature is off, nothing of the returns exists for anybody.
      */
+    /**
+     * The return, null when it does not exist; one of an order of another sale unit is a 404.
+     */
+    private function reachableReturn(int $returnId): ?OrderReturn
+    {
+        $orderReturn = $this->returns->findById($returnId);
+
+        if (null !== $orderReturn) {
+            $this->orderAccess->assertReachesReturn($orderReturn);
+        }
+
+        return $orderReturn;
+    }
+
     private function assertFeatureEnabled(): void
     {
         if (!$this->eligibility->isFeatureEnabled()) {

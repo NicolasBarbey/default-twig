@@ -14,11 +14,11 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Admin;
 
+use BackOfficeDefaultTwigBundle\Form\Legacy\LegacyFormEventBridge;
 use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use BackOfficeDefaultTwigBundle\Form\Legacy\LegacyFormEventBridge;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -54,11 +54,12 @@ readonly class AdminFormAction
     }
 
     /**
-     * @param callable(FormInterface): object                       $eventFactory             build the event from the validated form
-     * @param callable(\Throwable): Response                        $renderError              build the error response (typically a re-render with errors)
-     * @param callable(object): array{0: string, 1: int|null}|null  $describeForLog           Optional. Build [message, resourceId] from the dispatched event.
-     * @param array<string, scalar>                                 $successParameters
-     * @param callable(object): array<string, scalar>|null          $successParametersResolver Optional. Resolve the redirect parameters from the dispatched event (e.g. a freshly created entity id). Overrides $successParameters when provided.
+     * @param callable(FormInterface): object                      $eventFactory              build the event from the validated form
+     * @param callable(\Throwable): Response                       $renderError               build the error response (typically a re-render with errors)
+     * @param callable(object): array{0: string, 1: int|null}|null $describeForLog            Optional. Build [message, resourceId] from the dispatched event.
+     * @param array<string, scalar>                                $successParameters
+     * @param callable(object): array<string, scalar>|null         $successParametersResolver Optional. Resolve the redirect parameters from the dispatched event (e.g. a freshly created entity id). Overrides $successParameters when provided.
+     * @param callable(object): void|null                          $afterDispatch             Optional. Runs once the event is dispatched, before the success is logged: what a form carries that the event does not (a second event on the saved entity). A failure is reported like the dispatch's own.
      */
     public function submit(
         string $resource,
@@ -72,6 +73,7 @@ readonly class AdminFormAction
         array $successParameters = [],
         ?callable $describeForLog = null,
         ?callable $successParametersResolver = null,
+        ?callable $afterDispatch = null,
     ): Response {
         if ($denied = $this->access->check($resource, [], $access)) {
             return $denied;
@@ -86,6 +88,10 @@ readonly class AdminFormAction
             }
 
             $this->events->dispatch($event, $eventName);
+
+            if ($afterDispatch !== null) {
+                $afterDispatch($event);
+            }
 
             $this->logSuccess($resource, $access, $event, $describeForLog);
 
@@ -110,7 +116,7 @@ readonly class AdminFormAction
      * @param callable(object): array{0: string, 1: int|null}|null $describeForLog
      * @param callable(\Throwable): Response|null                  $renderError               Optional. When omitted, errors redirect to $successRoute.
      * @param array<string, scalar>                                $successParameters
-     * @param callable(object): array<string, scalar>|null          $successParametersResolver Optional. Resolve the redirect parameters from the dispatched event (e.g. the id of an entity the action just created). Overrides $successParameters when provided.
+     * @param callable(object): array<string, scalar>|null         $successParametersResolver Optional. Resolve the redirect parameters from the dispatched event (e.g. the id of an entity the action just created). Overrides $successParameters when provided.
      */
     public function tokenAction(
         string $resource,

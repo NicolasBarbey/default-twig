@@ -44,10 +44,12 @@ final class CustomerSheetTest extends WebIntegrationTestCase
     /**
      * Measured on the sheet with 200 orders: 40 queries on a cold request, 21 once the
      * request-scoped memos are warm (37 and 19 before the figures and the sections). The
-     * cold count moves by one between runs, hence the margin.
+     * cold count moves by one between runs, hence the margin. The sidebar total of orders
+     * is read again on every request (22 warm), as the memo of the sidebar is reset
+     * between two requests: it holds the figures of the administrator of the request.
      */
     private const COLD_QUERY_BUDGET = 41;
-    private const WARM_QUERY_BUDGET = 21;
+    private const WARM_QUERY_BUDGET = 22;
 
     private AdminSessionInjector $injector;
 

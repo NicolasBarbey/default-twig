@@ -73,6 +73,18 @@ final class AdministratorType extends AbstractType
                 'constraints' => [new NotBlank()],
             ]);
 
+        // Only a shop with sale units has anything to choose from.
+        if ([] !== $options['sale_unit_choices']) {
+            $builder->add('sale_units', ChoiceType::class, [
+                'required' => false,
+                'multiple' => true,
+                'expanded' => true,
+                'choices' => $options['sale_unit_choices'],
+                'label' => $this->translator->trans('Sale units'),
+                'help' => $this->translator->trans('The administrator only works on the checked sale units. Check none to give access to all of them.'),
+            ]);
+        }
+
         if ($isUpdate) {
             $builder->add('id', HiddenType::class, [
                 'constraints' => [new NotBlank(), new GreaterThan(0)],
@@ -86,9 +98,11 @@ final class AdministratorType extends AbstractType
             ->setDefaults([
                 'include_id' => false,
                 'profile_choices' => [],
+                'sale_unit_choices' => [],
                 'csrf_token_id' => 'admin.administrator',
             ])
             ->setAllowedTypes('include_id', 'bool')
-            ->setAllowedTypes('profile_choices', 'array');
+            ->setAllowedTypes('profile_choices', 'array')
+            ->setAllowedTypes('sale_unit_choices', 'array');
     }
 }

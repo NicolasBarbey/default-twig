@@ -15,7 +15,9 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Tests\Query;
 
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Tests\Support\QueryCounter;
+use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 use Thelia\Model\OrderQuery;
 use Thelia\Model\OrderStatus;
 use Thelia\Model\OrderStatusQuery;
@@ -37,7 +39,7 @@ final class OrderStatusCountersTest extends IntegrationTestCase
     {
         parent::setUp();
 
-        $this->orders = new OrderRepository();
+        $this->orders = new OrderRepository(new OrderAccess(new AdminSaleUnitScope()));
     }
 
     public function testTheCountersCostOneCountQueryAndOneStatusReadWhateverTheNumberOfStatuses(): void

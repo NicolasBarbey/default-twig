@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Repository;
 
 use BackOfficeDefaultTwigBundle\DTO\Dashboard\DateRange;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderFilters;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Collection\ObjectCollection;
@@ -36,6 +37,9 @@ use Thelia\Model\OrderStatusQuery;
  * the order count per status, the ids a canonical status code answers for — are
  * memoised for the request. The sidebar asks for them on every screen and the
  * dashboard asks for the same figures again.
+ *
+ * Every read of orders but the one by identifier goes through the sale units the
+ * administrator reaches (see OrderAccess); the controllers ask for that one to be checked.
  */
 final class OrderRepository
 {
@@ -59,6 +63,11 @@ final class OrderRepository
 
     /** @var array<string, list<array{id: int, code: string, title: string, color: string, count: int}>> */
     private array $statusesWithCounts = [];
+
+    public function __construct(
+        private readonly OrderAccess $access,
+    ) {
+    }
 
     /**
      * The status rows change rarely and through these events only; the counts
@@ -128,7 +137,10 @@ final class OrderRepository
 
         $decisions = [];
 
-        foreach (OrderQuery::create()->filterById($orderIds, Criteria::IN)->select(['Id', 'Ref', 'StatusId'])->find() as $row) {
+        $query = OrderQuery::create()->filterById($orderIds, Criteria::IN);
+        $this->access->restrict($query);
+
+        foreach ($query->select(['Id', 'Ref', 'StatusId'])->find() as $row) {
             $decisions[] = [
                 'id' => (int) $row['Id'],
                 'ref' => (string) $row['Ref'],
@@ -150,7 +162,10 @@ final class OrderRepository
             return [];
         }
 
-        return iterator_to_array(OrderQuery::create()->filterById($orderIds, Criteria::IN)->find(), false);
+        $query = OrderQuery::create()->filterById($orderIds, Criteria::IN);
+        $this->access->restrict($query);
+
+        return iterator_to_array($query->find(), false);
     }
 
     public function countItemsForOrder(int $orderId): int
@@ -261,7 +276,7 @@ final class OrderRepository
                        CASE WHEN '.OrderTableMap::COL_STATUS_ID.' IN ('.$this->statusIdListSql(self::REVENUE_STATUS_CODES).') THEN 1 ELSE 0 END AS is_revenue,
                        '.OrderFilters::totalAmountSqlExpression().' AS computed
                 FROM `order`
-                WHERE '.OrderTableMap::COL_CUSTOMER_ID.' = :customer
+                WHERE '.OrderTableMap::COL_CUSTOMER_ID.' = :customer'.$this->access->sqlCondition().'
             ) AS per_order';
 
         $statement = Propel::getConnection()->prepare($sql);
@@ -281,7 +296,10 @@ final class OrderRepository
 
     public function countByCustomer(int $customerId): int
     {
-        return (int) OrderQuery::create()->filterByCustomerId($customerId)->count();
+        $query = OrderQuery::create()->filterByCustomerId($customerId);
+        $this->access->restrict($query);
+
+        return (int) $query->count();
     }
 
     /**
@@ -289,9 +307,11 @@ final class OrderRepository
      */
     public function findRecentByCustomer(int $customerId, int $limit = 25): ObjectCollection
     {
+        $query = OrderQuery::create()->filterByCustomerId($customerId);
+        $this->access->restrict($query);
+
         /** @var ObjectCollection<int, Order> $result */
-        $result = OrderQuery::create()
-            ->filterByCustomerId($customerId)
+        $result = $query
             ->orderByCreatedAt(Criteria::DESC)
             ->limit($limit)
             ->find();
@@ -307,9 +327,11 @@ final class OrderRepository
         $page = max(1, $page);
         $offset = ($page - 1) * $perPage;
 
+        $query = OrderQuery::create()->filterByCustomerId($customerId);
+        $this->access->restrict($query);
+
         /** @var ObjectCollection<int, Order> $result */
-        $result = OrderQuery::create()
-            ->filterByCustomerId($customerId)
+        $result = $query
             ->orderByCreatedAt(Criteria::DESC)
             ->offset($offset)
             ->limit($perPage)
@@ -412,7 +434,8 @@ final class OrderRepository
      */
     public function findStatusesWithCounts(string $locale): array
     {
-        return $this->statusesWithCounts[$locale] ??= $this->readStatusesWithCounts($locale);
+        // An administrator's reach is part of the answer: the memo is kept per reach.
+        return $this->statusesWithCounts[$locale.$this->access->sqlCondition()] ??= $this->readStatusesWithCounts($locale);
     }
 
     /**
@@ -424,7 +447,9 @@ final class OrderRepository
     private function readStatusesWithCounts(string $locale): array
     {
         $counts = [];
-        $grouped = OrderQuery::create()
+        $groupedQuery = OrderQuery::create();
+        $this->access->restrict($groupedQuery);
+        $grouped = $groupedQuery
             ->withColumn('COUNT(*)', 'order_count')
             ->groupByStatusId()
             ->select(['StatusId', 'order_count'])
@@ -463,7 +488,10 @@ final class OrderRepository
 
     public function countAll(): int
     {
-        return OrderQuery::create()->count();
+        $query = OrderQuery::create();
+        $this->access->restrict($query);
+
+        return $query->count();
     }
 
     /**
@@ -476,7 +504,7 @@ final class OrderRepository
             SELECT '.OrderFilters::totalAmountSqlExpression().' AS computed
             FROM `order`
             WHERE created_at BETWEEN :from AND :to
-              AND status_id IN ('.$this->statusIdListSql(self::REVENUE_STATUS_CODES).')
+              AND status_id IN ('.$this->statusIdListSql(self::REVENUE_STATUS_CODES).')'.$this->access->sqlCondition().'
         ) AS sub';
 
         $statement = Propel::getConnection()->prepare($sql);
@@ -488,7 +516,10 @@ final class OrderRepository
 
     public function countOrders(DateRange $range): int
     {
-        return (int) OrderQuery::create()
+        $query = OrderQuery::create();
+        $this->access->restrict($query);
+
+        return (int) $query
             ->filterByCreatedAt($range->fromSql(), Criteria::GREATER_EQUAL)
             ->filterByCreatedAt($range->toSql(), Criteria::LESS_EQUAL)
             ->count();
@@ -506,7 +537,7 @@ final class OrderRepository
                 COALESCE(SUM(IF(`order`.status_id IN ('.$this->statusIdListSql(self::REVENUE_STATUS_CODES).'),
                     '.OrderFilters::totalAmountSqlExpression().', 0)), 0) AS revenue
                 FROM `order`
-                WHERE created_at BETWEEN :from AND :to
+                WHERE created_at BETWEEN :from AND :to'.$this->access->sqlCondition().'
                 GROUP BY DATE(`order`.created_at)';
 
         $statement = Propel::getConnection()->prepare($sql);
@@ -553,7 +584,10 @@ final class OrderRepository
 
         $threshold = (new \DateTimeImmutable())->modify('-'.$hours.' hours')->format('Y-m-d H:i:s');
 
-        return (int) OrderQuery::create()
+        $query = OrderQuery::create();
+        $this->access->restrict($query);
+
+        return (int) $query
             ->filterByStatusId($statusIds, Criteria::IN)
             ->filterByCreatedAt($threshold, Criteria::LESS_EQUAL)
             ->count();
@@ -567,7 +601,10 @@ final class OrderRepository
             return 0;
         }
 
-        return (int) OrderQuery::create()
+        $query = OrderQuery::create();
+        $this->access->restrict($query);
+
+        return (int) $query
             ->filterByStatusId($statusIds, Criteria::IN)
             ->count();
     }
@@ -603,7 +640,7 @@ final class OrderRepository
             SELECT DISTINCT oa.country_id
             FROM `order` o
             JOIN order_address oa ON oa.id = o.delivery_order_address_id
-            WHERE oa.country_id IS NOT NULL
+            WHERE oa.country_id IS NOT NULL'.$this->access->sqlCondition('o.sale_unit_id').'
         ';
 
         $statement = Propel::getConnection()->prepare($sql);
@@ -630,7 +667,7 @@ final class OrderRepository
     {
         $sql = 'SELECT MAX(computed) AS max_val FROM (
             SELECT '.OrderFilters::totalAmountSqlExpression().' AS computed
-            FROM `order`
+            FROM `order`'.$this->access->sqlWhere().'
         ) AS sub';
 
         $statement = Propel::getConnection()->prepare($sql);
@@ -652,7 +689,8 @@ final class OrderRepository
     public function getItemsBounds(): array
     {
         $sql = 'SELECT MAX(item_count) AS max_val FROM (
-            SELECT COUNT(*) AS item_count FROM order_product GROUP BY order_id
+            SELECT COUNT(*) AS item_count FROM order_product'.$this->itemsOfReachedOrdersSql().'
+            GROUP BY order_id
         ) AS sub';
 
         $statement = Propel::getConnection()->prepare($sql);
@@ -716,10 +754,18 @@ final class OrderRepository
         return [] === $ids ? '0' : implode(', ', $ids);
     }
 
+    private function itemsOfReachedOrdersSql(): string
+    {
+        $condition = $this->access->sqlWhere();
+
+        return '' === $condition ? '' : ' WHERE order_id IN (SELECT id FROM `order`'.$condition.')';
+    }
+
     private function buildFilteredQuery(OrderFilters $filters): OrderQuery
     {
         $query = OrderQuery::create();
         $filters->applyTo($query);
+        $this->access->restrict($query);
 
         return $query;
     }
@@ -745,12 +791,16 @@ final class OrderRepository
     /** @return array{previous: ?int, next: ?int} */
     public function findPreviousNext(Order $current): array
     {
-        $previous = OrderQuery::create()
+        $previousQuery = OrderQuery::create();
+        $this->access->restrict($previousQuery);
+        $previous = $previousQuery
             ->filterById($current->getId(), Criteria::LESS_THAN)
             ->filterByStatusId($current->getStatusId(), Criteria::EQUAL)
             ->orderById(Criteria::DESC)
             ->findOne();
-        $next = OrderQuery::create()
+        $nextQuery = OrderQuery::create();
+        $this->access->restrict($nextQuery);
+        $next = $nextQuery
             ->filterById($current->getId(), Criteria::GREATER_THAN)
             ->filterByStatusId($current->getStatusId(), Criteria::EQUAL)
             ->orderById(Criteria::ASC)

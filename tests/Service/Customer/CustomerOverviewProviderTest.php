@@ -19,8 +19,10 @@ use BackOfficeDefaultTwigBundle\Repository\CustomerRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerOverviewProvider;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Tests\Support\QueryCounter;
 use Symfony\Component\Translation\IdentityTranslator;
+use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 use Thelia\Model\Currency;
 use Thelia\Model\Customer;
 use Thelia\Model\OrderStatus;
@@ -88,7 +90,7 @@ final class CustomerOverviewProviderTest extends IntegrationTestCase
         $order->setStatusId($ownSent->getId())->save($this->getPropelConnection());
 
         $kpis = $this->provider(true)->compute($customer, $this->now)->kpis;
-        $revenue = (new OrderRepository())->getRevenue(new DateRange(
+        $revenue = (new OrderRepository(new OrderAccess(new AdminSaleUnitScope())))->getRevenue(new DateRange(
             new \DateTimeImmutable('2001-03-01 00:00:00'),
             new \DateTimeImmutable('2001-03-31 23:59:59'),
             'custom',
@@ -116,7 +118,7 @@ final class CustomerOverviewProviderTest extends IntegrationTestCase
         $order->setStatusId($ownPaid->getId())->save($this->getPropelConnection());
 
         $kpis = $this->provider(true)->compute($customer, $this->now)->kpis;
-        $list = new CustomerRepository(new OrderRepository());
+        $list = new CustomerRepository(new OrderRepository(new OrderAccess(new AdminSaleUnitScope())), new OrderAccess(new AdminSaleUnitScope()));
         $customerId = (int) $customer->getId();
 
         self::assertNotNull($kpis);
@@ -209,7 +211,7 @@ final class CustomerOverviewProviderTest extends IntegrationTestCase
         $access = $this->createStub(AdminAccessChecker::class);
         $access->method('canView')->willReturn($canViewOrders);
 
-        return new CustomerOverviewProvider(new OrderRepository(), $access, new IdentityTranslator());
+        return new CustomerOverviewProvider(new OrderRepository(new OrderAccess(new AdminSaleUnitScope())), $access, new IdentityTranslator());
     }
 
     private function customer(?string $createdAt = null): Customer

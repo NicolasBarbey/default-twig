@@ -16,6 +16,7 @@ namespace BackOfficeDefaultTwigBundle\Repository;
 
 use BackOfficeDefaultTwigBundle\DTO\Dashboard\DateRange;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilters;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderFilters;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Collection\ObjectCollection;
@@ -50,6 +51,7 @@ final readonly class CustomerRepository
 
     public function __construct(
         private OrderRepository $orders,
+        private OrderAccess $orderAccess,
     ) {
     }
 
@@ -157,7 +159,7 @@ final readonly class CustomerRepository
         $sql = 'SELECT customer_id, COUNT(*) AS total
             FROM `order`
             WHERE customer_id IN ('.$placeholders.')
-              AND status_id IN ('.$this->orders->revenueStatusIdListSql().')
+              AND status_id IN ('.$this->orders->revenueStatusIdListSql().')'.$this->orderAccess->sqlCondition().'
             GROUP BY customer_id';
 
         $statement = Propel::getConnection()->prepare($sql);
@@ -187,7 +189,7 @@ final readonly class CustomerRepository
         $placeholders = implode(',', array_fill(0, \count($customerIds), '?'));
         $sql = 'SELECT customer_id, MAX(created_at) AS last_at
             FROM `order`
-            WHERE customer_id IN ('.$placeholders.')
+            WHERE customer_id IN ('.$placeholders.')'.$this->orderAccess->sqlCondition().'
             GROUP BY customer_id';
 
         $statement = Propel::getConnection()->prepare($sql);

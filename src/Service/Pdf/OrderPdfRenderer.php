@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Pdf;
 
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -56,6 +57,7 @@ final class OrderPdfRenderer
         private readonly TranslatorInterface $translator,
         private readonly ParserResolver $parserResolver,
         private readonly TemplateHelperInterface $templateHelper,
+        private readonly OrderAccess $orderAccess,
     ) {
     }
 
@@ -74,6 +76,8 @@ final class OrderPdfRenderer
         if (!$order instanceof Order) {
             throw new NotFoundHttpException(\sprintf('Order %d not found', $orderId));
         }
+
+        $this->orderAccess->assertReaches($order);
 
         $shipment = null;
         if (null !== $shipmentId) {

@@ -21,6 +21,7 @@ use BackOfficeDefaultTwigBundle\Repository\CustomerRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderReturnRepository;
 use BackOfficeDefaultTwigBundle\Repository\ProductRepository;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -64,6 +65,7 @@ final readonly class DashboardStatsProvider
         private TranslatorInterface $translator,
         private SecurityContext $securityContext,
         private PeriodOptions $periodOptions,
+        private OrderAccess $orderAccess,
     ) {
     }
 
@@ -164,8 +166,11 @@ final readonly class DashboardStatsProvider
      */
     private function loadRecentOrders(): array
     {
+        $query = OrderQuery::create();
+        $this->orderAccess->restrict($query);
+
         return array_values(iterator_to_array(
-            OrderQuery::create()
+            $query
                 ->joinWithCustomer()
                 ->orderByCreatedAt(Criteria::DESC)
                 ->limit(self::RECENT_ORDERS_LIMIT)

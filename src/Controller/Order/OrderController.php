@@ -20,6 +20,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\Order\ForcedStatusChangeLog;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderBulkStatusPlanner;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderDetailContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderFilterPresenter;
@@ -54,7 +55,6 @@ use Thelia\Model\CountryQuery;
 use Thelia\Model\CustomerTitleQuery;
 use Thelia\Model\Order;
 use Thelia\Model\OrderAddressQuery;
-use Thelia\Model\OrderQuery;
 use Thelia\Model\OrderStatusQuery;
 use Thelia\Model\ProductQuery;
 use Thelia\Model\StateQuery;
@@ -94,6 +94,7 @@ final class OrderController
         private readonly OrderHistoryContextBuilder $historyContextBuilder,
         private readonly OrderShipmentContextBuilder $shipmentContextBuilder,
         private readonly OrderSaleUnits $orderSaleUnits,
+        private readonly OrderAccess $orderAccess,
     ) {
     }
 
@@ -129,7 +130,7 @@ final class OrderController
             return $denied;
         }
 
-        $order = $this->orderRepository->findById($order_id);
+        $order = $this->reachableOrder($order_id);
         if ($order === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
@@ -248,7 +249,7 @@ final class OrderController
             return $denied;
         }
 
-        $order = OrderQuery::create()->findPk($order_id);
+        $order = $this->reachableOrder($order_id);
         if ($order === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
@@ -279,7 +280,7 @@ final class OrderController
         $event = new OrderEvent($order);
         $event->setStatus($statusId);
         // An order pointing at a status row that is gone still has to be moved out of it.
-        $previousCode = (string) ($order->getOrderStatus()?->getCode() ?? '');
+        $previousCode = (string) ($order->getOrderStatus()?->getCode() ?? ''); // @phpstan-ignore nullsafe.neverNull (the status row may be gone)
 
         if ($forced) {
             $event->forceStatusTransition();
@@ -312,7 +313,7 @@ final class OrderController
             return $denied;
         }
 
-        $order = OrderQuery::create()->findPk($order_id);
+        $order = $this->reachableOrder($order_id);
         if ($order === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
@@ -345,7 +346,7 @@ final class OrderController
     #[Route('/admin/order/update/{order_id}/delivery-ref', name: 'admin.order.update.deliveryRef', methods: ['POST'], requirements: ['order_id' => '\d+'])]
     public function updateDeliveryRef(int $order_id, Request $request): Response
     {
-        $order = OrderQuery::create()->findPk($order_id);
+        $order = $this->reachableOrder($order_id);
         if ($order === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
@@ -368,7 +369,7 @@ final class OrderController
     #[Route('/admin/order/update/{order_id}/address', name: 'admin.order.update.address', methods: ['POST'], requirements: ['order_id' => '\d+'])]
     public function updateAddress(int $order_id, Request $request): Response
     {
-        $order = OrderQuery::create()->findPk($order_id);
+        $order = $this->reachableOrder($order_id);
         if ($order === null) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
@@ -650,6 +651,20 @@ final class OrderController
     private function stateChoices(string $locale): array
     {
         return $this->countryStates->visibleStates($locale);
+    }
+
+    /**
+     * The order, null when it does not exist; an order of a sale unit the administrator does not reach is a 404.
+     */
+    private function reachableOrder(int $orderId): ?Order
+    {
+        $order = $this->orderRepository->findById($orderId);
+
+        if (null !== $order) {
+            $this->orderAccess->assertReaches($order);
+        }
+
+        return $order;
     }
 
     private function flash(string $type, string $message): void

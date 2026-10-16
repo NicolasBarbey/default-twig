@@ -30,6 +30,7 @@ use BackOfficeDefaultTwigBundle\Service\Catalog\ProductPricingSnapshot;
 use BackOfficeDefaultTwigBundle\Service\Catalog\ProductRelationsContext;
 use BackOfficeDefaultTwigBundle\Service\I18n\EditLocaleResolver;
 use BackOfficeDefaultTwigBundle\Service\Listing\ListingThumbnailPresenter;
+use BackOfficeDefaultTwigBundle\Service\SaleUnit\RestrictedAdminGuard;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\Form\FormFactoryInterface;
@@ -83,6 +84,7 @@ final class ProductController
     public function __construct(
         private readonly AdminFormAction $action,
         private readonly AdminAccessChecker $access,
+        private readonly RestrictedAdminGuard $restricted,
         private readonly Environment $twig,
         private readonly FormFactoryInterface $formFactory,
         private readonly UrlGeneratorInterface $urls,
@@ -136,6 +138,11 @@ final class ProductController
     #[Route('/create', name: 'create', methods: ['POST'])]
     public function create(Request $request): Response
     {
+        // A new product starts with a national price and stock, which hold for every sale unit.
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::CREATE)) {
+            return $denied;
+        }
+
         $form = $this->buildCreateForm($request);
 
         return $this->action->submit(
@@ -171,6 +178,11 @@ final class ProductController
     #[Route('/clone', name: 'clone', methods: ['POST'])]
     public function clone(Request $request): Response
     {
+        // A new product starts with a national price and stock, which hold for every sale unit.
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::CREATE)) {
+            return $denied;
+        }
+
         $form = $this->buildCloneForm();
 
         $cloneData = $request->request->all('thelia_product_clone');

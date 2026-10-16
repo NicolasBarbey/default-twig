@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Twig;
 
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
+use Symfony\Contracts\Service\ResetInterface;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
@@ -24,13 +25,22 @@ use Twig\TwigFunction;
  * `{loop type="order-status"}` pattern. Custom statuses created by
  * integrators are picked up automatically.
  */
-final class SidebarCountersExtension extends AbstractExtension
+final class SidebarCountersExtension extends AbstractExtension implements ResetInterface
 {
     /** @var array{locale: string, data: array{total: int, statuses: list<array{id: int, code: string, title: string, color: string, count: int}>}}|null */
     private ?array $cached = null;
 
     public function __construct(private readonly OrderRepository $orderRepository)
     {
+    }
+
+    /**
+     * The counts are those of the administrator of the request: a process that serves
+     * another one next must not answer with them.
+     */
+    public function reset(): void
+    {
+        $this->cached = null;
     }
 
     public function getFunctions(): array

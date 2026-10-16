@@ -17,7 +17,9 @@ namespace BackOfficeDefaultTwigBundle\Tests\Query;
 use BackOfficeDefaultTwigBundle\Repository\CustomerRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerFilters;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use Symfony\Component\HttpFoundation\Request;
+use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 use Thelia\Model\Customer;
 use Thelia\Model\OrderStatus;
 use Thelia\Test\FixtureFactory;
@@ -43,7 +45,7 @@ final class CustomerListTotalSpentTest extends IntegrationTestCase
     {
         parent::setUp();
 
-        $this->customers = new CustomerRepository(new OrderRepository());
+        $this->customers = new CustomerRepository(new OrderRepository(new OrderAccess(new AdminSaleUnitScope())), new OrderAccess(new AdminSaleUnitScope()));
         $this->factory = $this->createFixtureFactory();
         $this->marker = 'Spent'.bin2hex(random_bytes(4));
     }

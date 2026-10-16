@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Repository;
 
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Collection\ObjectCollection;
 use Thelia\Model\Brand;
@@ -33,6 +34,11 @@ use Thelia\Model\ProductQuery;
 
 final readonly class SearchRepository
 {
+    public function __construct(
+        private OrderAccess $orderAccess,
+    ) {
+    }
+
     public const DISPLAY_LIMIT = 25;
 
     /** Fetch one extra row so the presenter can flag truncated result sets. */
@@ -131,11 +137,17 @@ final readonly class SearchRepository
     /** @return ObjectCollection<int, Order> */
     public function findOrders(string $term): ObjectCollection
     {
+        $like = '%'.$term.'%';
+        $query = OrderQuery::create()
+            ->condition('ref', 'Order.Ref LIKE ?', $like)
+            ->condition('invoice_ref', 'Order.InvoiceRef LIKE ?', $like)
+            ->condition('transaction_ref', 'Order.TransactionRef LIKE ?', $like)
+            ->where(['ref', 'invoice_ref', 'transaction_ref'], Criteria::LOGICAL_OR);
+        // Added after the alternatives, as one more condition they all have to meet.
+        $this->orderAccess->restrict($query);
+
         /** @var ObjectCollection<int, Order> $result */
-        $result = OrderQuery::create()
-            ->filterByRef('%'.$term.'%', Criteria::LIKE)
-            ->_or()->filterByInvoiceRef('%'.$term.'%', Criteria::LIKE)
-            ->_or()->filterByTransactionRef('%'.$term.'%', Criteria::LIKE)
+        $result = $query
             ->limit(self::SEARCH_LIMIT)
             ->find();
 

@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Repository;
 
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Service\OrderReturn\OrderReturnFilters;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Collection\ObjectCollection;
@@ -60,12 +61,27 @@ final class OrderReturnRepository
     /** @var array<string, list<array{id: int, code: string, effective_code: string, title: string, color: string}>> */
     private array $statusesLocalized = [];
 
+    public function __construct(
+        private readonly OrderAccess $access,
+    ) {
+    }
+
+    /**
+     * A return is reached through its order: only those of the sale units the administrator reaches.
+     */
+    private function restrict(OrderReturnQuery $query): OrderReturnQuery
+    {
+        $this->access->restrictByOrderId($query, OrderReturnTableMap::COL_ORDER_ID);
+
+        return $query;
+    }
+
     /**
      * @return array{rows: ObjectCollection<int, OrderReturn>, total: int, lastPage: int}
      */
     public function findPaginated(OrderReturnFilters $filters, int $page, int $perPage): array
     {
-        $query = OrderReturnQuery::create();
+        $query = $this->restrict(OrderReturnQuery::create());
         $filters->applyTo($query);
 
         $total = (clone $query)->count();
@@ -176,7 +192,7 @@ final class OrderReturnRepository
 
     public function countAll(): int
     {
-        return (int) OrderReturnQuery::create()->count();
+        return (int) $this->restrict(OrderReturnQuery::create())->count();
     }
 
     /**
@@ -196,7 +212,7 @@ final class OrderReturnRepository
      */
     public function findStatusesWithCounts(string $locale): array
     {
-        return $this->statusesWithCounts[$locale] ??= $this->readStatusesWithCounts($locale);
+        return $this->statusesWithCounts[$locale.$this->access->sqlCondition()] ??= $this->readStatusesWithCounts($locale);
     }
 
     /**
@@ -207,12 +223,12 @@ final class OrderReturnRepository
      */
     public function findPreviousNext(OrderReturn $current): array
     {
-        $previous = OrderReturnQuery::create()
+        $previous = $this->restrict(OrderReturnQuery::create())
             ->filterById($current->getId(), Criteria::LESS_THAN)
             ->filterByStatusId($current->getStatusId(), Criteria::EQUAL)
             ->orderById(Criteria::DESC)
             ->findOne();
-        $next = OrderReturnQuery::create()
+        $next = $this->restrict(OrderReturnQuery::create())
             ->filterById($current->getId(), Criteria::GREATER_THAN)
             ->filterByStatusId($current->getStatusId(), Criteria::EQUAL)
             ->orderById(Criteria::ASC)
@@ -238,7 +254,7 @@ final class OrderReturnRepository
 
         $threshold = (new \DateTimeImmutable())->modify('-'.$hours.' hours')->format('Y-m-d H:i:s');
 
-        return (int) OrderReturnQuery::create()
+        return (int) $this->restrict(OrderReturnQuery::create())
             ->filterByStatusId($statusIds, Criteria::IN)
             ->filterByCreatedAt($threshold, Criteria::LESS_EQUAL)
             ->count();
@@ -332,7 +348,7 @@ final class OrderReturnRepository
     private function readStatusesWithCounts(string $locale): array
     {
         $counts = [];
-        $grouped = OrderReturnQuery::create()
+        $grouped = $this->restrict(OrderReturnQuery::create())
             ->withColumn('COUNT(*)', 'return_count')
             ->groupByStatusId()
             ->select(['StatusId', 'return_count'])

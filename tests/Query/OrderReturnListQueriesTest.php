@@ -15,7 +15,9 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Tests\Query;
 
 use BackOfficeDefaultTwigBundle\Repository\OrderReturnRepository;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Tests\Support\QueryCounter;
+use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 use Thelia\Model\Order;
 use Thelia\Model\OrderProduct;
 use Thelia\Model\OrderReturn;
@@ -43,7 +45,7 @@ final class OrderReturnListQueriesTest extends IntegrationTestCase
     {
         parent::setUp();
 
-        $this->returns = new OrderReturnRepository();
+        $this->returns = new OrderReturnRepository(new OrderAccess(new AdminSaleUnitScope()));
         $this->factory = $this->createFixtureFactory();
     }
 

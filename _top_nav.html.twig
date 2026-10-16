@@ -79,12 +79,14 @@
                     <span class="visually-hidden">{{ 'Account security'|trans }}</span>
                 </a>
             </li>
+            {% if not sale_unit_restricted() %}
             <li class="nav-item">
                 <a class="nav-link" href="{{ path('admin.configuration.administrators.view-profile') }}" title="{{ 'Edit profile'|trans }}" data-testid="bo-top-nav-profile">
                     <i class="bi bi-person-circle" aria-hidden="true"></i>
                     <span class="ms-1 d-none d-lg-inline">{{ bo_current_admin().firstname|default('Admin') }}</span>
                 </a>
             </li>
+            {% endif %}
             <li class="nav-item">
                 <a class="nav-link text-danger" href="/admin/logout" title="{{ 'Logout'|trans }}" data-testid="bo-top-nav-logout">
                     <i class="bi bi-box-arrow-right" aria-hidden="true"></i>

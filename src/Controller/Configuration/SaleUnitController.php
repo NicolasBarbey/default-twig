@@ -30,11 +30,13 @@ use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 use Thelia\Form\Exception\FormValidationException;
 use Thelia\Model\SaleUnit;
 use Thelia\Tools\TokenProvider;
@@ -70,6 +72,7 @@ final class SaleUnitController
         private readonly UrlGeneratorInterface $urls,
         private readonly TokenProvider $tokens,
         private readonly TranslatorInterface $translator,
+        private readonly AdminSaleUnitScope $scope,
     ) {
     }
 
@@ -89,6 +92,7 @@ final class SaleUnitController
             'update_position_token' => $this->tokens->assignToken(),
             'sort_field' => $sort->field,
             'sort_direction' => $sort->direction,
+            'restricted' => $this->scope->isRestricted(),
         ]));
     }
 
@@ -97,6 +101,10 @@ final class SaleUnitController
     {
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::CREATE)) {
             return $denied;
+        }
+
+        if ($this->scope->isRestricted()) {
+            return $this->refuseWhenRestricted($this->translator->trans('Sale unit creation'), $this->translator->trans('You are restricted to some sale units: you cannot create one.'));
         }
 
         $form = $this->creationForm($request->getLocale());
@@ -129,7 +137,7 @@ final class SaleUnitController
             return $denied;
         }
 
-        $saleUnit = $this->saleUnits->find($sale_unit_id);
+        $saleUnit = $this->reachableSaleUnit($sale_unit_id);
         if (null === $saleUnit) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
@@ -152,7 +160,7 @@ final class SaleUnitController
             return $denied;
         }
 
-        $saleUnit = $this->saleUnits->find($sale_unit_id);
+        $saleUnit = $this->reachableSaleUnit($sale_unit_id);
         if (null === $saleUnit) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
@@ -197,6 +205,11 @@ final class SaleUnitController
     {
         $position = (int) ($request->query->get('position') ?? $request->request->get('position', 0));
 
+        // The order is shared by every unit: moving one renumbers the others.
+        if ($this->scope->isRestricted()) {
+            return $this->refuseWhenRestricted($this->translator->trans('Sale unit reorder'), $this->translator->trans('You are restricted to some sale units: you cannot reorder them.'));
+        }
+
         return $this->tokenWrite($request, AccessManager::UPDATE, 'Sale unit reorder', function (SaleUnit $saleUnit) use ($position): string {
             $this->writer->moveTo($saleUnit, $position);
 
@@ -207,6 +220,10 @@ final class SaleUnitController
     #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
+        if ($this->scope->isRestricted()) {
+            return $this->refuseWhenRestricted($this->translator->trans('Sale unit deletion'), $this->translator->trans('You are restricted to some sale units: you cannot delete one.'));
+        }
+
         return $this->tokenWrite($request, AccessManager::DELETE, 'Sale unit deletion', function (SaleUnit $saleUnit): string {
             $code = (string) $saleUnit->getCode();
             $this->writer->delete($saleUnit);
@@ -229,7 +246,7 @@ final class SaleUnitController
 
         $redirect = new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         $saleUnitId = (int) ($request->query->get('sale_unit_id') ?? $request->request->get('sale_unit_id', 0));
-        $saleUnit = $this->saleUnits->find($saleUnitId);
+        $saleUnit = $this->reachableSaleUnit($saleUnitId);
         if (null === $saleUnit) {
             return $redirect;
         }
@@ -250,6 +267,27 @@ final class SaleUnitController
         $this->adminLogger->log(self::RESOURCE, $access, $logLine, $saleUnitId);
 
         return $redirect;
+    }
+
+    /**
+     * The unit, null when it does not exist; a unit the administrator is not restricted to is a 404.
+     */
+    private function reachableSaleUnit(int $saleUnitId): ?SaleUnit
+    {
+        $saleUnit = $this->saleUnits->find($saleUnitId);
+
+        if (null !== $saleUnit && !$this->scope->allows($saleUnitId)) {
+            throw new NotFoundHttpException(\sprintf('Sale unit %d not found', $saleUnitId));
+        }
+
+        return $saleUnit;
+    }
+
+    private function refuseWhenRestricted(string $actionLabel, string $message): Response
+    {
+        $this->errorRenderer->setup($actionLabel, $message);
+
+        return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
     }
 
     private function creationForm(string $locale): FormInterface

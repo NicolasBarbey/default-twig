@@ -68,7 +68,7 @@
             { route: 'admin.sale-unit.default', label: 'Sale units'|trans, icon: 'bi-shop-window', resource: 'admin.sale-unit' },
             { route: 'admin.configuration.variables.default', label: 'System variables'|trans, icon: 'bi-sliders', resource: 'admin.configuration.variable' },
             { route: 'admin.configuration.profiles.list', label: 'Administration profiles'|trans, icon: 'bi-shield-lock', resource: 'admin.configuration.profile' },
-            { route: 'admin.configuration.administrators.view', label: 'Administrators'|trans, icon: 'bi-people', resource: 'admin.configuration.administrator' },
+            { route: 'admin.configuration.administrators.view', label: 'Administrators'|trans, icon: 'bi-people', resource: 'admin.configuration.administrator', enabled: not sale_unit_restricted() },
             { route: 'admin.configuration.languages.default', label: 'Languages and URLs'|trans, icon: 'bi-translate', resource: 'admin.configuration.language' },
             { route: 'admin.configuration.translations', label: 'Translations'|trans, icon: 'bi-globe', resource: 'admin.configuration.translations' },
             { route: 'admin.configuration.translations-customers-title', label: 'Customer title translations'|trans, icon: 'bi-person-badge', resource: 'admin.configuration.translations' },

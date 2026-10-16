@@ -1,0 +1,12 @@
+{# The sale units an administrator is restricted to: one checkbox per unit, none checked meaning all of them. #}
+<fieldset class="mb-3" data-testid="{{ testid }}">
+    <legend class="form-label fs-6">{{ field.vars.label }}</legend>
+    {% for choice in field %}
+        <div class="form-check">
+            {{ form_widget(choice, { attr: { class: 'form-check-input' } }) }}
+            {{ form_label(choice, null, { label_attr: { class: 'form-check-label' } }) }}
+        </div>
+    {% endfor %}
+    <div class="form-text">{{ field.vars.help }}</div>
+    {% do field.setRendered %}
+</fieldset>

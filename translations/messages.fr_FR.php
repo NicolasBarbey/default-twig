@@ -2533,4 +2533,10 @@ return [
     'Enabled — also remove the cookies of an anonymous page so a proxy can keep it' => 'Activé — retire aussi les cookies d\'une page anonyme pour qu\'un proxy puisse la garder',
     'Shared cache lifetime (seconds)' => 'Durée du cache partagé (secondes)',
     'How long a shared cache may keep a public page. An invalid value falls back to 300 seconds.' => 'Durée pendant laquelle un cache partagé peut garder une page publique. Une valeur invalide revient à 300 secondes.',
+    'The administrator only works on the checked sale units. Check none to give access to all of them.' => 'L\'administrateur ne travaille que sur les points de vente cochés. N\'en cochez aucun pour lui donner accès à tous.',
+    'You are restricted to some sale units: you cannot create one.' => 'Vous êtes limité à certains points de vente : vous ne pouvez pas en créer.',
+    'You are restricted to some sale units: you cannot reorder them.' => 'Vous êtes limité à certains points de vente : vous ne pouvez pas les réordonner.',
+    'You are restricted to some sale units: you cannot delete one.' => 'Vous êtes limité à certains points de vente : vous ne pouvez pas en supprimer.',
+    'This sale unit cannot be deleted: some administrators are restricted to it. Detach them from it first, or turn it off.' => 'Ce point de vente ne peut pas être supprimé : des administrateurs y sont limités. Détachez-les d\'abord, ou désactivez-le.',
+    'You are restricted to some sale units: this action is not available to you.' => 'Vous êtes limité à certains points de vente : cette action ne vous est pas ouverte.',
 ];

@@ -16,7 +16,9 @@ namespace BackOfficeDefaultTwigBundle\Repository;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Collection\ObjectCollection;
+use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 use Thelia\Model\Map\SaleUnitI18nTableMap;
+use Thelia\Model\Map\SaleUnitTableMap;
 use Thelia\Model\OrderQuery;
 use Thelia\Model\SaleUnit;
 use Thelia\Model\SaleUnitProductPrice;
@@ -29,6 +31,9 @@ use Thelia\Model\SaleUnitQuery;
  * Reads of the sale units and of what each one owns of the catalog: its prices and its
  * stocks. A shop that never declared a sale unit answers every question with one query
  * on an empty table.
+ *
+ * The lists (the options and the sorted units) only hold the units the administrator
+ * reaches: all of them, unless it is restricted to some.
  */
 final readonly class SaleUnitRepository
 {
@@ -37,6 +42,11 @@ final readonly class SaleUnitRepository
      * translation in that language costs no query of its own, and falls back to its code.
      */
     private const TITLE_COLUMN = 'localized_title';
+
+    public function __construct(
+        private AdminSaleUnitScope $scope,
+    ) {
+    }
 
     public function find(int $saleUnitId): ?SaleUnit
     {
@@ -85,6 +95,7 @@ final readonly class SaleUnitRepository
     {
         $criteria = 'DESC' === strtoupper($direction) ? Criteria::DESC : Criteria::ASC;
         $query = self::withLocalizedTitle(SaleUnitQuery::create(), $locale);
+        $this->scope->restrictQuery($query, SaleUnitTableMap::COL_ID);
 
         match ($field) {
             'id' => $query->orderById($criteria),
@@ -110,7 +121,10 @@ final readonly class SaleUnitRepository
     {
         $options = [];
 
-        foreach (self::withLocalizedTitle(SaleUnitQuery::create(), $locale)->orderByPosition()->orderById()->find() as $saleUnit) {
+        $query = self::withLocalizedTitle(SaleUnitQuery::create(), $locale);
+        $this->scope->restrictQuery($query, SaleUnitTableMap::COL_ID);
+
+        foreach ($query->orderByPosition()->orderById()->find() as $saleUnit) {
             $options[] = [
                 'id' => (int) $saleUnit->getId(),
                 'code' => (string) $saleUnit->getCode(),

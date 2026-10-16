@@ -17,6 +17,7 @@ namespace BackOfficeDefaultTwigBundle\Service\SaleUnit;
 use BackOfficeDefaultTwigBundle\Repository\SaleUnitRepository;
 use Propel\Runtime\Propel;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Thelia\Domain\SaleUnit\Exception\SaleUnitStillAssignedException;
 use Thelia\Model\Map\SaleUnitTableMap;
 use Thelia\Model\SaleUnit;
 
@@ -60,9 +61,11 @@ final readonly class SaleUnitWriter
 
     /**
      * The prices and stocks of the unit go with it. An order placed on it keeps it: the
-     * database refuses the deletion, and the merchant is told to turn the unit off instead.
+     * database refuses the deletion, and the merchant is told to turn the unit off instead. The same goes
+     * for a unit some administrator is restricted to: it would leave that administrator with no unit,
+     * which reads as every unit.
      *
-     * @throws SaleUnitRefusedException when orders were placed on the unit
+     * @throws SaleUnitRefusedException when orders were placed on the unit, or administrators are restricted to it
      */
     public function delete(SaleUnit $saleUnit): void
     {
@@ -71,7 +74,11 @@ final readonly class SaleUnitWriter
             throw new SaleUnitRefusedException($this->translator->trans('This sale unit cannot be deleted: %count% order(s) were placed on it. Turn it off instead.', ['%count%' => $orders]));
         }
 
-        $saleUnit->delete();
+        try {
+            $saleUnit->delete();
+        } catch (SaleUnitStillAssignedException) { // @phpstan-ignore catch.neverThrown (thrown by the model's preDelete hook)
+            throw new SaleUnitRefusedException($this->translator->trans('This sale unit cannot be deleted: some administrators are restricted to it. Detach them from it first, or turn it off.'));
+        }
     }
 
     /**

@@ -22,6 +22,7 @@ use BackOfficeDefaultTwigBundle\Service\Product\SaleUnitValuesWriter;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -29,6 +30,7 @@ use Thelia\Core\HttpFoundation\Session\Session;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Exception\TokenAuthenticationException;
 use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 use Thelia\Model\ProductSaleElementsQuery;
 use Thelia\Tools\TokenProvider;
 
@@ -48,6 +50,7 @@ final class ProductSaleUnitValuesController
         private readonly UrlGeneratorInterface $urls,
         private readonly TokenProvider $tokens,
         private readonly TranslatorInterface $translator,
+        private readonly AdminSaleUnitScope $scope,
     ) {
     }
 
@@ -65,6 +68,11 @@ final class ProductSaleUnitValuesController
 
         if (null === $saleUnit || null === $currency || $productId <= 0) {
             return new RedirectResponse($this->urls->generate('admin.products.default'));
+        }
+
+        // A unit the administrator is not restricted to does not exist for it: nothing is written on it.
+        if (!$this->scope->allows((int) $saleUnit->getId())) {
+            throw new NotFoundHttpException(\sprintf('Sale unit %d not found', (int) $saleUnit->getId()));
         }
 
         $redirect = new RedirectResponse($this->urls->generate('admin.products.update', [

@@ -79,6 +79,9 @@
                 <div class="col-md-6">{{ form_row(create_form.lastname) }}</div>
                 <div class="col-md-6">{{ form_row(create_form.password) }}</div>
                 <div class="col-md-6">{{ form_row(create_form.profile) }}</div>
+                {% if create_form.sale_units is defined %}
+                    <div class="col-12">{% include '@BackOfficeDefaultTwig/configuration/administrator/_sale_units.html.twig' with { field: create_form.sale_units, testid: 'administrator-create-sale-units' } only %}</div>
+                {% endif %}
             </div>
         {% endblock %}
     {% endcomponent %}
@@ -104,6 +107,9 @@
                     <div class="col-md-6">{{ form_row(edit_form.lastname) }}</div>
                     <div class="col-md-6">{{ form_row(edit_form.password) }}</div>
                     <div class="col-md-6">{{ form_row(edit_form.profile) }}</div>
+                    {% if edit_form.sale_units is defined %}
+                        <div class="col-12">{% include '@BackOfficeDefaultTwig/configuration/administrator/_sale_units.html.twig' with { field: edit_form.sale_units, testid: 'administrator-sale-units-' ~ admin_id } only %}</div>
+                    {% endif %}
                 </div>
             {% endblock %}
         {% endcomponent %}

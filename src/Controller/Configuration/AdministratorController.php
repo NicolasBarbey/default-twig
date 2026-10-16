@@ -15,8 +15,10 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Controller\Configuration;
 
 use BackOfficeDefaultTwigBundle\Form\Administrator\AdministratorType;
+use BackOfficeDefaultTwigBundle\Repository\SaleUnitRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
+use BackOfficeDefaultTwigBundle\Service\SaleUnit\RestrictedAdminGuard;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\ListSort;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Propel\Runtime\ActiveQuery\Criteria;
@@ -27,13 +29,17 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Event\Administrator\AdministratorEvent;
+use Thelia\Core\Event\Administrator\AdministratorSaleUnitsEvent;
 use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Core\Security\SecurityContext;
 use Thelia\Domain\Admin\TwoFactor\AdminTwoFactorManager;
+use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
+use Thelia\Domain\SaleUnit\SaleUnitActivityChecker;
 use Thelia\Model\Admin;
 use Thelia\Model\AdminQuery;
 use Thelia\Model\AdminTwoFactorQuery;
@@ -58,12 +64,21 @@ final class AdministratorController
         private readonly SecurityContext $securityContext,
         private readonly AdminTwoFactorManager $twoFactorManager,
         private readonly TokenProvider $tokens,
+        private readonly EventDispatcherInterface $events,
+        private readonly AdminSaleUnitScope $saleUnitScope,
+        private readonly SaleUnitActivityChecker $saleUnitActivity,
+        private readonly SaleUnitRepository $saleUnits,
+        private readonly RestrictedAdminGuard $restricted,
     ) {
     }
 
     #[Route('', name: 'view', methods: ['GET'])]
     public function list(Request $request): Response
     {
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::VIEW)) {
+            return $denied;
+        }
+
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::VIEW)) {
             return $denied;
         }
@@ -72,16 +87,25 @@ final class AdministratorController
     }
 
     #[Route('/view', name: 'view-profile', methods: ['GET'])]
-    public function viewProfile(): RedirectResponse
+    public function viewProfile(): Response
     {
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::VIEW)) {
+            return $denied;
+        }
+
         return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
     }
 
     #[Route('/add', name: 'add', methods: ['POST'])]
     public function add(): Response
     {
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::CREATE)) {
+            return $denied;
+        }
+
         $form = $this->formFactory->createNamed('thelia_administrator_create', AdministratorType::class, null, [
             'profile_choices' => $this->profileChoices(),
+            'sale_unit_choices' => $this->saleUnitChoices($this->resolveDefaultLocale()),
         ]);
 
         return $this->action->submit(
@@ -109,12 +133,17 @@ final class AdministratorController
             successRoute: self::LIST_ROUTE,
             renderError: fn (): Response => $this->renderListWithError(),
             describeForLog: fn (AdministratorEvent $event): array => $this->describe($event, 'created'),
+            afterDispatch: fn (AdministratorEvent $event) => $this->saveSaleUnits($form, (int) $event->getAdministrator()->getId()),
         );
     }
 
     #[Route('/save', name: 'save', methods: ['POST'])]
     public function save(Request $request): Response
     {
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::UPDATE)) {
+            return $denied;
+        }
+
         // Each row's edit form is registered as 'thelia_administrator_update_<id>' (see
         // createEditForm), so the posted fields are namespaced by id. This route carries no id, so
         // recover it from the posted form-name prefix and rebuild the form under the matching name —
@@ -126,6 +155,7 @@ final class AdministratorController
             [
                 'include_id' => true,
                 'profile_choices' => $this->profileChoices(),
+                'sale_unit_choices' => $this->saleUnitChoices($this->resolveDefaultLocale()),
             ],
         );
 
@@ -156,12 +186,17 @@ final class AdministratorController
             successRoute: self::LIST_ROUTE,
             renderError: fn (): Response => $this->renderListWithError(),
             describeForLog: fn (AdministratorEvent $event): array => $this->describe($event, 'modified'),
+            afterDispatch: fn (AdministratorEvent $event) => $this->saveSaleUnits($form, (int) $event->getAdministrator()->getId()),
         );
     }
 
     #[Route('/delete', name: 'delete', methods: ['POST'])]
     public function delete(Request $request): Response
     {
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::DELETE)) {
+            return $denied;
+        }
+
         $administratorId = (int) ($request->query->get('administrator_id') ?? $request->request->get('administrator_id', 0));
 
         if ($administratorId === $this->currentAdminId()) {
@@ -195,6 +230,10 @@ final class AdministratorController
     #[Route('/two-factor-reset', name: 'two-factor-reset', methods: ['POST'])]
     public function resetTwoFactor(Request $request): Response
     {
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::UPDATE)) {
+            return $denied;
+        }
+
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
             return $denied;
         }
@@ -272,6 +311,7 @@ final class AdministratorController
         $editForms = [];
         $defaultLocale = $this->resolveDefaultLocale();
         $profileChoices = $this->profileChoices();
+        $saleUnitChoices = $this->saleUnitChoices($request?->getLocale() ?? $defaultLocale);
         $currentAdminId = $this->currentAdminId();
         $protectedAdminIds = array_map(intval(...), AdminTwoFactorQuery::create()
             ->filterByEnabledAt(null, Criteria::ISNOTNULL)
@@ -281,13 +321,14 @@ final class AdministratorController
 
         foreach ($admins as $admin) {
             $rows[] = $this->administratorToRow($admin, $currentAdminId, $defaultLocale, \in_array((int) $admin->getId(), $protectedAdminIds, true));
-            $editForms[$admin->getId()] = $this->createEditForm($admin, $defaultLocale, $profileChoices)->createView();
+            $editForms[$admin->getId()] = $this->createEditForm($admin, $defaultLocale, $profileChoices, $saleUnitChoices)->createView();
         }
 
         $createForm = $this->formFactory->createNamed('thelia_administrator_create', AdministratorType::class, [
             'locale' => $defaultLocale,
         ], [
             'profile_choices' => $profileChoices,
+            'sale_unit_choices' => $saleUnitChoices,
         ]);
 
         $showEmailChangeNotice = $request !== null
@@ -389,10 +430,11 @@ final class AdministratorController
 
     /**
      * @param array<int|string, int|string> $profileChoices
+     * @param array<string, int>            $saleUnitChoices
      */
-    private function createEditForm(Admin $admin, string $defaultLocale, array $profileChoices): FormInterface
+    private function createEditForm(Admin $admin, string $defaultLocale, array $profileChoices, array $saleUnitChoices): FormInterface
     {
-        return $this->formFactory->createNamed('thelia_administrator_update_'.$admin->getId(), AdministratorType::class, [
+        $data = [
             'id' => $admin->getId(),
             'login' => $admin->getLogin(),
             'firstname' => $admin->getFirstname(),
@@ -400,10 +442,63 @@ final class AdministratorController
             'email' => $admin->getEmail(),
             'profile' => $admin->getProfileId(),
             'locale' => $admin->getLocale() ?: $defaultLocale,
-        ], [
+        ];
+
+        if ([] !== $saleUnitChoices) {
+            $data['sale_units'] = array_values(array_intersect(
+                $this->saleUnitScope->assignedSaleUnitIds((int) $admin->getId()),
+                $saleUnitChoices,
+            ));
+        }
+
+        return $this->formFactory->createNamed('thelia_administrator_update_'.$admin->getId(), AdministratorType::class, $data, [
             'include_id' => true,
             'profile_choices' => $profileChoices,
+            'sale_unit_choices' => $saleUnitChoices,
         ]);
+    }
+
+    /**
+     * The sale units an administrator can be attached to, by title: every unit for an
+     * administrator who is not restricted, its own for one who is, and nothing while the
+     * shop sells from no unit (the field is not offered then).
+     *
+     * @return array<string, int>
+     */
+    private function saleUnitChoices(string $locale): array
+    {
+        if (!$this->saleUnitActivity->isMultiSaleUnitMode()) {
+            return [];
+        }
+
+        $choices = [];
+        foreach ($this->saleUnits->findOptions($locale) as $option) {
+            $label = $option['title'];
+            $choices[isset($choices[$label]) ? $label.' ('.$option['code'].')' : $label] = $option['id'];
+        }
+
+        return $choices;
+    }
+
+    /**
+     * Attaches the administrator to the sale units its form ticks, once it is saved. Only an
+     * administrator who is not restricted gets here (the routes refuse the others), and a
+     * restricted one is refused again here: its choice must never end as "no unit", which
+     * reads as every unit.
+     */
+    private function saveSaleUnits(FormInterface $form, int $administratorId): void
+    {
+        if (!$form->has('sale_units') || $this->restricted->isRestricted()) {
+            return;
+        }
+
+        $selected = array_map(intval(...), (array) $form->get('sale_units')->getData());
+
+        $this->events->dispatch(
+            new AdministratorSaleUnitsEvent($administratorId, $selected),
+            TheliaEvents::ADMINISTRATOR_UPDATE_SALE_UNITS,
+        );
+        $this->saleUnitScope->forget($administratorId);
     }
 
     /**

@@ -20,6 +20,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 use Thelia\Model\SaleUnit;
 
 final readonly class SaleUnitListPresenter
@@ -30,6 +31,7 @@ final readonly class SaleUnitListPresenter
         private SaleUnitRepository $saleUnits,
         private UrlGeneratorInterface $urls,
         private TranslatorInterface $translator,
+        private AdminSaleUnitScope $scope,
     ) {
     }
 
@@ -39,9 +41,10 @@ final readonly class SaleUnitListPresenter
     public function rows(string $locale, string $sortField, string $sortDirection): array
     {
         $rows = [];
+        $restricted = $this->scope->isRestricted();
 
         foreach ($this->saleUnits->findSorted($locale, $sortField, $sortDirection) as $saleUnit) {
-            $rows[] = $this->row($saleUnit, $locale);
+            $rows[] = $this->row($saleUnit, $locale, $restricted);
         }
 
         return $rows;
@@ -50,7 +53,7 @@ final readonly class SaleUnitListPresenter
     /**
      * @return array<string, mixed>
      */
-    private function row(SaleUnit $saleUnit, string $locale): array
+    private function row(SaleUnit $saleUnit, string $locale, bool $restricted): array
     {
         $id = (int) $saleUnit->getId();
         $title = SaleUnitRepository::titleOf($saleUnit, $locale);
@@ -71,14 +74,14 @@ final readonly class SaleUnitListPresenter
                     grantedAttribute: AccessManager::UPDATE,
                     grantedSubject: AdminResources::SALE_UNIT,
                 ),
-                new RowAction(
+                ...$restricted ? [] : [new RowAction(
                     kind: 'delete',
                     label: $this->translator->trans('Delete'),
                     modalTarget: '#sale-unit-delete-modal',
                     grantedAttribute: AccessManager::DELETE,
                     grantedSubject: AdminResources::SALE_UNIT,
                     dataAttributes: ['sale-unit-id' => $id, 'sale-unit-label' => $title],
-                ),
+                )],
             ],
         ];
     }

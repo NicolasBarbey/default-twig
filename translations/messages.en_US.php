@@ -457,4 +457,10 @@ return [
     'Enabled — also remove the cookies of an anonymous page so a proxy can keep it' => 'Enabled — also remove the cookies of an anonymous page so a proxy can keep it',
     'Shared cache lifetime (seconds)' => 'Shared cache lifetime (seconds)',
     'How long a shared cache may keep a public page. An invalid value falls back to 300 seconds.' => 'How long a shared cache may keep a public page. An invalid value falls back to 300 seconds.',
+    'The administrator only works on the checked sale units. Check none to give access to all of them.' => 'The administrator only works on the checked sale units. Check none to give access to all of them.',
+    'You are restricted to some sale units: you cannot create one.' => 'You are restricted to some sale units: you cannot create one.',
+    'You are restricted to some sale units: you cannot reorder them.' => 'You are restricted to some sale units: you cannot reorder them.',
+    'You are restricted to some sale units: you cannot delete one.' => 'You are restricted to some sale units: you cannot delete one.',
+    'This sale unit cannot be deleted: some administrators are restricted to it. Detach them from it first, or turn it off.' => 'This sale unit cannot be deleted: some administrators are restricted to it. Detach them from it first, or turn it off.',
+    'You are restricted to some sale units: this action is not available to you.' => 'You are restricted to some sale units: this action is not available to you.',
 ];

@@ -18,6 +18,7 @@ use BackOfficeDefaultTwigBundle\Repository\OrderHistoryRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderHistoryNotePolicy;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -65,6 +66,7 @@ final class OrderHistoryController
         private readonly OrderHistoryRepository $history,
         private readonly OrderHistoryNotePolicy $notePolicy,
         private readonly OrderHistoryRecorder $recorder,
+        private readonly OrderAccess $orderAccess,
     ) {
     }
 
@@ -79,6 +81,7 @@ final class OrderHistoryController
         if (null === $order) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
+        $this->orderAccess->assertReaches($order);
 
         if (!$this->tokenIsValid($request)) {
             return $this->back($request, $order_id, 'danger', 'The form has expired, please try again.');
@@ -112,6 +115,7 @@ final class OrderHistoryController
         if (null === $order) {
             return new RedirectResponse($this->urls->generate(self::LIST_ROUTE));
         }
+        $this->orderAccess->assertReaches($order);
 
         if (!$this->tokenIsValid($request)) {
             return $this->back($request, $order_id, 'danger', 'The form has expired, please try again.');

@@ -20,6 +20,7 @@ use BackOfficeDefaultTwigBundle\Service\File\ProductVideoPresenter;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationIdentifierNotices;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationsTabContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Product\SaleUnitValuesContextBuilder;
+use BackOfficeDefaultTwigBundle\Service\SaleUnit\RestrictedAdminGuard;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -106,6 +107,7 @@ final class ProductAdvancedController
         private readonly TranslatorInterface $translator,
         private readonly SaleUnitValuesContextBuilder $saleUnitValuesContextBuilder,
         private readonly RequestStack $requestStack,
+        private readonly RestrictedAdminGuard $restricted,
     ) {
     }
 
@@ -524,6 +526,11 @@ final class ProductAdvancedController
     #[Route('/admin/product/combination/add', name: 'admin.product.combination.add', methods: ['POST'])]
     public function combinationAdd(Request $request): Response
     {
+        // What these write holds for every sale unit.
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::UPDATE)) {
+            return $denied;
+        }
+
         $product = ProductQuery::create()->findPk((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)));
         if ($product === null) {
             return new RedirectResponse($this->urls->generate('admin.products.default'));
@@ -563,6 +570,11 @@ final class ProductAdvancedController
     #[Route('/admin/product/combination/delete', name: 'admin.product.combination.delete', methods: ['POST'])]
     public function combinationDelete(Request $request): Response
     {
+        // What these write holds for every sale unit.
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::UPDATE)) {
+            return $denied;
+        }
+
         $event = new ProductSaleElementDeleteEvent(
             (int) ($request->query->get('product_sale_element_id') ?? $request->request->get('product_sale_element_id', 0)),
             $this->defaultCurrencyId(),
@@ -583,6 +595,11 @@ final class ProductAdvancedController
     #[Route('/admin/product/combinations/update', name: 'admin.product.combination.update', methods: ['POST'])]
     public function combinationUpdate(Request $request, EventDispatcherInterface $events): Response
     {
+        // What these write holds for every sale unit.
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::UPDATE)) {
+            return $denied;
+        }
+
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
             return $denied;
         }
@@ -699,6 +716,11 @@ final class ProductAdvancedController
     #[Route('/admin/product/combination/build', name: 'admin.product.combination.build', methods: ['POST'])]
     public function combinationBuild(Request $request): Response
     {
+        // What these write holds for every sale unit.
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::UPDATE)) {
+            return $denied;
+        }
+
         $product = ProductQuery::create()->findPk((int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)));
         if ($product === null) {
             return new RedirectResponse($this->urls->generate('admin.products.default'));
@@ -774,6 +796,11 @@ final class ProductAdvancedController
     #[Route('/admin/product/default-price/update', name: 'admin.product.combination.defaut-price.update', methods: ['POST'])]
     public function combinationDefaultPriceUpdate(Request $request, EventDispatcherInterface $events): Response
     {
+        // What these write holds for every sale unit.
+        if ($denied = $this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::UPDATE)) {
+            return $denied;
+        }
+
         if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::UPDATE)) {
             return $denied;
         }

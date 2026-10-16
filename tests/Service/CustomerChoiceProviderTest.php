@@ -18,7 +18,9 @@ use BackOfficeDefaultTwigBundle\Repository\CustomerRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerChoiceProvider;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 use Thelia\Model\Customer;
 use Thelia\Model\CustomerTitleQuery;
 use Thelia\Test\IntegrationTestCase;
@@ -81,7 +83,7 @@ final class CustomerChoiceProviderTest extends IntegrationTestCase
         $access = $this->createMock(AdminAccessChecker::class);
         $access->method('canView')->with(AdminResources::CUSTOMER)->willReturn($granted);
 
-        return new CustomerChoiceProvider(new CustomerRepository(new OrderRepository()), $access);
+        return new CustomerChoiceProvider(new CustomerRepository(new OrderRepository(new OrderAccess(new AdminSaleUnitScope())), new OrderAccess(new AdminSaleUnitScope())), $access);
     }
 
     private function customer(): Customer
