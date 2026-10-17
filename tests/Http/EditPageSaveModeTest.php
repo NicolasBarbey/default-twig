@@ -68,7 +68,8 @@ final class EditPageSaveModeTest extends WebIntegrationTestCase
     {
         yield 'product' => ['product', static function (FixtureFactory $factory): array {
             $currency = CurrencyQuery::create()->findOneByByDefault(1);
-            $product = $factory->product($factory->category(), $factory->taxRule(), $currency ?? $factory->currency());
+            // A product without a title would fail the validation of the sheet on save.
+            $product = $factory->product($factory->category(), $factory->taxRule(), $currency ?? $factory->currency(), ['title' => 'Product under edit']);
 
             return ['/admin/products/update?product_id='.$product->getId(), '/admin/products'];
         }];
@@ -76,6 +77,8 @@ final class EditPageSaveModeTest extends WebIntegrationTestCase
         yield 'category' => ['category', static function (FixtureFactory $factory): array {
             $parent = $factory->category();
             $category = $factory->category(['parent' => $parent->getId()]);
+            // The factory creates no title, and a category without one fails the validation of the sheet on save.
+            $category->setLocale('en_US')->setTitle('Category under edit')->save();
 
             return ['/admin/categories/update?category_id='.$category->getId(), '/admin/categories?category_id='.$parent->getId()];
         }];
@@ -109,7 +112,9 @@ final class EditPageSaveModeTest extends WebIntegrationTestCase
         foreach ([$name.'-edit-top', $name.'-edit'] as $toolbar) {
             $buttons = $crawler->filter('[data-testid="'.$toolbar.'-save-stay"]')->ancestors()->first()->filter('.btn');
             self::assertSame(['stay', 'close', null], $buttons->each(static fn ($button): ?string => $button->attr('value')), $toolbar.': Save, Save and close, then Close.');
-            self::assertSame($listUrl, $crawler->filter('[data-testid="'.$toolbar.'-cancel"]')->attr('href'), $toolbar.': Close leads to the list of the sheet.');
+            // path() of the Twig engine renders the link of a Thelia route with the scheme and the host.
+            $closeUrl = (string) preg_replace('#^https?://[^/]+#', '', (string) $crawler->filter('[data-testid="'.$toolbar.'-cancel"]')->attr('href'));
+            self::assertSame($listUrl, $closeUrl, $toolbar.': Close leads to the list of the sheet.');
         }
     }
 
