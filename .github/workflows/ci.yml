@@ -222,24 +222,9 @@ jobs:
 
       - name: Run the theme's own test suite
         # A theme has no vendor/ and no kernel of its own, so its suite runs with
-        # the host's PHPUnit and autoloader, from the host root. EditPageSaveModeTest
-        # has its own step below.
+        # the host's PHPUnit and autoloader, from the host root.
         working-directory: thelia
-        run: php vendor/bin/phpunit -c templates/backOffice/default-twig/phpunit.xml.dist --display-deprecations --exclude-filter EditPageSaveModeTest
-
-      - name: Run EditPageSaveModeTest (known failures, not blocking)
-        # 6 of its 12 cases fail on a fresh install of main (17/10/2026), whatever
-        # this workflow does:
-        #  - testTheToolbarFramesTheGeneralForm (4 cases) expects a relative Close
-        #    link ('/admin/products') but path() of the Twig engine module returns an
-        #    absolute URL ('http://localhost/admin/products'), line 112;
-        #  - testSaveAndCloseLeadsToTheListOfTheSheet (product, category) submits a
-        #    form whose title is empty, because the fixture has none: validation
-        #    fails and the controller redirects back to the sheet, line 127.
-        # Remove continue-on-error once the test is fixed.
-        continue-on-error: true
-        working-directory: thelia
-        run: php vendor/bin/phpunit -c templates/backOffice/default-twig/phpunit.xml.dist --display-deprecations --filter EditPageSaveModeTest
+        run: php vendor/bin/phpunit -c templates/backOffice/default-twig/phpunit.xml.dist --display-deprecations
 
       - name: Run the core http-backoffice suite against this checkout
         # --fail-on-skipped: a core test that skips because the theme lacks a page
