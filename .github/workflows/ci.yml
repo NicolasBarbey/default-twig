@@ -244,7 +244,7 @@ jobs:
       - name: Run the core http-backoffice suite against this checkout
         # --fail-on-skipped: a core test that skips because the theme lacks a page
         # is not a pass, it is a test that will run, and may fail, once the theme
-        # is merged (it turned main red once). The two skips the full core suite
-        # tolerates are not in this suite.
+        # is merged (it turned main red once). With the assets built this suite
+        # has no skip (203 tests, 0 skipped on 17/10/2026).
         working-directory: thelia
         run: composer test:http-backoffice -- --display-deprecations --display-skipped --fail-on-skipped
