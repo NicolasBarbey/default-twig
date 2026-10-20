@@ -69,17 +69,19 @@
                     next_label: 'Edit next order'|trans,
                     testid: 'order',
                 } only %}
-                <div class="btn-group" data-controller="bo-print-iframe" data-bo-print-iframe-url-value="{{ invoice_url }}" data-bo-print-iframe-name-value="order-invoice">
-                    <a href="{{ invoice_url }}" target="_blank" class="btn btn-outline-secondary" data-testid="order-invoice-link" title="{{ 'View invoice PDF'|trans }}">
-                        <i class="bi bi-file-pdf" aria-hidden="true"></i> {{ 'Invoice'|trans }}
-                    </a>
-                    <button type="button" class="btn btn-outline-secondary" data-action="bo-print-iframe#print" data-testid="order-invoice-print" title="{{ 'Print invoice'|trans }}">
-                        <i class="bi bi-printer" aria-hidden="true"></i>
-                    </button>
-                    <a href="{{ invoice_download_url }}" class="btn btn-outline-secondary" data-testid="order-invoice-download" title="{{ 'Download invoice as PDF'|trans }}">
-                        <i class="bi bi-download" aria-hidden="true"></i>
-                    </a>
-                </div>
+                {% if has_invoice|default(false) %}
+                    <div class="btn-group" data-controller="bo-print-iframe" data-bo-print-iframe-url-value="{{ invoice_url }}" data-bo-print-iframe-name-value="order-invoice">
+                        <a href="{{ invoice_url }}" target="_blank" class="btn btn-outline-secondary" data-testid="order-invoice-link" title="{{ 'View invoice PDF'|trans }}">
+                            <i class="bi bi-file-pdf" aria-hidden="true"></i> {{ 'Invoice'|trans }}
+                        </a>
+                        <button type="button" class="btn btn-outline-secondary" data-action="bo-print-iframe#print" data-testid="order-invoice-print" title="{{ 'Print invoice'|trans }}">
+                            <i class="bi bi-printer" aria-hidden="true"></i>
+                        </button>
+                        <a href="{{ invoice_download_url }}" class="btn btn-outline-secondary" data-testid="order-invoice-download" title="{{ 'Download invoice as PDF'|trans }}">
+                            <i class="bi bi-download" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                {% endif %}
                 <div class="btn-group" data-controller="bo-print-iframe" data-bo-print-iframe-url-value="{{ delivery_url }}" data-bo-print-iframe-name-value="order-delivery">
                     <a href="{{ delivery_url }}" target="_blank" class="btn btn-outline-secondary" data-testid="order-delivery-link" title="{{ 'View purchase order as PDF'|trans }}">
                         <i class="bi bi-file-pdf" aria-hidden="true"></i> {{ 'Delivery slip'|trans }}

@@ -16,6 +16,7 @@ namespace BackOfficeDefaultTwigBundle\Tests\Http;
 
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Thelia\Model\ConfigQuery;
+use Thelia\Model\OrderStatus;
 use Thelia\Test\FixtureFactory;
 use Thelia\Test\WebIntegrationTestCase;
 use Thelia\Tests\Support\BackOffice\AdminSessionInjector;
@@ -72,5 +73,22 @@ final class OrderDetailStatusFormTest extends WebIntegrationTestCase
             'The status form must not hide behind a tab.',
         );
         self::assertCount(1, $crawler->filter('[data-testid="order-status-form"] [data-testid="order-status-select"]'));
+    }
+
+    public function testTheInvoiceIsOfferedOnAPaidOrderOnly(): void
+    {
+        $customer = $this->factory->customer($this->factory->customerTitle());
+        $unpaid = $this->factory->order($customer);
+        $paid = $this->factory->order($customer, ['statusCode' => OrderStatus::CODE_PAID]);
+
+        $crawler = $this->client->request('GET', '/admin/order/update/'.$unpaid->getId());
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertCount(0, $crawler->filter('[data-testid="order-invoice-link"]'), 'An unpaid order has no invoice date: no invoice is offered.');
+        self::assertCount(1, $crawler->filter('[data-testid="order-delivery-link"]'));
+
+        $crawler = $this->client->request('GET', '/admin/order/update/'.$paid->getId());
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertCount(1, $crawler->filter('[data-testid="order-invoice-link"]'));
+        self::assertCount(1, $crawler->filter('[data-testid="order-invoice-download"]'));
     }
 }

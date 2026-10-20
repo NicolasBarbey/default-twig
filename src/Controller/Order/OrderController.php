@@ -161,6 +161,8 @@ final class OrderController
                 'customer_titles' => $this->customerTitleChoices($locale),
                 'countries' => $this->countryChoices($locale),
                 'states' => $this->stateChoices($locale),
+                // The invoice date is set when the order is paid: before, the PDF has none.
+                'has_invoice' => $order->isPaid(false) || null !== $order->getInvoiceDate(),
                 'invoice_url' => $this->urls->generate('admin.order.pdf.invoice', ['order_id' => $order_id, 'browser' => 1]),
                 'invoice_download_url' => $this->urls->generate('admin.order.pdf.invoice', ['order_id' => $order_id, 'browser' => 0]),
                 'delivery_url' => $this->urls->generate('admin.order.pdf.delivery', ['order_id' => $order_id, 'browser' => 1]),
