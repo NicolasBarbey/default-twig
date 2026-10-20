@@ -26,8 +26,8 @@
                         {% for line in preview.lines %}
                             <tr data-testid="catalog-price-rule-preview-line-{{ line.productSaleElementsId }}">
                                 <td><code>{{ line.reference }}</code></td>
-                                <td class="text-end">{{ line.taxedBefore|number_format(2, '.', ' ') }} {{ currency.symbol }}</td>
-                                <td class="text-end {{ line.changedByTheRule ? 'fw-semibold text-success' : 'text-body-secondary' }}">{{ line.taxedAfter|number_format(2, '.', ' ') }} {{ currency.symbol }}</td>
+                                <td class="text-end">{{ line.taxedBefore|format_currency(currency.code) }}</td>
+                                <td class="text-end {{ line.changedByTheRule ? 'fw-semibold text-success' : 'text-body-secondary' }}">{{ line.taxedAfter|format_currency(currency.code) }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>

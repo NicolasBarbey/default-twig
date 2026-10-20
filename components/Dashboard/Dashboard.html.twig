@@ -9,7 +9,7 @@
             {% endfor %}
         </div>
         <span class="text-muted small">
-            {{ data.range.from|date('d/m/Y') }} - {{ data.range.to|date('d/m/Y') }}
+            {{ data.range.from|format_date('medium') }} - {{ data.range.to|format_date('medium') }}
         </span>
     </div>
 

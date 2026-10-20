@@ -23,7 +23,7 @@
                 <div class="d-flex gap-2 align-items-center flex-wrap">
                     <span class="badge" style="background-color: {{ status_color }}; color: {{ contrast_text_color(status_color) }};" data-testid="order-return-status-badge">{{ status_title }}</span>
                     {% if return.createdAt %}
-                        <span class="text-muted" data-testid="order-return-created-at"><i class="bi bi-calendar3" aria-hidden="true"></i> {{ return.createdAt|date('d/m/Y H:i') }}</span>
+                        <span class="text-muted" data-testid="order-return-created-at"><i class="bi bi-calendar3" aria-hidden="true"></i> {{ return.createdAt|format_datetime('medium', 'short') }}</span>
                     {% endif %}
                     {% if return.createdByAdmin %}
                         <span class="text-muted"><i class="bi bi-shop" aria-hidden="true"></i> {{ 'Opened by the merchant'|trans }}</span>
@@ -113,8 +113,8 @@
                                                 {% endif %}
                                             {% endif %}
                                         </td>
-                                        <td class="text-end">{{ line.unit_price|number_format(2, ',', ' ') }} €</td>
-                                        <td class="text-end">{{ line.refund_amount|number_format(2, ',', ' ') }} €</td>
+                                        <td class="text-end">{{ line.unit_price|format_currency(return.order.currency.code) }}</td>
+                                        <td class="text-end">{{ line.refund_amount|format_currency(return.order.currency.code) }}</td>
                                     </tr>
                                 {% else %}
                                     <tr><td colspan="5" class="text-muted text-center py-3">{{ 'This return holds no line.'|trans }}</td></tr>
@@ -160,15 +160,15 @@
                     <ul class="list-group list-group-flush small">
                         <li class="list-group-item d-flex justify-content-between">
                             <span>{{ 'Recorded on the return'|trans }}</span>
-                            <strong data-testid="order-return-refund-amount">{{ return.refundAmount|number_format(2, ',', ' ') }} €</strong>
+                            <strong data-testid="order-return-refund-amount">{{ return.refundAmount|format_currency(return.order.currency.code) }}</strong>
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
                             <span>{{ 'On the requested quantities'|trans }}</span>
-                            <span data-testid="order-return-computed-refund">{{ computed_refund|number_format(2, ',', ' ') }} €</span>
+                            <span data-testid="order-return-computed-refund">{{ computed_refund|format_currency(return.order.currency.code) }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
                             <span>{{ 'On the received quantities'|trans }}</span>
-                            <span data-testid="order-return-received-refund">{{ received_refund|number_format(2, ',', ' ') }} €</span>
+                            <span data-testid="order-return-received-refund">{{ received_refund|format_currency(return.order.currency.code) }}</span>
                         </li>
                         <li class="list-group-item d-flex justify-content-between">
                             <span>{{ 'Postage included'|trans }}</span>

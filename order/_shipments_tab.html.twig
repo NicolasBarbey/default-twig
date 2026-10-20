@@ -47,7 +47,7 @@
                                 {# Plain text rather than <code> and text-muted: both sit under 4.5:1 on a striped row. #}
                                 <span class="font-monospace">{{ shipment.ref }}</span>
                                 {% if shipment.shipped_at %}
-                                    <small class="d-block">{{ 'Shipped on'|trans }} {{ shipment.shipped_at|date('Y-m-d H:i') }}</small>
+                                    <small class="d-block">{{ 'Shipped on'|trans }} {{ shipment.shipped_at|format_datetime('medium', 'short') }}</small>
                                 {% endif %}
                             </td>
                             <td><span class="badge {{ status_classes[shipment.status]|default('text-bg-secondary') }}">{{ status_labels[shipment.status]|default(shipment.status) }}</span></td>

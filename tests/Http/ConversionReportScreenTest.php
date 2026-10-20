@@ -134,7 +134,7 @@ final class ConversionReportScreenTest extends WebIntegrationTestCase
         $crawler = $this->client->getCrawler();
         self::assertCount(1, $crawler->filter('[data-testid="report-coverage-notice"]'));
         self::assertStringStartsWith(
-            $horizon->earliestSurvivingCartDate()->format('d/m/Y'),
+            (new \IntlDateFormatter(\Locale::getDefault(), \IntlDateFormatter::MEDIUM, \IntlDateFormatter::NONE))->format($horizon->earliestSurvivingCartDate()),
             trim($crawler->filter('[data-testid="report-range"]')->text()),
         );
     }
