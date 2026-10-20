@@ -114,7 +114,8 @@ final class ProductController
         $page = max(1, (int) $request->query->get('page', 1));
         $filters = ProductFilters::fromRequest($request);
         $locale = $this->defaultLocale();
-        $categories = $this->categoryChoices();
+        $editLocale = $this->editLocaleOf($request);
+        $categories = $this->categoryChoices($editLocale);
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, array_merge(
             $this->paginatedRows($filters, $page),
@@ -126,7 +127,7 @@ final class ProductController
                 'filters' => $this->filterPresenter->present($filters, $locale, $categories),
                 'query_params' => $filters->toQueryParams(),
                 'allow_manual_ordering' => $filters->allowsManualOrdering(),
-                'create_form' => $this->buildCreateForm($request)->createView(),
+                'create_form' => $this->buildCreateForm($editLocale)->createView(),
                 'clone_form' => $this->buildCloneForm()->createView(),
                 'available_categories' => $categories,
                 'available_currencies' => $this->currencyChoices(),
@@ -146,7 +147,7 @@ final class ProductController
             return $denied;
         }
 
-        $form = $this->buildCreateForm($request);
+        $form = $this->buildCreateForm($this->editLocaleOf($request));
 
         return $this->action->submit(
             resource: self::RESOURCE,
@@ -169,9 +170,11 @@ final class ProductController
             return new Response('');
         }
 
+        $editLocale = $this->editLocaleOf($request);
+
         return new Response($this->twig->render('@BackOfficeDefaultTwig/catalog/product/_create_modal.html.twig', [
-            'create_form' => $this->buildCreateForm($request)->createView(),
-            'available_categories' => $this->categoryChoices(),
+            'create_form' => $this->buildCreateForm($editLocale)->createView(),
+            'available_categories' => $this->categoryChoices($editLocale),
             'available_currencies' => $this->currencyChoices(),
             'available_tax_rules' => $this->taxRuleChoices(),
             'default_category_id' => $default_category,
@@ -409,10 +412,10 @@ final class ProductController
         return $request->query->get(CategoryListPresenter::ORIGIN_PARAMETER) === CategoryListPresenter::ORIGIN;
     }
 
-    private function buildCreateForm(Request $request): FormInterface
+    private function buildCreateForm(string $locale): FormInterface
     {
         return $this->formFactory->createNamed('thelia_product_creation', ProductType::class, [
-            'locale' => $request->getLocale(),
+            'locale' => $locale,
             'visible' => true,
         ], [
         ]);
@@ -703,9 +706,8 @@ final class ProductController
     /**
      * @return list<array<string, mixed>>
      */
-    private function categoryChoices(): array
+    private function categoryChoices(string $locale): array
     {
-        $locale = $this->defaultLocale();
         $items = [['id' => 0, 'title' => $this->translator->trans('- All categories -')]];
         foreach (CategoryQuery::create()->joinWithI18n($locale)->orderById()->find() as $category) {
             $category->setLocale($locale);
@@ -890,6 +892,11 @@ final class ProductController
         }
 
         return $items;
+    }
+
+    private function editLocaleOf(Request $request): string
+    {
+        return $this->editLocale->resolveFromRequest($request)->getLocale() ?? $this->defaultLocale();
     }
 
     private function defaultLocale(): string
