@@ -164,6 +164,50 @@ final class ProductCombinationUpdateTest extends WebIntegrationTestCase
         self::assertSame(30.0, (float) $dollarPrice->getPrice());
     }
 
+    public function testAnEmptiedPriceKeepsTheStoredOneInsteadOfSavingZero(): void
+    {
+        $this->loginFullAdmin();
+        [$product, $pse] = $this->productWithACombination();
+
+        $this->client->request('POST', self::COMBINATIONS_URL, [
+            '_token' => $this->tokenOf($product, 'combinations-form'),
+            'product_id' => $product->getId(),
+            'tax_rule' => $product->getTaxRuleId(),
+            'product_sale_element_id' => [$pse->getId()],
+            'reference' => [$pse->getRef()],
+            'quantity' => [42],
+            'price' => [''],
+            'sale_price' => [''],
+            'weight' => [1.5],
+        ]);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        self::assertSame(42.0, (float) $this->freshSaleElement($pse)->getQuantity(), 'The rest of the row is saved.');
+        $price = $this->storedPrice($pse);
+        self::assertSame(25.0, (float) $price->getPrice(), 'An emptied price keeps its stored value.');
+        self::assertSame(20.0, (float) $price->getPromoPrice(), 'An emptied sale price keeps its stored value.');
+    }
+
+    public function testAZeroTypedInThePriceIsSaved(): void
+    {
+        $this->loginFullAdmin();
+        [$product, $pse] = $this->productWithACombination();
+
+        $this->client->request('POST', self::COMBINATIONS_URL, [
+            '_token' => $this->tokenOf($product, 'combinations-form'),
+            'product_id' => $product->getId(),
+            'tax_rule' => $product->getTaxRuleId(),
+            'product_sale_element_id' => [$pse->getId()],
+            'reference' => [$pse->getRef()],
+            'quantity' => [42],
+            'price' => ['0'],
+            'sale_price' => ['0'],
+            'weight' => [1.5],
+        ]);
+
+        self::assertSame(0.0, (float) $this->storedPrice($pse)->getPrice(), 'A price of 0 is saved when 0 is typed.');
+    }
+
     public function testTheDefaultPriceCannotBeUpdatedThroughAGet(): void
     {
         $this->loginFullAdmin();

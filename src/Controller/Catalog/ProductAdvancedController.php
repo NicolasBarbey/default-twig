@@ -653,11 +653,11 @@ final class ProductAdvancedController
             $event = new ProductSaleElementUpdateEvent($product, $pseId);
             $event
                 ->setReference((string) ($refs[$index] ?? ''))
-                ->setPrice((float) ($prices[$index] ?? $storedPrice?->getPrice() ?? 0))
+                ->setPrice($this->submittedOrStored($prices[$index] ?? null, $storedPrice?->getPrice()))
                 ->setCurrencyId($currency)
                 ->setWeight((float) ($weights[$index] ?? 0))
                 ->setQuantity((float) ($quantities[$index] ?? 0))
-                ->setSalePrice((float) ($salePrices[$index] ?? $storedPrice?->getPromoPrice() ?? 0))
+                ->setSalePrice($this->submittedOrStored($salePrices[$index] ?? null, $storedPrice?->getPromoPrice()))
                 ->setOnsale(isset($onsale[$index]) ? 1 : 0)
                 ->setIsnew(isset($isnew[$index]) ? 1 : 0)
                 ->setIsdefault($defaultPse === $pseId)
@@ -1221,6 +1221,19 @@ final class ProductAdvancedController
         }
 
         return !\is_scalar($submittedPrice) || trim((string) $submittedPrice) === '';
+    }
+
+    /**
+     * An amount left empty keeps the stored one: a price of 0 is saved only when
+     * 0 is typed.
+     */
+    private function submittedOrStored(mixed $submittedAmount, mixed $storedAmount): float
+    {
+        if (\is_scalar($submittedAmount) && trim((string) $submittedAmount) !== '') {
+            return (float) $submittedAmount;
+        }
+
+        return (float) ($storedAmount ?? 0);
     }
 
     private function referenceOf(mixed $submittedReference, int $pseId): string
