@@ -55,6 +55,7 @@ use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Domain\Shipping\ProductRule\ShippingSurchargeMode;
 use Thelia\Model\BrandQuery;
 use Thelia\Model\CategoryQuery;
+use Thelia\Model\Currency;
 use Thelia\Model\CurrencyQuery;
 use Thelia\Model\LangQuery;
 use Thelia\Model\Map\ProductTableMap;
@@ -118,8 +119,9 @@ final class ProductController
         $categories = $this->categoryChoices($editLocale);
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, array_merge(
-            $this->paginatedRows($filters, $page),
+            $this->paginatedRows($filters, $page, $request->getLocale()),
             [
+                'currency_code' => (string) Currency::getDefaultCurrency()->getCode(),
                 'current_page' => $page,
                 'current_category' => $filters->categoryId ?? 0,
                 'current_search' => $filters->search,
@@ -580,7 +582,7 @@ final class ProductController
     /**
      * @return array<string, mixed>
      */
-    private function paginatedRows(ProductFilters $filters, int $page): array
+    private function paginatedRows(ProductFilters $filters, int $page, string $uiLocale): array
     {
         $locale = $this->defaultLocale();
         $query = $filters->applyTo(ProductQuery::create(), $locale);
@@ -606,7 +608,7 @@ final class ProductController
         foreach ($products as $product) {
             \assert($product instanceof Product);
             $product->setLocale($locale);
-            $rows[] = $this->productToRow($product, $pricing[(int) $product->getId()] ?? null, $filters, $page);
+            $rows[] = $this->productToRow($product, $pricing[(int) $product->getId()] ?? null, $filters, $page, $uiLocale);
         }
 
         return [
@@ -621,7 +623,7 @@ final class ProductController
     /**
      * @return array<string, mixed>
      */
-    private function productToRow(Product $product, ?ProductPricingSnapshot $pricing, ProductFilters $filters, int $page): array
+    private function productToRow(Product $product, ?ProductPricingSnapshot $pricing, ProductFilters $filters, int $page, string $uiLocale): array
     {
         $id = (int) $product->getId();
         $pricing ??= new ProductPricingSnapshot();
@@ -664,8 +666,8 @@ final class ProductController
                 htmlspecialchars($editUrl),
                 htmlspecialchars((string) $product->getTitle()),
             ),
-            'price_html' => $this->pricingPresenter->price($pricing),
-            'promo_price_html' => $this->pricingPresenter->promoPrice($pricing),
+            'price_html' => $this->pricingPresenter->price($pricing, $uiLocale),
+            'promo_price_html' => $this->pricingPresenter->promoPrice($pricing, $uiLocale),
             'stock_html' => $this->pricingPresenter->stock($pricing),
             'visible' => (bool) $product->getVisible(),
             'position' => (int) $product->getPosition(),

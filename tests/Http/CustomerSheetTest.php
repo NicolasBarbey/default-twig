@@ -97,10 +97,10 @@ final class CustomerSheetTest extends WebIntegrationTestCase
 
         $crawler = $this->sheet($customer, $this->factory->admin());
 
-        self::assertStringStartsWith('100.00 ', $this->text($crawler, 'customer-kpi-total-spent-value'));
+        self::assertStringStartsWith('€100.00', $this->text($crawler, 'customer-kpi-total-spent-value'));
         self::assertSame('4', $this->text($crawler, 'customer-kpi-order-count-value'));
         self::assertStringContainsString('1', $this->text($crawler, 'customer-kpi-order-count-note'), 'The cancelled order is said to be left out.');
-        self::assertStringStartsWith('25.00 ', $this->text($crawler, 'customer-kpi-average-basket-value'));
+        self::assertStringStartsWith('€25.00', $this->text($crawler, 'customer-kpi-average-basket-value'));
         self::assertCount(1, $crawler->filter('[data-testid="customer-kpi-total-spent-hint"]'), 'The definition is shown next to the figure.');
     }
 
@@ -108,7 +108,7 @@ final class CustomerSheetTest extends WebIntegrationTestCase
     {
         $crawler = $this->sheet($this->customer(), $this->factory->admin());
 
-        self::assertStringStartsWith('0.00 ', $this->text($crawler, 'customer-kpi-total-spent-value'));
+        self::assertStringStartsWith('€0.00', $this->text($crawler, 'customer-kpi-total-spent-value'));
         self::assertSame('0', $this->text($crawler, 'customer-kpi-order-count-value'));
         self::assertSame('-', $this->text($crawler, 'customer-kpi-average-basket-value'));
         self::assertCount(1, $crawler->filter('[data-testid="customer-orders-section"]'), 'An empty section is shown, not hidden.');
@@ -137,7 +137,7 @@ final class CustomerSheetTest extends WebIntegrationTestCase
 
         $crawler = $this->carts($customer, $this->factory->admin());
 
-        self::assertStringStartsWith('90.00 ', $this->text($crawler, 'customer-current-cart-amount'));
+        self::assertStringStartsWith('€90.00', $this->text($crawler, 'customer-current-cart-amount'));
         $link = $crawler->filter('[data-testid="customer-current-cart-product-link"]');
         self::assertCount(1, $link);
         self::assertSame('Linen jacket', trim($link->text()));

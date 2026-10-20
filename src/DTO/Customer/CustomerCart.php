@@ -26,7 +26,7 @@ final readonly class CustomerCart
         public int $lineCount,
         public float $quantity,
         public float $amount,
-        public string $currencySymbol,
+        public string $currencyCode,
     ) {
     }
 }

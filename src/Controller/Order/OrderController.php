@@ -52,6 +52,7 @@ use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Domain\Order\Service\OrderStatusTransitionGuard;
 use Thelia\Log\Tlog;
 use Thelia\Model\CountryQuery;
+use Thelia\Model\Currency;
 use Thelia\Model\CustomerTitleQuery;
 use Thelia\Model\Order;
 use Thelia\Model\OrderAddressQuery;
@@ -113,6 +114,7 @@ final class OrderController
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             'rows' => $this->rowPresenter->presentAll($paginated['rows'], $locale),
+            'currency_code' => (string) Currency::getDefaultCurrency()->getCode(),
             'bulk_statuses' => $this->bulkStatusPlanner->targets($locale),
             'bulk_status_url' => $this->urls->generate('admin.order.list.update.status'),
             'total' => $paginated['total'],

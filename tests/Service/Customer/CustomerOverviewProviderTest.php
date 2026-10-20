@@ -177,7 +177,7 @@ final class CustomerOverviewProviderTest extends IntegrationTestCase
 
         self::assertNotNull($kpis);
         self::assertTrue($kpis->mixesCurrencies);
-        self::assertSame((string) Currency::getDefaultCurrency()->getSymbol(), $kpis->currencySymbol);
+        self::assertSame((string) Currency::getDefaultCurrency()->getCode(), $kpis->currencyCode);
     }
 
     public function testTheAccountAgeReadsInWholeUnits(): void

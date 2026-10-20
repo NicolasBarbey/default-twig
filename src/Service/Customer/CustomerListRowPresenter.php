@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Customer;
 
+use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\Service\Tag\TagSwatch;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -39,6 +40,7 @@ final readonly class CustomerListRowPresenter
         private UrlGeneratorInterface $urls,
         private TranslatorInterface $translator,
         private TagSwatch $swatch,
+        private MoneyFormatter $money,
     ) {
     }
 
@@ -72,7 +74,7 @@ final readonly class CustomerListRowPresenter
             'phone_html' => $this->renderPhone($phone),
             'country_html' => $this->renderCountry($countryFlag, $countryTitle),
             'orders_html' => $this->renderOrders($customerId, $orderCount),
-            'total_spent_html' => $this->renderTotalSpent($totalSpent, $orderCount),
+            'total_spent_html' => $this->renderTotalSpent($totalSpent, $orderCount, $locale),
             'last_order_html' => $this->renderLastOrder($lastOrderAt),
             'created_html' => $this->renderCreatedAt($createdAt),
             'guest_html' => $this->renderGuest($customer->isGuest()),
@@ -156,7 +158,7 @@ final readonly class CustomerListRowPresenter
         );
     }
 
-    private function renderTotalSpent(float $total, int $orderCount): string
+    private function renderTotalSpent(float $total, int $orderCount, string $locale): string
     {
         if ($orderCount === 0) {
             return '<span class="text-muted">-</span>';
@@ -164,7 +166,7 @@ final readonly class CustomerListRowPresenter
 
         return \sprintf(
             '<span class="bo-customer-total fw-semibold">%s</span>',
-            htmlspecialchars(number_format($total, 2, ',', ' ').' €'),
+            htmlspecialchars($this->money->format($total, $locale)),
         );
     }
 

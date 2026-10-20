@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Customer;
 
+use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -29,6 +30,7 @@ final readonly class CustomerFilterPresenter
         private UrlGeneratorInterface $urls,
         private TranslatorInterface $translator,
         private CustomerFilterCatalog $catalog,
+        private MoneyFormatter $money,
     ) {
     }
 
@@ -51,7 +53,7 @@ final readonly class CustomerFilterPresenter
             'is_empty' => $filters->isEmpty(),
             'has_any_filter' => !$filters->isEmpty() || $filters->search !== '' || $filters->period !== CustomerFilters::PERIOD_ALL,
             'advanced_count' => $this->countAdvancedFilters($filters),
-            'active_chips' => $this->buildActiveChips($filters, $countryIndex, $langIndex, $titleIndex, $tagIndex),
+            'active_chips' => $this->buildActiveChips($filters, $countryIndex, $langIndex, $titleIndex, $tagIndex, $locale),
             'clear_all_url' => $this->urls->generate(self::LIST_ROUTE),
 
             'country_options' => $countries,
@@ -103,6 +105,7 @@ final readonly class CustomerFilterPresenter
         array $langIndex,
         array $titleIndex,
         array $tagIndex,
+        string $locale,
     ): array {
         $chips = [];
 
@@ -149,7 +152,7 @@ final readonly class CustomerFilterPresenter
             );
         }
 
-        $spentLabel = $this->amountRangeLabel($filters->minTotalSpent, $filters->maxTotalSpent);
+        $spentLabel = $this->amountRangeLabel($filters->minTotalSpent, $filters->maxTotalSpent, $locale);
         if ($spentLabel !== '') {
             $chips[] = $this->chip(
                 $filters,
@@ -292,21 +295,21 @@ final readonly class CustomerFilterPresenter
         return $this->translator->trans('until %date%', ['%date%' => $to->format('d/m/Y')]);
     }
 
-    private function amountRangeLabel(?float $min, ?float $max): string
+    private function amountRangeLabel(?float $min, ?float $max, string $locale): string
     {
         if ($min === null && $max === null) {
             return '';
         }
 
         if ($min !== null && $max !== null) {
-            return $this->formatMoney($min).' - '.$this->formatMoney($max);
+            return $this->formatMoney($min, $locale).' - '.$this->formatMoney($max, $locale);
         }
 
         if ($min !== null) {
-            return '>= '.$this->formatMoney($min);
+            return '>= '.$this->formatMoney($min, $locale);
         }
 
-        return '<= '.$this->formatMoney($max);
+        return '<= '.$this->formatMoney($max, $locale);
     }
 
     private function intRangeLabel(?int $min, ?int $max): string
@@ -331,9 +334,9 @@ final readonly class CustomerFilterPresenter
         return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
     }
 
-    private function formatMoney(float $value): string
+    private function formatMoney(float $value, string $locale): string
     {
-        return number_format($value, 2, ',', ' ').' €';
+        return $this->money->format($value, $locale);
     }
 
     private function triStateValue(?bool $value): string

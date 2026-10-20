@@ -27,7 +27,7 @@ final readonly class CustomerKpis
         public ?float $averageBasket,
         public ?\DateTimeImmutable $firstOrderAt,
         public ?\DateTimeImmutable $lastOrderAt,
-        public string $currencySymbol,
+        public string $currencyCode,
         public bool $mixesCurrencies,
     ) {
     }

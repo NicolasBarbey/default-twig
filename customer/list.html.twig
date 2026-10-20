@@ -186,7 +186,7 @@
                                                    data-bo-range-slider-target="minInput"
                                                    data-action="change->bo-range-slider#onMinInput"
                                                    data-testid="customer-filter-min-total">
-                                            <span class="input-group-text">€</span>
+                                            <span class="input-group-text">{{ currency_code|currency_symbol }}</span>
                                         </div>
                                     </div>
                                     <div class="col">
@@ -197,7 +197,7 @@
                                                    data-bo-range-slider-target="maxInput"
                                                    data-action="change->bo-range-slider#onMaxInput"
                                                    data-testid="customer-filter-max-total">
-                                            <span class="input-group-text">€</span>
+                                            <span class="input-group-text">{{ currency_code|currency_symbol }}</span>
                                         </div>
                                     </div>
                                 </div>

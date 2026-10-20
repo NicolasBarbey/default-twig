@@ -319,7 +319,7 @@
                 'ref_html': '<a href="' ~ order.edit_url|e ~ '" class="link-primary text-decoration-none fw-medium">' ~ order.ref|e ~ '</a>',
                 'created_at': order.created_at ? order.created_at|format_datetime('medium', 'short') : '-',
                 'status_html': '<span class="badge" style="background-color: ' ~ order.status_color|e ~ ';">' ~ order.status_title|e ~ '</span>',
-                'total': order.amount|number_format(2, '.', ' ') ~ ' ' ~ order.currency_symbol,
+                'total': order.amount|format_currency(order.currency_code),
                 '_actions': [
                     row_action('view', 'View'|trans, order.edit_url),
                 ],

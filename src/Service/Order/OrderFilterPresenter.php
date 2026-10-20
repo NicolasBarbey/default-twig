@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Order;
 
+use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -29,6 +30,7 @@ final readonly class OrderFilterPresenter
         private UrlGeneratorInterface $urls,
         private TranslatorInterface $translator,
         private OrderFilterCatalog $catalog,
+        private MoneyFormatter $money,
     ) {
     }
 
@@ -59,6 +61,7 @@ final readonly class OrderFilterPresenter
                 $deliveryIndex,
                 $countryIndex,
                 $this->indexById($saleUnits),
+                $locale,
             ),
             'clear_all_url' => $this->urls->generate(self::LIST_ROUTE),
 
@@ -111,6 +114,7 @@ final readonly class OrderFilterPresenter
         array $deliveryIndex,
         array $countryIndex,
         array $saleUnitIndex,
+        string $locale,
     ): array {
         $chips = [];
 
@@ -133,7 +137,7 @@ final readonly class OrderFilterPresenter
             );
         }
 
-        $amountLabel = $this->amountRangeLabel($filters->minAmount, $filters->maxAmount);
+        $amountLabel = $this->amountRangeLabel($filters->minAmount, $filters->maxAmount, $locale);
         if ($amountLabel !== '') {
             $chips[] = $this->chip(
                 $filters,
@@ -304,21 +308,21 @@ final readonly class OrderFilterPresenter
         return $this->translator->trans('until %date%', ['%date%' => $to->format('d/m/Y')]);
     }
 
-    private function amountRangeLabel(?float $min, ?float $max): string
+    private function amountRangeLabel(?float $min, ?float $max, string $locale): string
     {
         if ($min === null && $max === null) {
             return '';
         }
 
         if ($min !== null && $max !== null) {
-            return $this->formatNumber($min).' - '.$this->formatNumber($max).' €';
+            return $this->money->format($min, $locale).' - '.$this->money->format($max, $locale);
         }
 
         if ($min !== null) {
-            return '≥ '.$this->formatNumber($min).' €';
+            return '≥ '.$this->money->format($min, $locale);
         }
 
-        return '≤ '.$this->formatNumber($max).' €';
+        return '≤ '.$this->money->format($max, $locale);
     }
 
     private function itemsRangeLabel(?int $min, ?int $max): string

@@ -71,7 +71,7 @@ final readonly class CustomerOverviewProvider
             averageBasket: $count > 0 ? round($total / $count, 2) : null,
             firstOrderAt: $stats['first_at'],
             lastOrderAt: $stats['last_at'],
-            currencySymbol: (string) $currency->getSymbol(),
+            currencyCode: (string) $currency->getCode(),
             mixesCurrencies: $stats['currency_count'] > 1,
         );
     }

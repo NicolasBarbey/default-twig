@@ -27,10 +27,10 @@
 
 <div class="row g-3" data-testid="customer-kpis">
     {% if kpis is not null %}
-        {% set money = kpis.currencySymbol %}
+        {% set money = kpis.currencyCode %}
         {{ _self.tile(
             'Total spent'|trans,
-            kpis.totalSpent|number_format(2, '.', ' ') ~ ' ' ~ money,
+            kpis.totalSpent|format_currency(money),
             'bi-cash-stack', 'success', 'customer-kpi-total-spent',
             definition,
             kpis.mixesCurrencies ? 'Amounts in several currencies, added up unconverted'|trans : null
@@ -44,7 +44,7 @@
         ) }}
         {{ _self.tile(
             'Average basket'|trans,
-            kpis.averageBasket is not null ? kpis.averageBasket|number_format(2, '.', ' ') ~ ' ' ~ money : '-',
+            kpis.averageBasket is not null ? kpis.averageBasket|format_currency(money) : '-',
             'bi-basket', 'info', 'customer-kpi-average-basket',
             'Total spent divided by the number of orders counted.'|trans
         ) }}

@@ -21,6 +21,7 @@ use BackOfficeDefaultTwigBundle\Repository\CustomerRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderReturnRepository;
 use BackOfficeDefaultTwigBundle\Repository\ProductRepository;
+use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -29,6 +30,7 @@ use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Core\Security\SecurityContext;
 use Thelia\Domain\OrderReturn\Service\ReturnEligibilityChecker;
+use Thelia\Model\Currency;
 use Thelia\Model\Order;
 use Thelia\Model\OrderQuery;
 
@@ -66,6 +68,7 @@ final readonly class DashboardStatsProvider
         private SecurityContext $securityContext,
         private PeriodOptions $periodOptions,
         private OrderAccess $orderAccess,
+        private MoneyFormatter $money,
     ) {
     }
 
@@ -89,7 +92,7 @@ final readonly class DashboardStatsProvider
 
             $kpis[] = new Kpi(
                 label: $this->translator->trans('Revenue'),
-                value: $this->formatCurrency($revenue),
+                value: $this->formatCurrency($revenue, $locale),
                 variationPercent: $this->variation($revenue, $previousRevenue),
                 icon: 'bi-cash-stack',
                 accent: 'primary',
@@ -107,7 +110,7 @@ final readonly class DashboardStatsProvider
             );
             $kpis[] = new Kpi(
                 label: $this->translator->trans('Average order'),
-                value: $this->formatCurrency($aov),
+                value: $this->formatCurrency($aov, $locale),
                 variationPercent: $this->variation($aov, $previousAov),
                 icon: 'bi-receipt',
                 accent: 'success',
@@ -148,6 +151,7 @@ final readonly class DashboardStatsProvider
             alerts: $this->buildAlerts($canViewOrders),
             periodOptions: $this->periodOptions->build($range, 'admin.home'),
             locale: $locale,
+            currencyCode: (string) Currency::getDefaultCurrency()->getCode(),
             showRevenueChart: $canViewOrders,
             showOrderStatus: $canViewOrders,
             showRecentOrders: $canViewOrders,
@@ -257,8 +261,8 @@ final readonly class DashboardStatsProvider
         return (($current - $previous) / $previous) * 100;
     }
 
-    private function formatCurrency(float $amount): string
+    private function formatCurrency(float $amount, string $locale): string
     {
-        return number_format($amount, 2, ',', ' ').' €';
+        return $this->money->format($amount, $locale);
     }
 }

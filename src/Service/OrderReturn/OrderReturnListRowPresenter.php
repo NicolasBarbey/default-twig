@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Service\OrderReturn;
 
 use BackOfficeDefaultTwigBundle\Repository\OrderReturnRepository;
+use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -38,6 +39,7 @@ final readonly class OrderReturnListRowPresenter
         private UrlGeneratorInterface $urls,
         private TranslatorInterface $translator,
         private OrderReturnRepository $returns,
+        private MoneyFormatter $money,
     ) {
     }
 
@@ -97,7 +99,7 @@ final readonly class OrderReturnListRowPresenter
             'status' => (string) $status->getTitle(),
             'status_code' => $effectiveCode,
             'status_color' => (string) ($status->getColor() ?: self::FALLBACK_STATUS_COLOR),
-            'refund_amount' => $this->formatAmount((float) $orderReturn->getRefundAmount()),
+            'refund_amount' => $this->formatAmount($orderReturn, $locale),
             'date_html' => $this->renderDate($orderReturn),
             '_actions' => $this->buildActions($returnId, $effectiveCode),
         ];
@@ -184,9 +186,13 @@ final readonly class OrderReturnListRowPresenter
         );
     }
 
-    private function formatAmount(float $amount): string
+    private function formatAmount(OrderReturn $orderReturn, string $locale): string
     {
-        return number_format($amount, 2, ',', ' ').' €';
+        return $this->money->format(
+            (float) $orderReturn->getRefundAmount(),
+            $locale,
+            $orderReturn->getOrder()->getCurrency()->getCode(),
+        );
     }
 
     /**

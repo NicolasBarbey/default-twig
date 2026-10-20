@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Catalog;
 
+use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Model\CurrencyQuery;
 
@@ -23,29 +24,30 @@ use Thelia\Model\CurrencyQuery;
  */
 final class ProductPricingPresenter
 {
-    private ?string $symbol = null;
+    private ?string $currencyCode = null;
 
     public function __construct(
         private readonly TranslatorInterface $translator,
+        private readonly MoneyFormatter $money,
     ) {
     }
 
-    public function price(ProductPricingSnapshot $snapshot): string
+    public function price(ProductPricingSnapshot $snapshot, string $locale): string
     {
         if ($snapshot->price <= 0.0) {
             return '<span class="text-muted">-</span>';
         }
 
-        return $this->amountPair($snapshot->price, $snapshot->taxedPrice);
+        return $this->amountPair($snapshot->price, $snapshot->taxedPrice, $locale);
     }
 
-    public function promoPrice(ProductPricingSnapshot $snapshot): string
+    public function promoPrice(ProductPricingSnapshot $snapshot, string $locale): string
     {
         if ($snapshot->promoPrice <= 0.0) {
             return '<span class="text-muted">-</span>';
         }
 
-        $pair = $this->amountPair($snapshot->promoPrice, $snapshot->taxedPromoPrice);
+        $pair = $this->amountPair($snapshot->promoPrice, $snapshot->taxedPromoPrice, $locale);
         if (!$snapshot->onSale) {
             // Value is set but the sale is off: show it muted so the list does not
             // suggest customers are being charged that amount.
@@ -76,22 +78,17 @@ final class ProductPricingPresenter
         );
     }
 
-    private function amountPair(float $untaxed, float $taxed): string
+    private function amountPair(float $untaxed, float $taxed, string $locale): string
     {
         // The tax wording only shows from md up: on a phone the amounts alone keep the
         // cell narrow enough to stay clear of the pinned actions column.
         return \sprintf(
             '<div class="bo-product-price"><div class="fw-semibold">%s<span class="d-none d-md-inline"> %s</span></div><div class="text-muted small">%s<span class="d-none d-md-inline"> %s</span></div></div>',
-            htmlspecialchars($this->format($untaxed)),
+            htmlspecialchars($this->money->format($untaxed, $locale, $this->currencyCode())),
             htmlspecialchars($this->translator->trans('excl. tax')),
-            htmlspecialchars($this->format($taxed)),
+            htmlspecialchars($this->money->format($taxed, $locale, $this->currencyCode())),
             htmlspecialchars($this->translator->trans('incl. tax')),
         );
-    }
-
-    private function format(float $amount): string
-    {
-        return number_format($amount, 2, ',', ' ').' '.$this->currencySymbol();
     }
 
     private function formatQuantity(float $quantity): string
@@ -101,14 +98,14 @@ final class ProductPricingPresenter
             : number_format($quantity, 2, ',', ' ');
     }
 
-    private function currencySymbol(): string
+    private function currencyCode(): ?string
     {
-        if ($this->symbol !== null) {
-            return $this->symbol;
+        if ($this->currencyCode !== null) {
+            return $this->currencyCode;
         }
 
         $currency = CurrencyQuery::create()->findOneByByDefault(1) ?? CurrencyQuery::create()->findOne();
 
-        return $this->symbol = $currency !== null ? (string) $currency->getSymbol() : '';
+        return $this->currencyCode = $currency !== null ? (string) $currency->getCode() : null;
     }
 }

@@ -38,7 +38,7 @@
                 {% if address.vat_exempted_amount is defined and address.vat_exempted_amount is not null %}
                     <dt class="col-sm-5 fw-normal text-muted">{{ 'Exempted VAT'|trans }}</dt>
                     <dd class="col-sm-7 mb-1" data-testid="order-{{ kind }}-address-vat-exempted-amount">
-                        {{ address.vat_exempted_amount|number_format(2, '.', ' ') }} {{ currency_symbol|default('') }}
+                        {{ address.vat_exempted_amount|format_currency(currency_code) }}
                     </dd>
                 {% endif %}
                 {% if address.vat_verified_at is defined and address.vat_verified_at %}

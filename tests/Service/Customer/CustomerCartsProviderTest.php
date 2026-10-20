@@ -295,7 +295,7 @@ final class CustomerCartsProviderTest extends IntegrationTestCase
         $carts = $this->provider->compute((int) $customer->getId(), 'en_US', $this->now);
 
         self::assertCount(1, $carts->abandoned);
-        self::assertSame((string) Currency::getDefaultCurrency()->getSymbol(), $carts->abandoned[0]->currencySymbol);
+        self::assertSame((string) Currency::getDefaultCurrency()->getCode(), $carts->abandoned[0]->currencyCode);
     }
 
     public function testTheSectionCostsAFixedNumberOfQueries(): void

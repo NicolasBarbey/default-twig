@@ -49,6 +49,7 @@ use Thelia\Domain\Customer\Service\CustomerTitleService;
 use Thelia\Domain\Tagging\Service\TagService;
 use Thelia\Mailer\MailerFactory;
 use Thelia\Model\ConfigQuery;
+use Thelia\Model\Currency;
 use Thelia\Model\Customer;
 use Thelia\Model\CustomerQuery;
 use Thelia\Model\Event\CustomerEvent;
@@ -148,6 +149,7 @@ final class CustomerController
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             'rows' => $rows,
+            'currency_code' => (string) Currency::getDefaultCurrency()->getCode(),
             'total' => $paginated['total'],
             'pages' => $paginated['lastPage'],
             'current_page' => $page,
@@ -512,7 +514,7 @@ final class CustomerController
      * @return array<int, array<string, mixed>>
      */
     /**
-     * @return list<array{id: int, ref: string, created_at: \DateTimeInterface|null, status_title: string, status_color: string, amount: float, currency_symbol: string, edit_url: string}>
+     * @return list<array{id: int, ref: string, created_at: \DateTimeInterface|null, status_title: string, status_color: string, amount: float, currency_code: string, edit_url: string}>
      */
     private function customerOrdersPage(int $customerId, int $page, int $perPage): array
     {
@@ -532,7 +534,7 @@ final class CustomerController
                 'status_title' => $status !== null ? (string) $status->getTitle() : '',
                 'status_color' => $status !== null ? (string) $status->getColor() : '#6c757d',
                 'amount' => $amounts[(int) $order->getId()] ?? (float) $order->getTotalAmount(),
-                'currency_symbol' => $currency !== null ? (string) $currency->getSymbol() : '',
+                'currency_code' => (string) $currency->getCode(),
                 'edit_url' => $this->urls->generate('admin.order.update.view', ['order_id' => (int) $order->getId()]),
             ];
         }

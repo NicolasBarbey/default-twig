@@ -16,6 +16,7 @@ namespace BackOfficeDefaultTwigBundle\Service\Order;
 
 use BackOfficeDefaultTwigBundle\Repository\ModuleRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
+use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -48,6 +49,7 @@ final readonly class OrderListRowPresenter
         private ModuleRepository $moduleRepository,
         private OrderStatusTransitionGuard $transitionGuard,
         private OrderSaleUnits $saleUnits,
+        private MoneyFormatter $money,
     ) {
     }
 
@@ -141,7 +143,7 @@ final readonly class OrderListRowPresenter
             'items_html' => $this->renderItems($orderId, $itemCounts),
             'payment_html' => $this->renderModule($paymentTitle, 'bi-credit-card'),
             'delivery_html' => $this->renderDelivery($order, $deliveryTitle),
-            'amount' => $this->formatAmount($order, $totals),
+            'amount' => $this->formatAmount($order, $totals, $locale),
             'date_html' => $this->renderDate($order),
             'sale_unit' => $this->saleUnitTitle($order, $saleUnitTitles, $locale),
             'is_urgent' => $isUrgent,
@@ -317,13 +319,11 @@ final readonly class OrderListRowPresenter
     /**
      * @param array<int, float> $totals
      */
-    private function formatAmount(Order $order, array $totals): string
+    private function formatAmount(Order $order, array $totals, string $locale): string
     {
         $amount = $totals[(int) $order->getId()] ?? (float) $order->getTotalAmount();
-        $total = number_format($amount, 2, ',', ' ');
-        $symbol = (string) ($order->getCurrency() ? $order->getCurrency()->getSymbol() : '');
 
-        return $symbol === '' ? $total : $total.' '.$symbol;
+        return $this->money->format($amount, $locale, $order->getCurrency()->getCode());
     }
 
     /**

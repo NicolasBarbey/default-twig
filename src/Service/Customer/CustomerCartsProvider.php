@@ -59,15 +59,15 @@ final readonly class CustomerCartsProvider
         $currentRow = $this->carts->findCurrentCart($customerId, $createdSince, $activeSince);
         // One more than shown, to tell whether some are left out.
         $abandonedRows = $this->carts->findAbandonedCarts($customerId, $createdSince, $activeSince, self::MAX_ABANDONED + 1);
-        $symbols = $this->currencySymbols($currentRow !== null ? [$currentRow, ...$abandonedRows] : $abandonedRows);
+        $codes = $this->currencyCodes($currentRow !== null ? [$currentRow, ...$abandonedRows] : $abandonedRows);
 
-        $current = $currentRow !== null ? $this->cart($currentRow, $symbols) : null;
+        $current = $currentRow !== null ? $this->cart($currentRow, $codes) : null;
 
         return new CustomerCarts(
             current: $current,
             currentLines: $current !== null ? $this->lines($current->id, $locale) : [],
             abandoned: array_map(
-                fn (array $row): CustomerCart => $this->cart($row, $symbols),
+                fn (array $row): CustomerCart => $this->cart($row, $codes),
                 \array_slice($abandonedRows, 0, self::MAX_ABANDONED),
             ),
             horizonDays: $horizonDays,
@@ -77,9 +77,9 @@ final readonly class CustomerCartsProvider
 
     /**
      * @param array{id: int, currency_id: ?int, created_at: \DateTimeImmutable, last_activity_at: \DateTimeImmutable, line_count: int, quantity: float, amount: float} $row
-     * @param array<int, string>                                                                                                                                       $symbols
+     * @param array<int, string>                                                                                                                                       $codes
      */
-    private function cart(array $row, array $symbols): CustomerCart
+    private function cart(array $row, array $codes): CustomerCart
     {
         return new CustomerCart(
             id: $row['id'],
@@ -88,7 +88,7 @@ final readonly class CustomerCartsProvider
             lineCount: $row['line_count'],
             quantity: $row['quantity'],
             amount: $row['amount'],
-            currencySymbol: $symbols[$row['currency_id'] ?? 0] ?? $symbols[0],
+            currencyCode: $codes[$row['currency_id'] ?? 0] ?? $codes[0],
         );
     }
 
@@ -115,23 +115,23 @@ final readonly class CustomerCartsProvider
     }
 
     /**
-     * Currency symbol per currency id, the shop's default under key 0.
+     * Currency ISO code per currency id, the shop's default under key 0.
      *
      * @param list<array{currency_id: ?int}> $rows
      *
      * @return array<int, string>
      */
-    private function currencySymbols(array $rows): array
+    private function currencyCodes(array $rows): array
     {
-        $symbols = [0 => (string) Currency::getDefaultCurrency()->getSymbol()];
+        $codes = [0 => (string) Currency::getDefaultCurrency()->getCode()];
         $ids = array_values(array_unique(array_filter(array_column($rows, 'currency_id'))));
 
         if ($ids !== []) {
             foreach (CurrencyQuery::create()->filterById($ids)->find() as $currency) {
-                $symbols[(int) $currency->getId()] = (string) $currency->getSymbol();
+                $codes[(int) $currency->getId()] = (string) $currency->getCode();
             }
         }
 
-        return $symbols;
+        return $codes;
     }
 }

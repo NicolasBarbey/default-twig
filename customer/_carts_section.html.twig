@@ -8,7 +8,7 @@
         {% set cart = carts.current %}
         <p class="small text-muted mb-2" data-testid="customer-current-cart-meta">
             {{ 'Last activity on %date'|trans({ '%date': cart.lastActivityAt|format_datetime('medium', 'short') }) }}
-            &middot; {{ 'Total excl. tax'|trans }} <strong data-testid="customer-current-cart-amount">{{ cart.amount|number_format(2, '.', ' ') }} {{ cart.currencySymbol }}</strong>
+            &middot; {{ 'Total excl. tax'|trans }} <strong data-testid="customer-current-cart-amount">{{ cart.amount|format_currency(cart.currencyCode) }}</strong>
         </p>
         {% set line_rows = [] %}
         {% for line in carts.currentLines %}
@@ -24,8 +24,8 @@
                 title_html: title_html,
                 reference: line.reference,
                 quantity: line.quantity,
-                unit_price: line.unitPrice|number_format(2, '.', ' ') ~ ' ' ~ cart.currencySymbol,
-                line_total: line.lineTotal|number_format(2, '.', ' ') ~ ' ' ~ cart.currencySymbol,
+                unit_price: line.unitPrice|format_currency(cart.currencyCode),
+                line_total: line.lineTotal|format_currency(cart.currencyCode),
             }]) %}
         {% endfor %}
         {{ component('BoDataTable', {
@@ -51,7 +51,7 @@
             last_activity: cart.lastActivityAt|format_datetime('medium', 'short'),
             created_at: cart.createdAt|format_date('medium'),
             lines: cart.lineCount,
-            amount: cart.amount|number_format(2, '.', ' ') ~ ' ' ~ cart.currencySymbol,
+            amount: cart.amount|format_currency(cart.currencyCode),
         }]) %}
     {% endfor %}
     {{ component('BoDataTable', {
