@@ -134,6 +134,36 @@ final class ProductCombinationUpdateTest extends WebIntegrationTestCase
         self::assertSame(20.0, (float) $price->getPromoPrice(), 'A sale price the form did not send keeps its stored value.');
     }
 
+    public function testTheGridSavesTheAmountsInTheCurrencyItDisplays(): void
+    {
+        $this->loginFullAdmin();
+        [$product, $pse] = $this->productWithACombination();
+        $dollar = $this->factory->currency(['code' => 'USD', 'symbol' => '$', 'rate' => 1.1, 'byDefault' => 0]);
+
+        $this->client->request('POST', self::COMBINATIONS_URL, [
+            '_token' => $this->tokenOf($product, 'combinations-form'),
+            'product_id' => $product->getId(),
+            'tax_rule' => $product->getTaxRuleId(),
+            'currency' => $dollar->getId(),
+            'product_sale_element_id' => [$pse->getId()],
+            'reference' => [$pse->getRef()],
+            'quantity' => [42],
+            'price' => ['30'],
+            'sale_price' => ['0'],
+            'weight' => [1.5],
+        ]);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        self::assertSame(25.0, (float) $this->storedPrice($pse)->getPrice(), 'The price of the default currency is not overwritten.');
+        ProductPriceTableMap::clearInstancePool();
+        $dollarPrice = ProductPriceQuery::create()
+            ->filterByProductSaleElementsId($pse->getId())
+            ->filterByCurrencyId($dollar->getId())
+            ->findOne($this->getPropelConnection());
+        self::assertNotNull($dollarPrice, 'The price is saved in the currency of the grid.');
+        self::assertSame(30.0, (float) $dollarPrice->getPrice());
+    }
+
     public function testTheDefaultPriceCannotBeUpdatedThroughAGet(): void
     {
         $this->loginFullAdmin();

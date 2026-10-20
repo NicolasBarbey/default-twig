@@ -613,7 +613,11 @@ final class ProductAdvancedController
             return new RedirectResponse($this->urls->generate('admin.products.default'));
         }
 
-        $currency = $this->defaultCurrencyId();
+        // The grid saves in the currency it displays, and sends it in a hidden field.
+        $currency = (int) $form->get('currency', 0);
+        if ($currency <= 0) {
+            $currency = $this->defaultCurrencyId();
+        }
         $taxRule = (int) $form->get('tax_rule', (int) $product->getTaxRuleId());
         $useExchangeRate = (int) $form->get('use_exchange_rate', 0);
         $defaultPse = (int) $form->get('default_pse', 0);
