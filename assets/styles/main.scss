@@ -1927,7 +1927,7 @@ tr.bo-order-row--urgent {
 
     &:has(input:checked) {
         background-color: var(--pill-color);
-        color: #fff;
+        color: var(--pill-text, #fff);
         border-color: var(--pill-color);
     }
 

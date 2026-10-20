@@ -71,7 +71,7 @@
                                 {% for option in filters.status_options %}
                                     {% set checked = option.id in filters.selected_status_ids %}
                                     <label class="bo-order-filters__pill" data-checked="{{ checked ? 'true' : 'false' }}"
-                                           style="--pill-color: {{ option.color }};">
+                                           style="--pill-color: {{ option.color }}; --pill-text: {{ contrast_text_color(option.color) }};">
                                         <input type="checkbox" class="visually-hidden" name="status_ids[]"
                                                value="{{ option.id }}" {{ checked ? 'checked' : '' }}
                                                data-testid="order-return-filter-status-{{ option.code }}">

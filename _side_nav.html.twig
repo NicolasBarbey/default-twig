@@ -89,7 +89,7 @@
                             <li>
                                 <a class="nav-link" href="{{ path('admin.order.list') }}?status_id={{ status.id }}">
                                     {{ status.title }}
-                                    <span class="bo-side-nav__badge" style="background-color: {{ status.color }}; color: #fff;" data-testid="bo-nav-order-count-{{ status.code }}">{{ status.count }}</span>
+                                    <span class="bo-side-nav__badge" style="background-color: {{ status.color }}; color: {{ contrast_text_color(status.color) }};" data-testid="bo-nav-order-count-{{ status.code }}">{{ status.count }}</span>
                                 </a>
                             </li>
                         {% endfor %}

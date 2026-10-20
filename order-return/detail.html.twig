@@ -21,7 +21,7 @@
             <div>
                 <h1 class="h3 mb-1">{{ 'Return'|trans }} <small class="text-muted">#{{ return.ref }}</small></h1>
                 <div class="d-flex gap-2 align-items-center flex-wrap">
-                    <span class="badge" style="background-color: {{ status_color }}; color: #fff;" data-testid="order-return-status-badge">{{ status_title }}</span>
+                    <span class="badge" style="background-color: {{ status_color }}; color: {{ contrast_text_color(status_color) }};" data-testid="order-return-status-badge">{{ status_title }}</span>
                     {% if return.createdAt %}
                         <span class="text-muted" data-testid="order-return-created-at"><i class="bi bi-calendar3" aria-hidden="true"></i> {{ return.createdAt|date('d/m/Y H:i') }}</span>
                     {% endif %}
