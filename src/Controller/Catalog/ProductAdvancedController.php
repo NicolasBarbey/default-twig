@@ -321,22 +321,28 @@ final class ProductAdvancedController
         $price = (float) $request->query->get('price', 0);
         $taxRuleId = (int) $request->query->get('tax_rule_id', 0);
         $action = (string) $request->query->get('action', 'untaxed_to_taxed');
+        // A tax whose amount is a feature of the product (FeatureFixAmountTaxType) needs it; the rule is the one sent, not the stored one.
+        $product = ProductQuery::create()->findPk((int) $request->query->get('product_id', 0));
 
-        $result = $price;
         $taxRule = \Thelia\Model\TaxRuleQuery::create()->findPk($taxRuleId);
         $country = \Thelia\Model\CountryQuery::create()->findOneByByDefault(1);
 
-        if ($taxRule !== null && $country !== null) {
-            $calculator = new \Thelia\Domain\Taxation\TaxEngine\Calculator();
-            try {
-                $calculator->loadTaxRuleWithoutProduct($taxRule, $country);
-                $result = match ($action) {
-                    'taxed_to_untaxed' => $calculator->getUntaxedPrice($price),
-                    default => $calculator->getTaxedPrice($price),
-                };
-            } catch (\Throwable) {
-                $result = $price;
-            }
+        // Refused rather than echoed: the form would write the price in the other field as if converted.
+        if ($taxRule === null || $country === null) {
+            return new JsonResponse(['error' => 'No tax rule or no default country'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $calculator = new \Thelia\Domain\Taxation\TaxEngine\Calculator();
+        try {
+            $product !== null
+                ? $calculator->loadTaxRule($taxRule, $country, $product)
+                : $calculator->loadTaxRuleWithoutProduct($taxRule, $country);
+            $result = match ($action) {
+                'taxed_to_untaxed' => $calculator->getUntaxedPrice($price),
+                default => $calculator->getTaxedPrice($price),
+            };
+        } catch (\Throwable) {
+            return new JsonResponse(['error' => 'The price could not be converted'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         return new JsonResponse([

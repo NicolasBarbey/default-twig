@@ -210,7 +210,8 @@
                     <form method="post" action="{{ path('admin.product.combination.defaut-price.update') }}"
                           data-testid="default-pse-form"
                           data-controller="bo-pse-price-with-tax"
-                          data-bo-pse-price-with-tax-calc-url-value="{{ path('admin.product.calculate-price') }}">
+                          data-bo-pse-price-with-tax-calc-url-value="{{ path('admin.product.calculate-price') }}"
+                          data-bo-pse-price-with-tax-product-id-value="{{ product.id }}">
                         <input type="hidden" name="_token" value="{{ assignToken() }}">
                         <input type="hidden" name="product_id" value="{{ product.id }}">
                         <input type="hidden" name="product_sale_element_id" value="{{ default_pse.id }}">
@@ -227,7 +228,8 @@
                                     <span class="bo-form-label__text">{{ 'Tax rule'|trans }}</span><span class="bo-form-label__required" aria-hidden="true">*</span>
                                 </label>
                                 <select class="form-select" id="default_pse_tax_rule" name="tax_rule" required
-                                        data-bo-pse-price-with-tax-target="taxRule">
+                                        data-bo-pse-price-with-tax-target="taxRule"
+                                        data-action="change->bo-pse-price-with-tax#onTaxRuleChange">
                                     <option value="">{{ 'Select a tax rule'|trans }}</option>
                                     {% for rule in tax_rules %}
                                         <option value="{{ rule.id }}" {% if rule.id == tax_rule_id %}selected{% endif %}>{{ rule.title }}</option>
@@ -237,6 +239,10 @@
                             <div class="col-md-6 d-flex align-items-end">
                                 <span class="text-muted small">{{ 'Currency'|trans }} : <strong>{{ currency.name }}</strong> ({{ currency.symbol }})</span>
                             </div>
+                        </div>
+
+                        <div class="alert alert-danger" role="alert" data-bo-pse-price-with-tax-target="error" data-testid="default-pse-price-error" hidden>
+                            {{ 'The price could not be converted with the tax rule. Type the price without taxes, or try again.'|trans }}
                         </div>
 
                         <div class="row g-3">
