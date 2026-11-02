@@ -248,6 +248,12 @@ public function onCustomerTab(HookRenderBlockEvent $event): void
 }
 ```
 
+#### Changing the actions of a combination
+
+Each row of the combinations tab of a product sheet opens a menu of actions, the deletion last. A theme or a project
+that overrides the back office changes the menu in `catalog/product/_combination_row_actions.html.twig`, a copy of
+that file, without copying the whole tab.
+
 ## Tests
 
 - **PHPStan**: `ddev exec composer phpstan` (baseline 60 errors).

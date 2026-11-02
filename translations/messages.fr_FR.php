@@ -3356,5 +3356,6 @@ return [
     'The provider this usage runs on ignores the reasoning effort.' => 'Le fournisseur de cet usage ignore l\'effort de raisonnement.',
     'The new order of the combinations was not saved.' => 'Le nouvel ordre des combinaisons n\'a pas été enregistré.',
     'Reload the grid' => 'Recharger la grille',
+    'Actions of %combination%' => 'Actions de %combination%',
     'The price could not be converted with the tax rule. Type the price without taxes, or try again.' => 'Le prix n\'a pas pu être converti avec la règle de taxe. Saisissez le prix hors taxes, ou réessayez.',
 ];

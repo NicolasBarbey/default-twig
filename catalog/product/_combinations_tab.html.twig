@@ -144,43 +144,8 @@
                                                 <i class="bi bi-{% if row.visible %}eye{% else %}eye-slash{% endif %}" aria-hidden="true"></i>
                                             </a>
                                         </td>
-                                        <td class="text-nowrap">
-                                            <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'Associate files'|trans }}">
-                                                <button type="button" class="btn btn-outline-secondary"
-                                                        data-bs-toggle="modal" data-bs-target="#pse-assoc-modal"
-                                                        data-pse-id="{{ row.id }}" data-assoc-type="image"
-                                                        title="{{ 'Associate images'|trans }}"
-                                                        data-testid="combinations-assoc-image-{{ row.id }}">
-                                                    <i class="bi bi-images" aria-hidden="true"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-secondary"
-                                                        data-bs-toggle="modal" data-bs-target="#pse-assoc-modal"
-                                                        data-pse-id="{{ row.id }}" data-assoc-type="document"
-                                                        title="{{ 'Associate documents'|trans }}"
-                                                        data-testid="combinations-assoc-document-{{ row.id }}">
-                                                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-secondary"
-                                                        data-bs-toggle="modal" data-bs-target="#pse-assoc-modal"
-                                                        data-pse-id="{{ row.id }}" data-assoc-type="video"
-                                                        title="{{ 'Associate videos'|trans }}"
-                                                        data-testid="combinations-assoc-video-{{ row.id }}">
-                                                    <i class="bi bi-film" aria-hidden="true"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-secondary"
-                                                        data-bs-toggle="modal" data-bs-target="#pse-assoc-modal"
-                                                        data-pse-id="{{ row.id }}" data-assoc-type="virtual"
-                                                        title="{{ 'Associate virtual document'|trans }}"
-                                                        data-testid="combinations-assoc-virtual-{{ row.id }}">
-                                                    <i class="bi bi-cloud-arrow-down" aria-hidden="true"></i>
-                                                </button>
-                                                <button type="button" class="btn btn-outline-danger"
-                                                        data-bs-toggle="modal" data-bs-target="#pse-delete-modal"
-                                                        data-pse-id="{{ row.id }}"
-                                                        data-testid="combinations-delete-{{ row.id }}">
-                                                    <i class="bi bi-trash" aria-hidden="true"></i>
-                                                </button>
-                                            </div>
+                                        <td class="text-end">
+                                            {{ include('@BackOfficeDefaultTwig/catalog/product/_combination_row_actions.html.twig', { row: row, product: product }, with_context = false) }}
                                         </td>
                                         {{ safe_hook('product.combinations-row', { pse_id: row.id, pse: row.id, idx: loop.index0, product: product.id, product_id: product.id }) }}
                                     </tr>

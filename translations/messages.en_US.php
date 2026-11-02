@@ -1188,5 +1188,6 @@ return [
     'Go to step 1' => 'Go to step 1',
     'The new order of the combinations was not saved.' => 'The new order of the combinations was not saved.',
     'Reload the grid' => 'Reload the grid',
+    'Actions of %combination%' => 'Actions of %combination%',
     'The price could not be converted with the tax rule. Type the price without taxes, or try again.' => 'The price could not be converted with the tax rule. Type the price without taxes, or try again.',
 ];
