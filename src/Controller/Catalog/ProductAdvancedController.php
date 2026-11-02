@@ -19,6 +19,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
 use BackOfficeDefaultTwigBundle\Service\File\ProductVideoPresenter;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationIdentifierNotices;
+use BackOfficeDefaultTwigBundle\Service\Product\CombinationPositionMover;
 use BackOfficeDefaultTwigBundle\Service\Product\CombinationsTabContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Product\GroupPricesContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Product\SaleUnitValuesContextBuilder;
@@ -47,6 +48,7 @@ use Thelia\Core\Event\ProductSaleElement\ProductSaleElementUpdateEvent;
 use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\Event\UpdatePositionEvent;
 use Thelia\Core\Security\AccessManager;
+use Thelia\Core\Security\Exception\TokenAuthenticationException;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Domain\Catalog\Product\Identifier\InvalidGtinException;
 use Thelia\Domain\Catalog\Product\Identifier\InvalidMpnException;
@@ -418,24 +420,36 @@ final class ProductAdvancedController
     }
 
     #[Route('/admin/product/product-sale-element-position', name: 'admin.product.product-sale-element-position', methods: ['POST'])]
-    public function psePosition(Request $request): Response
+    public function psePosition(Request $request, CombinationPositionMover $mover): JsonResponse
     {
-        $event = new UpdatePositionEvent(
-            (int) ($request->query->get('product_sale_element_id') ?? $request->request->get('product_sale_element_id', 0)),
-            (int) ($request->query->get('mode') ?? $request->request->get('mode', UpdatePositionEvent::POSITION_ABSOLUTE)),
-            (int) ($request->query->get('position') ?? $request->request->get('position', 0)),
-        );
+        if ($this->access->check(self::RESOURCE, [], AccessManager::UPDATE) !== null) {
+            return new JsonResponse(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
+        }
 
-        return $this->action->tokenAction(
-            resource: self::RESOURCE,
-            access: AccessManager::UPDATE,
-            request: $request,
-            event: $event,
-            eventName: TheliaEvents::PRODUCT_PRODUCT_SALE_ELEMENT_UPDATE_POSITION,
-            actionLabel: 'PSE reorder',
-            successRoute: self::EDIT_ROUTE,
-            successParameters: ['product_id' => (int) ($request->query->get('product_id') ?? $request->request->get('product_id', 0)), 'current_tab' => 'pse'],
+        // The order of the combinations holds for every sale unit.
+        if ($this->restricted->denyIfRestricted(self::RESOURCE, AccessManager::UPDATE) !== null) {
+            return new JsonResponse(['error' => 'Restricted to some sale units'], Response::HTTP_FORBIDDEN);
+        }
+
+        try {
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
+        } catch (TokenAuthenticationException) {
+            return new JsonResponse(['error' => 'Invalid token'], Response::HTTP_FORBIDDEN);
+        }
+
+        $combination = ProductSaleElementsQuery::create()->findPk(
+            (int) ($request->query->get('product_sale_element_id') ?? $request->request->get('product_sale_element_id', 0)),
         );
+        if ($combination === null) {
+            return new JsonResponse(['error' => 'Unknown combination'], Response::HTTP_NOT_FOUND);
+        }
+
+        $position = (int) ($request->query->get('position') ?? $request->request->get('position', 0));
+        if (!$mover->move($combination, $position)) {
+            return new JsonResponse(['error' => 'The combination was not moved'], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return new JsonResponse(['position' => $position]);
     }
 
     #[Route('/admin/products/attributes/tab', name: 'admin.products.attributes.tab', methods: ['GET'])]

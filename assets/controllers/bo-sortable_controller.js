@@ -7,16 +7,30 @@ import { tokenBody } from '../lib/post-request.js';
  * On drop, POSTs the moved row's id and its new 1-based position to the
  * configured URL (the token in the request body), then reloads the page so the server-rendered table
  * reflects the persisted order.
+ *
+ * With `json` set, the URL answers in JSON and the page is not reloaded: the table already shows
+ * the new order, and the fields being typed in it are kept. The fields `reindexedFields` names, read
+ * by the index of their row (`onsale[2]`), take the index of its new place, or the form would give
+ * each row the boxes of the row that was there before. Only those: a field a module adds to a row
+ * may be named by the id of its record. The moves are sent one after the other. A move refused or failed
+ * reveals the element `failureElement` selects (a message and a way to reload, so that nothing
+ * typed is lost without the administrator choosing) and stops the moves that follow, whose
+ * positions would be those of an order the shop does not have.
  */
 export default class extends Controller {
     static values = {
         url: String,
         token: String,
         paramName: { type: String, default: 'id' },
+        json: { type: Boolean, default: false },
+        failureElement: String,
+        reindexedFields: { type: Array, default: [] },
     };
 
     connect() {
         this.dragged = null;
+        this.broken = false;
+        this.pending = Promise.resolve();
         this.rows().forEach((row) => this.makeDraggable(row));
         this.boundDragStart = this.onDragStart.bind(this);
         this.boundDragOver = this.onDragOver.bind(this);
@@ -69,28 +83,31 @@ export default class extends Controller {
 
     onDragOver(event) {
         const row = event.target.closest('tr[data-row-id]');
-        if (!row || !this.dragged || row === this.dragged) {
+        // No drop once a move failed: the browser would handle it itself.
+        if (!row || !this.dragged || row === this.dragged || this.broken) {
             return;
         }
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
+        const rows = this.rows();
         row.classList.add('bo-sortable-target');
+        row.classList.toggle('bo-sortable-target--after', rows.indexOf(this.dragged) < rows.indexOf(row));
     }
 
     onDragLeave(event) {
         const row = event.target.closest('tr[data-row-id]');
         if (row) {
-            row.classList.remove('bo-sortable-target');
+            row.classList.remove('bo-sortable-target', 'bo-sortable-target--after');
         }
     }
 
     onDrop(event) {
         const target = event.target.closest('tr[data-row-id]');
-        if (!target || !this.dragged || target === this.dragged) {
+        if (!target || !this.dragged || target === this.dragged || this.broken) {
             return;
         }
         event.preventDefault();
-        target.classList.remove('bo-sortable-target');
+        target.classList.remove('bo-sortable-target', 'bo-sortable-target--after');
 
         // A row showing its position is sent to that very position: the list may be
         // one page of many, or carry gaps, and its rank on screen would then be wrong.
@@ -111,7 +128,14 @@ export default class extends Controller {
 
         const newPosition = Number.isInteger(targetPosition) ? targetPosition : this.rows().indexOf(this.dragged) + 1;
         const rowId = this.dragged.dataset.rowId;
-        this.persist(rowId, newPosition);
+        if (!this.jsonValue) {
+            this.persist(rowId, newPosition);
+
+            return;
+        }
+
+        this.reindexRows();
+        this.pending = this.pending.then(() => this.persistAsJson(rowId, newPosition));
     }
 
     onDragEnd() {
@@ -121,10 +145,10 @@ export default class extends Controller {
         }
         this.element
             .querySelectorAll('.bo-sortable-target')
-            .forEach((row) => row.classList.remove('bo-sortable-target'));
+            .forEach((row) => row.classList.remove('bo-sortable-target', 'bo-sortable-target--after'));
     }
 
-    persist(rowId, position) {
+    request(rowId, position, accept) {
         const url = new URL(this.urlValue, window.location.origin);
         url.searchParams.set(this.paramNameValue, rowId);
         url.searchParams.set('position', String(position));
@@ -135,12 +159,16 @@ export default class extends Controller {
             body.set('_token', this.tokenValue);
         }
 
-        fetch(url.toString(), {
+        return fetch(url.toString(), {
             method: 'POST',
             credentials: 'same-origin',
-            headers: { Accept: 'text/html', 'Content-Type': 'application/x-www-form-urlencoded' },
+            headers: { Accept: accept, 'Content-Type': 'application/x-www-form-urlencoded' },
             body: body.toString(),
-        })
+        });
+    }
+
+    persist(rowId, position) {
+        this.request(rowId, position, 'text/html')
             .then((response) => {
                 if (!response.ok && response.status >= 400) {
                     throw new Error(`HTTP ${response.status}`);
@@ -150,5 +178,40 @@ export default class extends Controller {
             .catch(() => {
                 window.location.reload();
             });
+    }
+
+    async persistAsJson(rowId, position) {
+        if (this.broken) {
+            return;
+        }
+
+        try {
+            const response = await this.request(rowId, position, 'application/json');
+            // An expired session redirects to the login page, which does not parse as JSON.
+            await response.json();
+            if (!response.ok) {
+                this.failed();
+            }
+        } catch {
+            this.failed();
+        }
+    }
+
+    failed() {
+        this.broken = true;
+        const failure = this.hasFailureElementValue ? document.querySelector(this.failureElementValue) : null;
+        if (failure) {
+            failure.hidden = false;
+        }
+    }
+
+    reindexRows() {
+        this.rows().forEach((row, index) => {
+            this.reindexedFieldsValue.forEach((name) => {
+                row.querySelectorAll(`[name^="${name}["]`).forEach((field) => {
+                    field.name = field.name.replace(/\[\d+\]$/, `[${index}]`);
+                });
+            });
+        });
     }
 }

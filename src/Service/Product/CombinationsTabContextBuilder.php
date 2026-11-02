@@ -28,8 +28,6 @@ use Thelia\Model\Currency;
 use Thelia\Model\CurrencyQuery;
 use Thelia\Model\LangQuery;
 use Thelia\Model\Product;
-use Thelia\Model\ProductSaleElements;
-use Thelia\Model\ProductSaleElementsQuery;
 use Thelia\Model\TaxRule;
 use Thelia\Model\TaxRuleQuery;
 
@@ -39,6 +37,7 @@ final readonly class CombinationsTabContextBuilder
         private GtinDuplicateFinder $duplicateFinder = new GtinDuplicateFinder(),
         private ProductFilterCatalog $catalog = new ProductFilterCatalog(),
         private CombinationLabeler $labeler = new CombinationLabeler(),
+        private CombinationDisplayOrder $displayOrder = new CombinationDisplayOrder(),
     ) {
     }
 
@@ -58,19 +57,10 @@ final readonly class CombinationsTabContextBuilder
     {
         $locale = $this->defaultLocale();
         $currency = $this->resolveCurrency($currencyId);
-        $pseRecords = ProductSaleElementsQuery::create()
-            ->filterByProductId((int) $product->getId())
-            ->orderByPosition()
-            ->orderById()
-            ->find();
-
-        $attributePositions = $this->templateAttributePositions($product);
-
-        $entries = [];
+        $rows = [];
         $hasCombinations = false;
-        foreach ($pseRecords as $pse) {
-            \assert($pse instanceof ProductSaleElements);
-            $description = $this->labeler->describe($pse, $locale, $attributePositions);
+        foreach ($this->displayOrder->of($product) as $pse) {
+            $description = $this->labeler->describe($pse, $locale);
             $hasCombinations = $hasCombinations || CombinationLabeler::DEFAULT_LABEL !== $description['label'];
 
             // A combination written without any price (by the API, an import) has no
@@ -101,15 +91,10 @@ final readonly class CombinationsTabContextBuilder
                 'visible' => (bool) $pse->getVisible(),
                 'position' => (int) $pse->getPosition(),
             ];
-            $entries[] = ['row' => $row, 'attribute_order' => $description['order']];
+            $rows[] = $row;
         }
 
-        // The query already ordered by position then id. Combinations tied on their
-        // position (every one of them on a shop migrated from Thelia 2) are then read
-        // in the order of their attributes and attribute values.
-        usort($entries, $this->compareEntries(...));
-
-        $rows = $this->withSharedCodes(array_column($entries, 'row'));
+        $rows = $this->withSharedCodes($rows);
         $defaultPse = null;
         foreach ($rows as $row) {
             if ($row['isdefault']) {
@@ -171,36 +156,6 @@ final readonly class CombinationsTabContextBuilder
         $brand = $product->getBrand();
 
         return $brand === null ? null : (string) $brand->setLocale($locale)->getTitle();
-    }
-
-    /**
-     * @param array{row: array<string, mixed>, attribute_order: list<array{int, int}>} $left
-     * @param array{row: array<string, mixed>, attribute_order: list<array{int, int}>} $right
-     */
-    private function compareEntries(array $left, array $right): int
-    {
-        return [$left['row']['position'], $left['attribute_order'], $left['row']['id']]
-            <=> [$right['row']['position'], $right['attribute_order'], $right['row']['id']];
-    }
-
-    /**
-     * Position of each attribute of the product's template, by attribute id.
-     *
-     * @return array<int, int>
-     */
-    private function templateAttributePositions(Product $product): array
-    {
-        $templateId = (int) ($product->getTemplateId() ?? 0);
-        if ($templateId <= 0) {
-            return [];
-        }
-
-        $positions = [];
-        foreach (AttributeTemplateQuery::create()->filterByTemplateId($templateId)->find() as $entry) {
-            $positions[(int) $entry->getAttributeId()] = (int) $entry->getPosition();
-        }
-
-        return $positions;
     }
 
     /**

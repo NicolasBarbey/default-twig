@@ -1274,6 +1274,10 @@ td.bo-datatable__details-col {
     box-shadow: inset 0 2px 0 0 var(--bs-primary, #0d6efd);
 }
 
+.bo-sortable-target--after {
+    box-shadow: inset 0 -2px 0 0 var(--bs-primary, #0d6efd);
+}
+
 // Position cell: arrows move a row one step, the number opens a field to send it
 // to any position (bo-position controller).
 .bo-position {

@@ -3354,4 +3354,6 @@ return [
     'Follow the range' => 'Suivre la gamme',
     'How hard the model thinks before it answers. Only Anthropic models use it; the other providers ignore it. A module that sets its own effort in its request keeps it.' => 'Intensité de réflexion du modèle avant de répondre. Seuls les modèles Anthropic l\'utilisent, les autres fournisseurs l\'ignorent. Un module qui fixe son propre effort dans sa requête le garde.',
     'The provider this usage runs on ignores the reasoning effort.' => 'Le fournisseur de cet usage ignore l\'effort de raisonnement.',
+    'The new order of the combinations was not saved.' => 'Le nouvel ordre des combinaisons n\'a pas été enregistré.',
+    'Reload the grid' => 'Recharger la grille',
 ];

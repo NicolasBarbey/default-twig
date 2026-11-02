@@ -310,7 +310,7 @@ final class SaleUnitAdminRestrictionTest extends WebIntegrationTestCase
         $this->client->request('POST', '/admin/product/default-price/update', ['_token' => $token, 'product_id' => $product->getId(), 'product_sale_element_id' => $pse->getId(), 'price' => '1', 'quantity' => '99']);
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
 
-        foreach (['/admin/product/combination/add', '/admin/product/combination/build', '/admin/product/combination/delete', '/admin/products/create'] as $url) {
+        foreach (['/admin/product/combination/add', '/admin/product/combination/build', '/admin/product/combination/delete', '/admin/product/product-sale-element-position', '/admin/products/create'] as $url) {
             $this->client->request('POST', $url, ['_token' => $token, 'product_id' => $product->getId(), 'product_sale_element_id' => $pse->getId()]);
             self::assertSame(403, $this->client->getResponse()->getStatusCode(), $url);
         }

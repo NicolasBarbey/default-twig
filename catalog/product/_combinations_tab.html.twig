@@ -65,6 +65,13 @@
                     {{ safe_hook('product.before-combinations', { location: 'product_before_combinations' }) }}
                     {{ safe_hook('product.combinations-list-caption', { location: 'product_combinations_list_caption' }) }}
 
+                    <div id="combinations-sort-failure" data-testid="combinations-sort-failure" hidden>
+                        <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+                            <span>{{ 'The new order of the combinations was not saved.'|trans }}</span>
+                            <a class="btn btn-sm btn-outline-danger" href="{{ path('admin.products.update', { product_id: product.id, current_tab: 'pse', combinations_currency_id: currency.id, sale_unit_id: sale_unit_values.sale_unit.id|default(null) }) }}">{{ 'Reload the grid'|trans }}</a>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-sm align-middle bo-combinations-grid" data-testid="combinations-table">
                             <thead class="table-light">
@@ -89,7 +96,10 @@
                             <tbody data-controller="bo-sortable"
                                    data-bo-sortable-url-value="{{ path('admin.product.product-sale-element-position', { product_id: product.id }) }}"
                                    data-bo-sortable-token-value="{{ assignToken() }}"
-                                   data-bo-sortable-param-name-value="product_sale_element_id">
+                                   data-bo-sortable-param-name-value="product_sale_element_id"
+                                   data-bo-sortable-json-value="true"
+                                   data-bo-sortable-failure-element-value="#combinations-sort-failure"
+                                   data-bo-sortable-reindexed-fields-value="{{ ['onsale', 'isnew']|json_encode|e('html_attr') }}">
                                 {% for row in pse_rows %}
                                     <tr data-testid="combinations-row-{{ row.id }}" data-row-id="{{ row.id }}">
                                         <td class="text-center text-muted" data-bo-sortable-handle title="{{ 'Drag to reorder'|trans }}" style="cursor:grab">

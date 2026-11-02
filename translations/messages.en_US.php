@@ -1186,4 +1186,6 @@ return [
     'Waiting for AI to be allowed in the shop (see above).' => 'Waiting for AI to be allowed in the shop (see above).',
     'The connection "%connection%" failed its last test: fix the key in step 1.' => 'The connection "%connection%" failed its last test: fix the key in step 1.',
     'Go to step 1' => 'Go to step 1',
+    'The new order of the combinations was not saved.' => 'The new order of the combinations was not saved.',
+    'Reload the grid' => 'Reload the grid',
 ];
