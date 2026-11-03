@@ -240,10 +240,11 @@ final class ProductCombinationPositionTest extends WebIntegrationTestCase
     private function sortToken(): string
     {
         $crawler = $this->client->request('GET', '/admin/products/combinations/tab?product_id='.$this->product->getId());
-        $sortable = $crawler->filter('tbody[data-controller="bo-sortable"]');
-        self::assertGreaterThan(0, $sortable->count(), 'The combinations table renders no sortable body.');
+        $sortable = $crawler->filter('table[data-testid="combinations-table"][data-controller~="bo-sortable"]');
+        self::assertGreaterThan(0, $sortable->count(), 'The combinations table is not sortable.');
+        self::assertSame('tbody[data-row-id]', $sortable->attr('data-bo-sortable-item-value'));
         // combinationUpdate() reads these boxes by row index: a row moved without reload takes the index of its new place.
-        self::assertSame(['onsale', 'isnew'], json_decode((string) $sortable->attr('data-bo-sortable-reindexed-fields-value'), true));
+        self::assertSame(['onsale', 'isnew', 'visible'], json_decode((string) $sortable->attr('data-bo-sortable-reindexed-fields-value'), true));
 
         return (string) $sortable->attr('data-bo-sortable-token-value');
     }
@@ -259,7 +260,7 @@ final class ProductCombinationPositionTest extends WebIntegrationTestCase
             $titleById[(int) $combination->getId()] = $this->titleOf($combination);
         }
 
-        return $crawler->filter('table[data-testid="combinations-table"] tbody tr[data-row-id]')
+        return $crawler->filter('table[data-testid="combinations-table"] > tbody[data-row-id]')
             ->each(static fn ($row): string => $titleById[(int) $row->attr('data-row-id')]);
     }
 

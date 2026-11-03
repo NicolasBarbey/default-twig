@@ -32,17 +32,22 @@
 
         <div class="card-body">
             {% if has_combinations %}
-                <form method="post" action="{{ path('admin.product.combination.update') }}" data-testid="combinations-form">
+                <form method="post" action="{{ path('admin.product.combination.update') }}" data-testid="combinations-form"
+                      data-controller="bo-pse-price-with-tax bo-combination-default"
+                      data-bo-pse-price-with-tax-calc-url-value="{{ path('admin.product.calculate-price') }}"
+                      data-bo-pse-price-with-tax-product-id-value="{{ product.id }}">
                     <input type="hidden" name="_token" value="{{ assignToken() }}">
                     <input type="hidden" name="product_id" value="{{ product.id }}">
                     <input type="hidden" name="currency" value="{{ currency.id }}">
+                    <input type="hidden" name="visible_sent" value="1">
 
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label required" for="combinations-tax-rule">
                                 <span class="bo-form-label__text">{{ 'Tax rule'|trans }}</span><span class="bo-form-label__required" aria-hidden="true">*</span>
                             </label>
-                            <select class="form-select" id="combinations-tax-rule" name="tax_rule" required data-testid="combinations-tax-rule">
+                            <select class="form-select" id="combinations-tax-rule" name="tax_rule" required data-testid="combinations-tax-rule"
+                                    data-bo-pse-price-with-tax-target="taxRule" data-action="change->bo-pse-price-with-tax#onTaxRuleChange">
                                 <option value="">{{ 'Select a tax rule'|trans }}</option>
                                 {% for rule in tax_rules %}
                                     <option value="{{ rule.id }}" {% if rule.id == tax_rule_id %}selected{% endif %}>{{ rule.title }}</option>
@@ -72,85 +77,194 @@
                         </div>
                     </div>
 
+                    <div class="alert alert-danger" role="alert" data-bo-pse-price-with-tax-target="error" data-testid="combinations-price-error" hidden>
+                        {{ 'The price could not be converted with the tax rule. Type the price without taxes, or try again.'|trans }}
+                    </div>
+
                     <div class="table-responsive">
-                        <table class="table table-sm align-middle bo-combinations-grid" data-testid="combinations-table">
+                        <table class="table table-borderless bo-combinations-grid" data-testid="combinations-table"
+                               data-controller="bo-sortable"
+                               data-bo-sortable-item-value="tbody[data-row-id]"
+                               data-bo-sortable-drag-whole-value="true"
+                               data-bo-sortable-url-value="{{ path('admin.product.product-sale-element-position', { product_id: product.id }) }}"
+                               data-bo-sortable-token-value="{{ assignToken() }}"
+                               data-bo-sortable-param-name-value="product_sale_element_id"
+                               data-bo-sortable-json-value="true"
+                               data-bo-sortable-failure-element-value="#combinations-sort-failure"
+                               data-bo-sortable-reindexed-fields-value="{{ ['onsale', 'isnew', 'visible']|json_encode|e('html_attr') }}">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="text-center" style="width:1%" aria-label="{{ 'Position'|trans }}"></th>
-                                    <th>{{ 'Default'|trans }}</th>
+                                    <th class="bo-combinations-grid__col-handle" aria-label="{{ 'Position'|trans }}"></th>
                                     <th>{{ 'Combination'|trans }}</th>
-                                    <th>{{ 'Reference'|trans }}</th>
-                                    <th class="text-end">{{ 'Quantity'|trans }}</th>
-                                    <th class="text-end">{{ 'Price'|trans }}</th>
-                                    <th class="text-end">{{ 'Sale price'|trans }}</th>
-                                    <th class="text-end">{{ 'Weight'|trans }}</th>
-                                    <th title="{{ 'EAN-8, UPC-A, EAN-13 or GTIN-14'|trans }}">{{ 'GTIN'|trans }}</th>
-                                    <th>{{ 'Manufacturer part number'|trans }}</th>
-                                    <th>{{ 'Manufacturer'|trans }}</th>
-                                    <th>{{ 'Promo'|trans }}</th>
-                                    <th>{{ 'New'|trans }}</th>
-                                    <th>{{ 'Visible'|trans }}</th>
-                                    <th></th>
+                                    <th class="bo-combinations-grid__col-identifiers">{{ 'Identifiers'|trans }}</th>
+                                    <th class="bo-combinations-grid__col-stock">{{ 'Stock and weight'|trans }}</th>
+                                    <th class="bo-combinations-grid__col-promo"><span class="visually-hidden">{{ 'Promotion'|trans }}</span></th>
+                                    <th class="bo-combinations-grid__col-price">{{ 'Price excl. taxes'|trans }}</th>
+                                    <th class="bo-combinations-grid__col-price">{{ 'Price incl. taxes'|trans }}</th>
+                                    <th class="bo-combinations-grid__col-actions"><span class="visually-hidden">{{ 'Actions'|trans }}</span></th>
                                 </tr>
                             </thead>
-                            <tbody data-controller="bo-sortable"
-                                   data-bo-sortable-url-value="{{ path('admin.product.product-sale-element-position', { product_id: product.id }) }}"
-                                   data-bo-sortable-token-value="{{ assignToken() }}"
-                                   data-bo-sortable-param-name-value="product_sale_element_id"
-                                   data-bo-sortable-json-value="true"
-                                   data-bo-sortable-failure-element-value="#combinations-sort-failure"
-                                   data-bo-sortable-reindexed-fields-value="{{ ['onsale', 'isnew']|json_encode|e('html_attr') }}">
-                                {% for row in pse_rows %}
-                                    <tr data-testid="combinations-row-{{ row.id }}" data-row-id="{{ row.id }}">
-                                        <td class="text-center text-muted" data-bo-sortable-handle title="{{ 'Drag to reorder'|trans }}" style="cursor:grab">
+                            {% for row in pse_rows %}
+                                {% set idx = loop.index0 %}
+                                {% set field_id = 'combination-' ~ row.id %}
+                                <tbody data-testid="combinations-row-{{ row.id }}" data-row-id="{{ row.id }}"
+                                       data-bo-pse-price-with-tax-scope
+                                       data-controller="bo-virtual-toggle" data-bo-virtual-toggle-mode-value="readonly">
+                                    <tr>
+                                        <td class="text-center bo-combinations-grid__handle" rowspan="3" data-bo-sortable-handle title="{{ 'Drag to reorder'|trans }}">
                                             <i class="bi bi-grip-vertical" aria-hidden="true"></i>
                                         </td>
-                                        <td class="text-center">
-                                            <input type="radio" name="default_pse" value="{{ row.id }}" {% if row.isdefault %}checked{% endif %} aria-label="{{ 'Default combination'|trans }}">
+                                        <td class="bo-combinations-grid__identity" colspan="6">
+                                            <span class="fw-semibold bo-combinations-grid__name">{{ row.label }}</span>
+                                            <span class="badge rounded-pill border border-success text-success bg-transparent ms-2" data-bo-combination-default-target="badge" data-pse-id="{{ row.id }}" data-testid="combinations-default-badge-{{ row.id }}"{% if not row.isdefault %} hidden{% endif %}>{{ 'By default'|trans }}</span>
+                                            <input type="radio" name="default_pse" value="{{ row.id }}" hidden {% if row.isdefault %}checked{% endif %}
+                                                   aria-label="{{ 'Default combination'|trans }}"
+                                                   data-bo-combination-default-target="radio" data-pse-id="{{ row.id }}">
                                         </td>
-                                        <td><small>{{ row.label }}</small></td>
-                                        <td><input type="hidden" name="product_sale_element_id[]" value="{{ row.id }}"><input type="text" name="reference[]" value="{{ row.ref }}" class="form-control form-control-sm bo-combinations-grid__ref"></td>
-                                        <td><input type="number" step="any" name="quantity[]" value="{{ row.quantity }}" class="form-control form-control-sm text-end bo-combinations-grid__number"></td>
-                                        <td><input type="number" step="any" name="price[]" value="{{ row.price }}" class="form-control form-control-sm text-end bo-combinations-grid__number"{% if row.price is null %} required{% endif %}></td>
-                                        <td><input type="number" step="any" name="sale_price[]" value="{{ row.sale_price }}" class="form-control form-control-sm text-end bo-combinations-grid__number"></td>
-                                        <td><input type="number" step="any" name="weight[]" value="{{ row.weight }}" class="form-control form-control-sm text-end bo-combinations-grid__number"></td>
+                                        {# datatable-sticky-actions is the lists' class: bo-overflow-dropdown lifts it above the next lines while the menu is open. #}
+                                        <td class="text-end bo-combinations-grid__actions datatable-sticky-actions">
+                                            <div class="d-inline-flex align-items-center gap-1">
+                                                <input type="checkbox" class="btn-check bo-combinations-grid__visibility" id="{{ field_id }}-visible" name="visible[{{ idx }}]" value="1" autocomplete="off"
+                                                       {% if row.visible %}checked{% endif %} data-testid="combinations-visible-{{ row.id }}">
+                                                <label class="btn btn-sm btn-outline-success btn-icon" for="{{ field_id }}-visible" title="{{ 'Visible in the shop'|trans }}">
+                                                    <i class="bi bi-eye" aria-hidden="true"></i><i class="bi bi-eye-slash" aria-hidden="true"></i>
+                                                    <span class="visually-hidden">{{ 'Visible in the shop'|trans }}</span>
+                                                </label>
+                                                {{ include('@BackOfficeDefaultTwig/catalog/product/_combination_row_actions.html.twig', { row: row, product: product }, with_context = false) }}
+                                            </div>
+                                        </td>
+                                        {{ safe_hook('product.combinations-row', { pse_id: row.id, pse: row.id, idx: idx, product: product.id, product_id: product.id }) }}
+                                    </tr>
+                                    <tr>
                                         <td>
-                                            <input type="text" name="ean_code[]" value="{{ row.ean_code }}" maxlength="32" inputmode="numeric" autocomplete="off"
-                                                   class="form-control form-control-sm bo-combinations-grid__gtin{% if row.gtin_shared_with is not empty %} border-warning{% endif %}"
-                                                   aria-label="{{ 'GTIN'|trans }}" data-testid="combinations-gtin-{{ row.id }}">
+                                            <div class="form-check mb-0">
+                                                <input type="checkbox" class="form-check-input" id="{{ field_id }}-isnew" name="isnew[{{ idx }}]" value="1" {% if row.isnew %}checked{% endif %}>
+                                                <label class="form-check-label" for="{{ field_id }}-isnew">{{ 'New'|trans }}</label>
+                                            </div>
+                                        </td>
+                                        <td class="bo-combinations-grid__identifiers">
+                                            <div class="bo-combinations-grid__field">
+                                                <label for="{{ field_id }}-ref">{{ 'Ref.'|trans }}</label>
+                                                <input type="hidden" name="product_sale_element_id[]" value="{{ row.id }}">
+                                                <input type="text" id="{{ field_id }}-ref" name="reference[]" value="{{ row.ref }}" class="form-control form-control-sm bo-combinations-grid__ref">
+                                            </div>
+                                        </td>
+                                        <td class="bo-combinations-grid__logistics">
+                                            <div class="bo-combinations-grid__field">
+                                                <label for="{{ field_id }}-quantity">{{ 'Stock'|trans }}</label>
+                                                <input type="number" step="any" id="{{ field_id }}-quantity" name="quantity[]" value="{{ row.quantity }}" class="form-control form-control-sm text-end bo-combinations-grid__number">
+                                            </div>
+                                        </td>
+                                        <td></td>
+                                        <td>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="any" name="price[]" value="{{ row.price }}" class="form-control text-end bo-combinations-grid__number"{% if row.price is null %} required{% endif %}
+                                                       aria-label="{{ 'Price excl. taxes'|trans }}"
+                                                       data-bo-pse-price-with-tax-target="priceExcl"
+                                                       data-action="blur->bo-pse-price-with-tax#onPriceExclBlur">
+                                                <span class="input-group-text">{{ currency.symbol }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="any" value="{{ row.price_with_tax }}" class="form-control text-end bo-combinations-grid__number"
+                                                       aria-label="{{ 'Price incl. taxes'|trans }}" data-testid="combinations-price-with-tax-{{ row.id }}"
+                                                       data-bo-pse-price-with-tax-target="priceIncl"
+                                                       data-action="blur->bo-pse-price-with-tax#onPriceInclBlur">
+                                                <span class="input-group-text">{{ currency.symbol }}</span>
+                                            </div>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                    <tr class="bo-combinations-grid__last-line">
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary bo-datatable__details-toggle bo-combinations-grid__more"
+                                                    data-controller="bo-datatable-details"
+                                                    data-action="click->bo-datatable-details#toggle"
+                                                    aria-expanded="false" aria-controls="{{ field_id }}-more"
+                                                    data-testid="combinations-more-toggle-{{ row.id }}">
+                                                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                                                <span class="bo-combinations-grid__more-closed">{{ 'Show the other fields'|trans }}</span>
+                                                <span class="bo-combinations-grid__more-open">{{ 'Hide'|trans }}</span>
+                                            </button>
+                                        </td>
+                                        <td class="bo-combinations-grid__identifiers">
+                                            <div class="bo-combinations-grid__field">
+                                                <label for="{{ field_id }}-gtin" title="{{ 'EAN-8, UPC-A, EAN-13 or GTIN-14'|trans }}">{{ 'GTIN'|trans }}</label>
+                                                <input type="text" id="{{ field_id }}-gtin" name="ean_code[]" value="{{ row.ean_code }}" maxlength="32" inputmode="numeric" autocomplete="off"
+                                                       class="form-control form-control-sm font-monospace bo-combinations-grid__gtin{% if row.gtin_shared_with is not empty %} border-warning{% endif %}"
+                                                       data-testid="combinations-gtin-{{ row.id }}">
+                                            </div>
                                             {% if row.gtin_shared_with is not empty %}
-                                                <small class="text-warning-emphasis d-block" data-testid="combinations-gtin-shared-{{ row.id }}">
+                                                <small class="text-warning-emphasis d-block bo-combinations-grid__note" data-testid="combinations-gtin-shared-{{ row.id }}">
                                                     <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
                                                     {{ 'Also carried by: %others%'|trans({ '%others%': row.gtin_shared_with|join(', ') }) }}
                                                 </small>
                                             {% endif %}
                                         </td>
-                                        <td><input type="text" name="mpn[]" value="{{ row.mpn }}" maxlength="255" autocomplete="off" class="form-control form-control-sm bo-combinations-grid__mpn" aria-label="{{ 'Manufacturer part number'|trans }}" data-testid="combinations-mpn-{{ row.id }}"></td>
-                                        <td>
-                                            <select name="manufacturer_brand_id[]" class="form-select form-select-sm bo-combinations-grid__brand" aria-label="{{ 'Manufacturer'|trans }}" data-testid="combinations-manufacturer-{{ row.id }}">
-                                                <option value="0">{{ product_brand_title is not null ? 'Brand of the product (%brand%)'|trans({ '%brand%': product_brand_title }) : 'Brand of the product'|trans }}</option>
-                                                {% for brand in brand_options %}
-                                                    <option value="{{ brand.id }}"{{ brand.id == row.manufacturer_brand_id ? ' selected' }}>{{ brand.title }}</option>
-                                                {% endfor %}
-                                            </select>
+                                        <td class="bo-combinations-grid__logistics">
+                                            <div class="bo-combinations-grid__field">
+                                                <label for="{{ field_id }}-weight">{{ 'Weight'|trans }}</label>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" step="any" id="{{ field_id }}-weight" name="weight[]" value="{{ row.weight }}" class="form-control text-end bo-combinations-grid__number">
+                                                    <span class="input-group-text">{{ 'Kg'|trans }}</span>
+                                                </div>
+                                            </div>
                                         </td>
-                                        <td class="text-center"><input type="checkbox" name="onsale[{{ loop.index0 }}]" value="1" {% if row.onsale %}checked{% endif %}></td>
-                                        <td class="text-center"><input type="checkbox" name="isnew[{{ loop.index0 }}]" value="1" {% if row.isnew %}checked{% endif %}></td>
-                                        <td class="text-center">
-                                            <a href="{{ path('admin.product.combination.toggle-visibility', { pse_id: row.id, product_id: product.id }) }}" data-bo-post
-                                               class="btn btn-sm {% if row.visible %}btn-success{% else %}btn-outline-secondary{% endif %}"
-                                               title="{{ row.visible ? 'Visible'|trans : 'Hidden'|trans }}"
-                                               data-testid="combinations-toggle-visible-{{ row.id }}">
-                                                <i class="bi bi-{% if row.visible %}eye{% else %}eye-slash{% endif %}" aria-hidden="true"></i>
-                                            </a>
+                                        <td class="bo-combinations-grid__promo bo-combinations-grid__promo--start">
+                                            <div class="form-check mb-0">
+                                                <input type="checkbox" class="form-check-input" id="{{ field_id }}-onsale" name="onsale[{{ idx }}]" value="1" {% if row.onsale %}checked{% endif %}
+                                                       data-bo-virtual-toggle-target="trigger" data-action="change->bo-virtual-toggle#update">
+                                                <label class="form-check-label" for="{{ field_id }}-onsale">{{ 'On promotion'|trans }}</label>
+                                            </div>
                                         </td>
-                                        <td class="text-end">
-                                            {{ include('@BackOfficeDefaultTwig/catalog/product/_combination_row_actions.html.twig', { row: row, product: product }, with_context = false) }}
+                                        <td class="bo-combinations-grid__promo">
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="any" name="sale_price[]" value="{{ row.sale_price }}" class="form-control text-end bo-combinations-grid__number"{% if not row.onsale %} readonly{% endif %}
+                                                       aria-label="{{ 'Sale price excluding taxes'|trans }}"
+                                                       data-bo-virtual-toggle-target="field"
+                                                       data-bo-pse-price-with-tax-target="salePriceExcl"
+                                                       data-action="blur->bo-pse-price-with-tax#onSalePriceExclBlur">
+                                                <span class="input-group-text">{{ currency.symbol }}</span>
+                                            </div>
                                         </td>
-                                        {{ safe_hook('product.combinations-row', { pse_id: row.id, pse: row.id, idx: loop.index0, product: product.id, product_id: product.id }) }}
+                                        <td class="bo-combinations-grid__promo bo-combinations-grid__promo--end">
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" step="any" value="{{ row.sale_price_with_tax }}" class="form-control text-end bo-combinations-grid__number"{% if not row.onsale %} readonly{% endif %}
+                                                       aria-label="{{ 'Sale price including taxes'|trans }}" data-testid="combinations-sale-price-with-tax-{{ row.id }}"
+                                                       data-bo-virtual-toggle-target="field"
+                                                       data-bo-pse-price-with-tax-target="salePriceIncl"
+                                                       data-action="blur->bo-pse-price-with-tax#onSalePriceInclBlur">
+                                                <span class="input-group-text">{{ currency.symbol }}</span>
+                                            </div>
+                                        </td>
+                                        <td></td>
                                     </tr>
-                                {% endfor %}
-                            </tbody>
+                                    <tr id="{{ field_id }}-more" hidden data-testid="combinations-more-{{ row.id }}">
+                                        <td class="bo-combinations-grid__handle-cont"></td>
+                                        <td colspan="7">
+                                            {# Not .bo-datatable__details-grid: bo-datatable-details would pin it to the width
+                                               of the scrolling box, and widen the grid to the whole card. #}
+                                            <div class="bo-combinations-grid__more-fields">
+                                                <div>
+                                                    <label class="form-label small" for="{{ field_id }}-mpn">{{ 'Manufacturer part number'|trans }}</label>
+                                                    <input type="text" id="{{ field_id }}-mpn" name="mpn[]" value="{{ row.mpn }}" maxlength="255" autocomplete="off" class="form-control form-control-sm bo-combinations-grid__mpn" data-testid="combinations-mpn-{{ row.id }}">
+                                                </div>
+                                                <div>
+                                                    <label class="form-label small" for="{{ field_id }}-manufacturer">{{ 'Manufacturer'|trans }}</label>
+                                                    <select id="{{ field_id }}-manufacturer" name="manufacturer_brand_id[]" class="form-select form-select-sm bo-combinations-grid__brand" data-testid="combinations-manufacturer-{{ row.id }}">
+                                                        <option value="0">{{ product_brand_title is not null ? 'Brand of the product (%brand%)'|trans({ '%brand%': product_brand_title }) : 'Brand of the product'|trans }}</option>
+                                                        {% for brand in brand_options %}
+                                                            <option value="{{ brand.id }}"{{ brand.id == row.manufacturer_brand_id ? ' selected' }}>{{ brand.title }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr class="bo-combinations-grid__band-end" aria-hidden="true"><td class="bo-combinations-grid__handle-cont"></td><td colspan="7"></td></tr>
+                                </tbody>
+                            {% endfor %}
                         </table>
                     </div>
 

@@ -18,8 +18,10 @@ use BackOfficeDefaultTwigBundle\Service\Product\CombinationsTabContextBuilder;
 use Thelia\Model\Attribute;
 use Thelia\Model\AttributeAv;
 use Thelia\Model\AttributeTemplate;
+use Thelia\Model\CountryQuery;
 use Thelia\Model\Currency;
 use Thelia\Model\Product;
+use Thelia\Model\TaxRuleCountry;
 use Thelia\Test\FixtureFactory;
 use Thelia\Test\IntegrationTestCase;
 
@@ -135,6 +137,31 @@ final class CombinationsTabContextBuilderTest extends IntegrationTestCase
         self::assertNull($rows[$unpriced]['sale_price']);
         self::assertSame(10.0, $rows[$priced]['price']);
         self::assertSame(10.0, $rows[$priced]['sale_price']);
+    }
+
+    public function testTheGridShowsEachPriceWithTheTaxesOfTheProduct(): void
+    {
+        $country = CountryQuery::create()->findOneByByDefault(1);
+        self::assertNotNull($country, 'The test shop has no default country.');
+        $taxRule = $this->factory->taxRule(['isDefault' => false]);
+        (new TaxRuleCountry())
+            ->setTaxRuleId($taxRule->getId())
+            ->setCountryId($country->getId())
+            ->setTaxId($this->factory->tax()->getId())
+            ->setPosition(1)
+            ->save();
+        $this->product->setTaxRuleId($taxRule->getId())->save();
+
+        $priced = $this->givenCombination(0, 's', 'blue');
+        $unpricedSaleElement = $this->factory->productSaleElement($this->product);
+        $this->factory->attributeCombination($unpricedSaleElement, $this->values['m']);
+
+        $context = (new CombinationsTabContextBuilder())->build($this->product, (int) $this->currency->getId());
+        $rows = array_column($context['pse_rows'], null, 'id');
+
+        self::assertSame(12.0, $rows[$priced]['price_with_tax'], 'A price of 10 with a tax of 20 %.');
+        self::assertSame(12.0, $rows[$priced]['sale_price_with_tax']);
+        self::assertNull($rows[(int) $unpricedSaleElement->getId()]['price_with_tax'], 'No price, no price with taxes either.');
     }
 
     /**

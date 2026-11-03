@@ -19,11 +19,13 @@ use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Exception\PropelException;
 use Thelia\Domain\Catalog\Product\Identifier\GtinDuplicateFinder;
 use Thelia\Domain\Catalog\Product\Identifier\GtinSharer;
+use Thelia\Domain\Taxation\TaxEngine\Calculator;
 use Thelia\Model\Attribute;
 use Thelia\Model\AttributeAv;
 use Thelia\Model\AttributeAvQuery;
 use Thelia\Model\AttributeQuery;
 use Thelia\Model\AttributeTemplateQuery;
+use Thelia\Model\CountryQuery;
 use Thelia\Model\Currency;
 use Thelia\Model\CurrencyQuery;
 use Thelia\Model\LangQuery;
@@ -59,6 +61,7 @@ final readonly class CombinationsTabContextBuilder
         $currency = $this->resolveCurrency($currencyId);
         $rows = [];
         $hasCombinations = false;
+        $taxed = $this->taxedPriceOf($product);
         foreach ($this->displayOrder->of($product) as $pse) {
             $description = $this->labeler->describe($pse, $locale);
             $hasCombinations = $hasCombinations || CombinationLabeler::DEFAULT_LABEL !== $description['label'];
@@ -79,6 +82,8 @@ final readonly class CombinationsTabContextBuilder
                 // Null, never 0: a 0 shown here would be saved back as a free price.
                 'price' => $price?->getPrice(),
                 'sale_price' => $price?->getPromoPrice(),
+                'price_with_tax' => $taxed($price?->getPrice()),
+                'sale_price_with_tax' => $taxed($price?->getPromoPrice()),
                 'quantity' => (float) $pse->getQuantity(),
                 'weight' => (float) $pse->getWeight(),
                 'ean_code' => (string) $pse->getEanCode(),
@@ -126,6 +131,42 @@ final readonly class CombinationsTabContextBuilder
             'brand_options' => $this->catalog->brands($locale),
             'product_brand_title' => $this->productBrandTitle($product, $locale),
         ];
+    }
+
+    /**
+     * The price with taxes as the calculate-price endpoint gives it. Null when there is no price or the
+     * rule cannot convert it: the field stays empty rather than showing the price without taxes.
+     *
+     * @return \Closure(float|string|null): ?float
+     */
+    private function taxedPriceOf(Product $product): \Closure
+    {
+        $taxRule = TaxRuleQuery::create()->findPk((int) $product->getTaxRuleId());
+        $country = CountryQuery::create()->findOneByByDefault(1);
+        $calculator = null;
+        if ($taxRule !== null && $country !== null) {
+            try {
+                $calculator = (new Calculator())->loadTaxRule($taxRule, $country, $product);
+            } catch (PropelException $databaseFailure) {
+                throw $databaseFailure;
+            } catch (\Throwable) {
+                $calculator = null;
+            }
+        }
+
+        return static function (float|string|null $price) use ($calculator): ?float {
+            if ($price === null || $calculator === null) {
+                return null;
+            }
+
+            try {
+                return round((float) $calculator->getTaxedPrice((float) $price), 6);
+            } catch (PropelException $databaseFailure) {
+                throw $databaseFailure;
+            } catch (\Throwable) {
+                return null;
+            }
+        };
     }
 
     /**

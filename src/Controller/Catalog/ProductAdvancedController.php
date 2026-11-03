@@ -671,6 +671,9 @@ final class ProductAdvancedController
         $manufacturerBrands = $form->all('manufacturer_brand_id');
         $onsale = $form->all('onsale');
         $isnew = $form->all('isnew');
+        // A grid copy made before the visibility boxes existed sends no marker: leave the visibility as it is.
+        $visible = $form->all('visible');
+        $sendsVisibility = $form->has('visible_sent');
         $saved = [];
 
         $unpriced = [];
@@ -709,6 +712,9 @@ final class ProductAdvancedController
             // are saved, and the refusal says which one and why.
             try {
                 $events->dispatch($event, TheliaEvents::PRODUCT_UPDATE_PRODUCT_SALE_ELEMENT);
+                if ($sendsVisibility) {
+                    $this->showOrHide($productId, $pseId, isset($visible[$index]), $events);
+                }
                 $saved[] = $pseId;
             } catch (InvalidGtinException|InvalidMpnException $refusal) {
                 $this->identifierNotices->refused($refusal);
@@ -719,6 +725,17 @@ final class ProductAdvancedController
         $this->noticeUnpricedCombinations($request, $unpriced);
 
         return new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['product_id' => $productId, 'current_tab' => 'pse']));
+    }
+
+    /** The update event carries no visibility, hence the visibility event, fired only on a change. */
+    private function showOrHide(int $productId, int $pseId, bool $visible, EventDispatcherInterface $events): void
+    {
+        $combination = ProductSaleElementsQuery::create()->filterByProductId($productId)->findPk($pseId);
+        if ($combination === null || (bool) $combination->getVisible() === $visible) {
+            return;
+        }
+
+        $events->dispatch(new ProductSaleElementToggleVisibilityEvent($pseId), TheliaEvents::PRODUCT_PRODUCT_SALE_ELEMENT_TOGGLE_VISIBILITY);
     }
 
     #[Route('/admin/products/combinations/tab', name: 'admin.product.combinations.tab', methods: ['GET'])]

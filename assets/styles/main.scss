@@ -1001,14 +1001,29 @@ td.bo-datatable__details-col {
     font-weight: 500;
 }
 
-// Buttons with only an icon - tighter, square footprint with a clear hover state.
+// Buttons with only an icon: a square as high as a button of the same size.
 .btn-icon {
-    width: 2.25rem;
-    height: 2.25rem;
+    --bo-btn-icon-size: calc(var(--bs-btn-font-size) * var(--bs-btn-line-height) + 2 * var(--bs-btn-padding-y) + 2 * var(--bs-btn-border-width));
+    width: var(--bo-btn-icon-size);
+    height: var(--bo-btn-icon-size);
     padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+
+    // Centered by its own box: Bootstrap Icons sets it on a text line (`vertical-align: -.125em`).
+    > .bi {
+        display: block;
+        line-height: 1;
+    }
+
+    // At density 1 the glyph rounds to the pixel above (9px over a small button's eye, 11 under); a denser screen would put it low.
+    @media (max-resolution: 1dppx) {
+        > .bi::before {
+            position: relative;
+            top: .08em;
+        }
+    }
 }
 
 // Row action buttons inside tables get the same treatment.
@@ -1259,6 +1274,23 @@ td.bo-datatable__details-col {
 
 // Sortable rows (drag-and-drop reorder)
 .bo-sortable-row {
+    cursor: grab;
+
+    &:active {
+        cursor: grabbing;
+    }
+}
+
+// A row moved by its handle: the hand shows on the handle only.
+.bo-sortable-row:has(.bo-sortable-handle) {
+    cursor: auto;
+
+    &:active {
+        cursor: auto;
+    }
+}
+
+.bo-sortable-handle {
     cursor: grab;
 
     &:active {
@@ -2458,7 +2490,7 @@ tr.bo-order-row--urgent {
 
 // ---------- Catalog: combinations grid ----------
 
-// One field per column: the grid scrolls sideways in its `.table-responsive` rather
+// One <tbody> per combination. The grid scrolls sideways in its `.table-responsive` rather
 // than squeezing a price or a barcode below what it takes to read it.
 .table.bo-combinations-grid {
     .bo-combinations-grid__number { min-width: 5.5rem; }
@@ -2466,6 +2498,270 @@ tr.bo-order-row--urgent {
     .bo-combinations-grid__gtin { min-width: 10.5rem; }
     .bo-combinations-grid__mpn { min-width: 9rem; }
     .bo-combinations-grid__brand { min-width: 10rem; }
+
+    // Separate borders: the sale box rounds its corners, which a collapsed table does not draw.
+    border-collapse: separate;
+    border-spacing: 0;
+
+    // Each column takes a share of the card and a field grows up to its cap; the prices have none,
+    // so that the sale box stays filled.
+    .bo-combinations-grid__col-handle { width: 2.75rem; }
+    .bo-combinations-grid__col-identifiers { width: 23%; }
+    .bo-combinations-grid__col-stock { width: 15%; }
+    .bo-combinations-grid__col-promo { width: 9%; }
+    .bo-combinations-grid__col-price { width: 13%; }
+    // 1% asks the table for the least width.
+    .bo-combinations-grid__col-actions { width: 1%; }
+    // Read by the sale box to keep its prices in line.
+    --bo-grid-cell-padding-x: clamp(.25rem, .6vw, .9rem);
+
+    > thead > tr > th,
+    > tbody > tr > td {
+        padding-inline: var(--bo-grid-cell-padding-x);
+    }
+
+    // Without the line of the lists' pinned actions: on a grid that does not scroll it would stand alone.
+    > tbody > tr > td.bo-combinations-grid__actions {
+        box-shadow: none;
+        white-space: nowrap;
+    }
+
+    > tbody > tr:first-child > td {
+        vertical-align: middle;
+    }
+
+    .bo-combinations-grid__identifiers > .bo-combinations-grid__field { max-width: 22rem; }
+    .bo-combinations-grid__logistics > .bo-combinations-grid__field { max-width: 12rem; }
+
+    // Bootstrap's `min-height: 1.5rem` is not filled by the smaller text and leaves the box above the fields.
+    .form-check {
+        display: flex;
+        align-items: center;
+        gap: .4em;
+        min-height: 0;
+        margin-bottom: 0;
+        padding-inline-start: 0;
+        font-size: .8rem;
+
+        .form-check-input {
+            float: none;
+            flex-shrink: 0;
+            margin: 0;
+        }
+    }
+
+    .input-group {
+        flex-wrap: nowrap;
+    }
+
+    > tbody > tr > td {
+        vertical-align: bottom;
+        padding-block: .2rem;
+    }
+
+    > tbody > tr:first-child > td {
+        padding-block-start: .6rem;
+    }
+
+    // A line of its own: in the last line of fields, the air would sit inside the sale box.
+    > tbody > tr.bo-combinations-grid__band-end > td {
+        padding: 0;
+        height: .5rem;
+    }
+
+    // The handle cells of the lower lines darken with it, so that the column is covered down to the separator.
+    > tbody > tr > td.bo-combinations-grid__handle {
+        vertical-align: middle;
+        font-size: 1.25rem;
+        color: var(--bs-secondary-color);
+    }
+
+    > tbody > tr > td.bo-combinations-grid__handle,
+    > tbody > tr > td.bo-combinations-grid__handle-cont {
+        transition: color .15s ease, background-color .15s ease;
+
+        @media (prefers-reduced-motion: reduce) {
+            transition: none;
+        }
+    }
+
+    > tbody:has(> tr > td.bo-combinations-grid__handle:hover) > tr > td.bo-combinations-grid__handle,
+    > tbody:has(> tr > td.bo-combinations-grid__handle:hover) > tr > td.bo-combinations-grid__handle-cont {
+        color: var(--bs-body-color);
+        background-color: var(--bs-gray-200);
+    }
+
+    // The borderless grid dropped the header line of the DataTable lists.
+    > thead > tr > th {
+        border-bottom-width: var(--bs-border-width);
+    }
+
+    .bo-combinations-grid__more-fields {
+        display: flex;
+        flex-wrap: wrap;
+        column-gap: 1.5rem;
+        row-gap: .75rem;
+        padding-block: .6rem .8rem;
+
+        > div {
+            width: 16rem;
+        }
+
+        .form-label {
+            margin-bottom: .35rem;
+        }
+    }
+
+    // Separator between combinations only; the first and last are transparent so that a drop there draws its line.
+    > tbody > tr:first-child > td {
+        border-block-start: 2px solid transparent;
+    }
+
+    > tbody + tbody > tr:first-child > td {
+        border-block-start-color: var(--bs-secondary-border-subtle);
+    }
+
+    > tbody:last-of-type > tr.bo-combinations-grid__band-end > td {
+        border-block-end: 2px solid transparent;
+    }
+
+    // A long title runs over the empty cells of its line instead of widening the first column.
+    .bo-combinations-grid__identity {
+        white-space: normal;
+    }
+
+    .bo-combinations-grid__field {
+        display: grid;
+        grid-template-columns: 3.25rem 1fr;
+        gap: .4rem;
+        align-items: center;
+
+        > label {
+            margin: 0;
+            font-size: .72rem;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+            color: var(--bs-secondary-color);
+        }
+    }
+
+    .bo-combinations-grid__note {
+        white-space: normal;
+        margin-inline-start: 3.65rem;
+    }
+
+    // The sale box and its two prices read as one control: a background a shade darker than the card.
+    > tbody > tr > td.bo-combinations-grid__promo {
+        --bo-promo-padding: .35rem;
+        vertical-align: middle;
+        padding-block: var(--bo-promo-padding);
+        background-color: var(--bs-gray-200);
+        transition: background-color .15s ease;
+
+        @media (prefers-reduced-motion: reduce) {
+            transition: none;
+        }
+
+        .form-control[readonly] {
+            background-color: var(--bs-gray-100);
+            color: var(--bs-secondary-color);
+        }
+    }
+
+    > tbody > tr:has(> td.bo-combinations-grid__promo--start .form-check-input:checked) > td.bo-combinations-grid__promo {
+        background-color: var(--bs-primary-bg-subtle);
+    }
+
+    > tbody > tr > td.bo-combinations-grid__promo--start {
+        border-start-start-radius: var(--bs-border-radius);
+        border-end-start-radius: var(--bs-border-radius);
+    }
+
+    // The rest of the cell padding is a transparent border the background stops at. Physical radii, two
+    // each: flow-relative ones take one, which would make the inner corner oval (mirrored in _rtl.scss).
+    > tbody > tr > td.bo-combinations-grid__promo--end {
+        --bo-promo-end-gap: max(0px, calc(var(--bo-grid-cell-padding-x) - var(--bo-promo-padding)));
+        padding-inline-end: var(--bo-promo-padding);
+        border-inline-end: var(--bo-promo-end-gap) solid transparent;
+        background-clip: padding-box;
+        border-top-right-radius: calc(var(--bs-border-radius) + var(--bo-promo-end-gap)) var(--bs-border-radius);
+        border-bottom-right-radius: calc(var(--bs-border-radius) + var(--bo-promo-end-gap)) var(--bs-border-radius);
+    }
+
+    .bo-combinations-grid__actions [data-bs-toggle="dropdown"] {
+        --bs-btn-border-color: var(--bs-border-color);
+        --bs-btn-hover-border-color: var(--bs-gray-400);
+    }
+
+    .bo-combinations-grid__visibility {
+        + .btn .bi-eye-slash { display: none; }
+
+        &:not(:checked) {
+            + .btn .bi-eye { display: none; }
+            + .btn .bi-eye-slash { display: block; }
+        }
+    }
+
+    > tbody:has(.bo-combinations-grid__visibility:not(:checked)) .bo-combinations-grid__name {
+        color: var(--bs-secondary-color);
+    }
+
+    .bo-combinations-grid__more {
+        --bs-btn-color: var(--bs-emphasis-color);
+        --bs-btn-border-color: var(--bs-gray-400);
+        --bs-btn-hover-color: var(--bs-emphasis-color);
+        --bs-btn-hover-bg: var(--bs-gray-200);
+        --bs-btn-hover-border-color: var(--bs-gray-400);
+        --bs-btn-active-color: var(--bs-emphasis-color);
+        --bs-btn-active-bg: var(--bs-gray-200);
+        --bs-btn-active-border-color: var(--bs-gray-400);
+        --bs-btn-padding-y: .1rem;
+        --bs-btn-padding-x: .5rem;
+        --bs-btn-font-size: .78rem;
+        display: inline-flex;
+        align-items: center;
+        gap: .35rem;
+        white-space: nowrap;
+
+        // Turn about the arrow's own center: Bootstrap Icons sets the glyph on a text line (`vertical-align: -.125em`).
+        > .bi {
+            display: block;
+            line-height: 1;
+
+            &::before {
+                display: block;
+            }
+        }
+
+        &[aria-expanded="true"] {
+            background-color: var(--bs-gray-200);
+        }
+
+        .bo-combinations-grid__more-open { display: none; }
+
+        &[aria-expanded="true"] {
+            .bo-combinations-grid__more-open { display: inline; }
+            .bo-combinations-grid__more-closed { display: none; }
+        }
+    }
+
+    // The separator on the side where the drag lands takes the color, not a line inside the fields.
+    > tbody.bo-sortable-target {
+        box-shadow: none;
+    }
+
+    > tbody.bo-sortable-target:not(.bo-sortable-target--after) > tr:first-child > td,
+    > tbody.bo-sortable-target--after + tbody > tr:first-child > td {
+        border-block-start-color: var(--bs-primary);
+    }
+
+    > tbody.bo-sortable-target--after:last-of-type > tr.bo-combinations-grid__band-end > td {
+        border-block-end-color: var(--bs-primary);
+    }
+
+    > tbody.bo-sortable-dragging > tr > td {
+        opacity: .5;
+    }
 }
 
 // ---------- Reports: conversion funnel ----------

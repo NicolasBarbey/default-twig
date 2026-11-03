@@ -271,6 +271,58 @@ final class ProductCombinationUpdateTest extends WebIntegrationTestCase
         self::assertSame(0.0, (float) $this->storedPrice($pse)->getPrice(), 'A price of 0 is saved when 0 is typed.');
     }
 
+    public function testTheGridHidesACombinationWhoseVisibilityBoxIsUnticked(): void
+    {
+        $this->loginFullAdmin();
+        [$product, $pse] = $this->productWithACombination();
+        $pse->setVisible(1)->save($this->getPropelConnection());
+
+        $this->client->request('POST', self::COMBINATIONS_URL, $this->gridOf($product, $pse) + ['visible_sent' => 1]);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        self::assertFalse((bool) $this->freshSaleElement($pse)->getVisible(), 'A box left unticked hides the combination.');
+    }
+
+    public function testTheGridShowsACombinationWhoseVisibilityBoxIsTicked(): void
+    {
+        $this->loginFullAdmin();
+        [$product, $pse] = $this->productWithACombination();
+        $pse->setVisible(0)->save($this->getPropelConnection());
+
+        $this->client->request('POST', self::COMBINATIONS_URL, $this->gridOf($product, $pse) + ['visible_sent' => 1, 'visible' => [0 => 1]]);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        self::assertTrue((bool) $this->freshSaleElement($pse)->getVisible(), 'A ticked box shows the combination.');
+    }
+
+    public function testAFormWithoutTheVisibilityBoxesLeavesTheVisibilityAsItIs(): void
+    {
+        $this->loginFullAdmin();
+        [$product, $pse] = $this->productWithACombination();
+        $pse->setVisible(1)->save($this->getPropelConnection());
+
+        // A copy of the grid made before the boxes existed sends none of them.
+        $this->client->request('POST', self::COMBINATIONS_URL, $this->gridOf($product, $pse));
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode());
+        self::assertTrue((bool) $this->freshSaleElement($pse)->getVisible(), 'Without the marker of the boxes, nothing is hidden.');
+    }
+
+    public function testTheGridRendersTheVisibilityOfEachCombinationAsABoxOfItsRow(): void
+    {
+        $this->loginFullAdmin();
+        [$product, $pse] = $this->productWithACombination();
+        $pse->setVisible(0)->save($this->getPropelConnection());
+
+        $crawler = $this->client->request('GET', '/admin/products/combinations/tab?product_id='.$product->getId());
+
+        $form = $crawler->filter('form[data-testid="combinations-form"]');
+        self::assertCount(1, $form->filter('input[name="visible_sent"]'), 'The grid says it sends its visibility boxes.');
+        $box = $form->filter(\sprintf('tbody[data-testid="combinations-row-%d"] input[type="checkbox"][name="visible[0]"]', $pse->getId()));
+        self::assertCount(1, $box, 'The visibility is a box of the row, indexed like the other boxes.');
+        self::assertNull($box->attr('checked'), 'A hidden combination shows its box unticked.');
+    }
+
     public function testTheDefaultPriceCannotBeUpdatedThroughAGet(): void
     {
         $this->loginFullAdmin();
@@ -343,10 +395,10 @@ final class ProductCombinationUpdateTest extends WebIntegrationTestCase
         $crawler = $this->client->request('GET', '/admin/products/combinations/tab?product_id='.$product->getId());
 
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
-        $unpricedInput = $crawler->filter(\sprintf('tr[data-testid="combinations-row-%d"] input[name="price[]"]', $unpriced->getId()));
+        $unpricedInput = $crawler->filter(\sprintf('tbody[data-testid="combinations-row-%d"] input[name="price[]"]', $unpriced->getId()));
         self::assertSame('', $unpricedInput->attr('value'), 'A combination without any price shows an empty price, not 0.');
         self::assertNotNull($unpricedInput->attr('required'), 'The browser asks for the missing price before submitting.');
-        $pricedInput = $crawler->filter(\sprintf('tr[data-testid="combinations-row-%d"] input[name="price[]"]', $pse->getId()));
+        $pricedInput = $crawler->filter(\sprintf('tbody[data-testid="combinations-row-%d"] input[name="price[]"]', $pse->getId()));
         self::assertSame('25', $pricedInput->attr('value'));
         self::assertNull($pricedInput->attr('required'), 'A priced combination is shown as before.');
     }
@@ -502,6 +554,23 @@ final class ProductCombinationUpdateTest extends WebIntegrationTestCase
     {
         return CurrencyQuery::create()->findOneByByDefault(1, $this->getPropelConnection())
             ?? $this->factory->currency(['byDefault' => 1]);
+    }
+
+    /**
+     * @return array<string, mixed> the fields the grid sends for its one combination, without its visibility
+     */
+    private function gridOf(Product $product, ProductSaleElements $pse): array
+    {
+        return [
+            '_token' => $this->tokenOf($product, 'combinations-form'),
+            'product_id' => $product->getId(),
+            'tax_rule' => $product->getTaxRuleId(),
+            'default_pse' => $pse->getId(),
+            'product_sale_element_id' => [$pse->getId()],
+            'reference' => [$pse->getRef()],
+            'quantity' => [7],
+            'weight' => [0],
+        ];
     }
 
     /**

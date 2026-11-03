@@ -343,6 +343,14 @@
     // `&rsaquo;`. Both are Bidi_Mirrored characters, which the browser mirrors
     // on its own inside a right-to-left paragraph - a CSS mirror here would undo
     // that.
+
+    // Sale box of the combinations grid (main.scss): its end corners sit on the left here.
+    .table.bo-combinations-grid > tbody > tr > td.bo-combinations-grid__promo--end {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-top-left-radius: calc(var(--bs-border-radius) + var(--bo-promo-end-gap)) var(--bs-border-radius);
+        border-bottom-left-radius: calc(var(--bs-border-radius) + var(--bo-promo-end-gap)) var(--bs-border-radius);
+    }
 }
 
 // The sidebar is `offcanvas-lg offcanvas-start`: below lg it slides in, and it

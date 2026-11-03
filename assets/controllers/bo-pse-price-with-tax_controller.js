@@ -1,16 +1,19 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * A price typed with or without taxes fills the other one, through the calculate-price
- * endpoint (the tax rule of the form, the shop's default country, the product when it exists).
- * Only the price without taxes is saved: the form is held back until every conversion has
- * answered, and a price typed and not converted yet (the form sent with Enter) is converted
- * first, or the price saved would be the one before. A conversion that fails shows the `error`
- * target, leaves the other field as it was, and keeps the form from being sent until it is done
- * again. An answer that comes back once its price or the field it fills was typed in again is
- * dropped. A tax rule changed keeps the prices without taxes, once the conversions under way
- * have answered, and computes the others again.
+ * A price typed with or without taxes fills the other one through the calculate-price endpoint; the
+ * form is held back until every conversion has answered. Prices pair up inside the nearest
+ * `[data-bo-pse-price-with-tax-scope]` element (one per grid row), else the form.
  */
+const SCOPE = '[data-bo-pse-price-with-tax-scope]';
+
+const COUNTERPARTS = {
+    priceExcl: ['untaxed_to_taxed', 'priceIncl'],
+    priceIncl: ['taxed_to_untaxed', 'priceExcl'],
+    salePriceExcl: ['untaxed_to_taxed', 'salePriceIncl'],
+    salePriceIncl: ['taxed_to_untaxed', 'salePriceExcl'],
+};
+
 export default class extends Controller {
     static targets = ['priceExcl', 'priceIncl', 'salePriceExcl', 'salePriceIncl', 'taxRule', 'error'];
 
@@ -36,59 +39,68 @@ export default class extends Controller {
         this.element.removeEventListener('submit', this.boundSubmit);
     }
 
-    onPriceExclBlur() {
-        this.convert(this.priceExclTarget);
+    onPriceExclBlur(event) {
+        this.convertTyped(event.currentTarget);
     }
 
-    onPriceInclBlur() {
-        this.convert(this.priceInclTarget);
+    onPriceInclBlur(event) {
+        this.convertTyped(event.currentTarget);
     }
 
-    onSalePriceExclBlur() {
-        this.convert(this.salePriceExclTarget);
+    onSalePriceExclBlur(event) {
+        this.convertTyped(event.currentTarget);
     }
 
-    onSalePriceInclBlur() {
-        this.convert(this.salePriceInclTarget);
+    onSalePriceInclBlur(event) {
+        this.convertTyped(event.currentTarget);
     }
 
     async onTaxRuleChange() {
         // A price with taxes typed just before is converted with the former rule first: the new rule applies to the prices without taxes it gives.
         await Promise.all(Array.from(this.pending));
-        [this.priceExclTarget, this.salePriceExclTarget].forEach((source) => this.convert(source));
+        [...this.priceExclTargets, ...this.salePriceExclTargets].forEach((source) => this.convert(source));
     }
 
     /**
-     * @returns {Array<[HTMLInputElement, string, HTMLInputElement]>} each price field, its conversion, the field it fills
+     * Looked up from the field itself, so that typing in a grid of hundreds of rows does not scan them all.
+     *
+     * @returns {[string, HTMLInputElement]|null}
      */
-    pairs() {
-        const pairs = [];
-        if (this.hasPriceExclTarget && this.hasPriceInclTarget) {
-            pairs.push([this.priceExclTarget, 'untaxed_to_taxed', this.priceInclTarget]);
-            pairs.push([this.priceInclTarget, 'taxed_to_untaxed', this.priceExclTarget]);
-        }
-        if (this.hasSalePriceExclTarget && this.hasSalePriceInclTarget) {
-            pairs.push([this.salePriceExclTarget, 'untaxed_to_taxed', this.salePriceInclTarget]);
-            pairs.push([this.salePriceInclTarget, 'taxed_to_untaxed', this.salePriceExclTarget]);
+    pairOf(field) {
+        const names = (field.getAttribute?.(`data-${this.identifier}-target`) ?? '').split(/\s+/);
+        const kind = names.find((name) => name in COUNTERPARTS);
+        if (!kind) {
+            return null;
         }
 
-        return pairs;
+        const [action, otherKind] = COUNTERPARTS[kind];
+        const scope = field.closest(SCOPE) ?? this.element;
+        const output = scope.querySelector(`[data-${this.identifier}-target~="${otherKind}"]`);
+
+        return output ? [action, output] : null;
     }
 
     onInput(event) {
-        if (this.pairs().some(([source]) => source === event.target)) {
+        if (this.pairOf(event.target)) {
             this.edited.add(event.target);
         }
     }
 
+    /** Only a price typed in: tabbing through the grid would convert back a rounded price. */
+    convertTyped(source) {
+        if (this.edited.has(source)) {
+            this.convert(source);
+        }
+    }
+
     convert(source) {
-        const pair = this.pairs().find(([field]) => field === source);
+        const pair = this.pairOf(source);
         if (!pair) {
             return Promise.resolve(true);
         }
         this.edited.delete(source);
 
-        const conversion = this.compute(source, pair[1], pair[2]);
+        const conversion = this.compute(source, pair[0], pair[1]);
         this.pending.add(conversion);
         conversion.then((converted) => {
             this.pending.delete(conversion);

@@ -73,6 +73,7 @@ final class ProductCombinationRowActionsTest extends WebIntegrationTestCase
         $entries = $menu->filter('li > .dropdown-item')->each(static fn (Crawler $item): string => (string) $item->attr('data-testid'));
         $id = $combination->getId();
         self::assertSame([
+            'combinations-set-default-'.$id,
             'combinations-assoc-image-'.$id,
             'combinations-assoc-document-'.$id,
             'combinations-assoc-video-'.$id,
@@ -88,6 +89,29 @@ final class ProductCombinationRowActionsTest extends WebIntegrationTestCase
             1,
             $menu->filterXPath(\sprintf('//li[hr[contains(@class, "dropdown-divider")]]/following-sibling::li[1]/*[@data-testid="combinations-delete-%d"]', $id)),
             'A separator stands right before the deletion.',
+        );
+    }
+
+    public function testOnlyTheOtherCombinationsOfferToBeSetAsDefault(): void
+    {
+        [$product, $default] = $this->productWithACombination();
+        $other = $this->factory->productSaleElement($product);
+        $this->factory->attributeCombination($other, $this->factory->attributeAv($this->factory->attribute(['title' => 'Color']), ['title' => 'Red']));
+        $default->setIsDefault(true)->save($this->getPropelConnection());
+        $other->setIsDefault(false)->save($this->getPropelConnection());
+
+        $tab = $this->tab($product);
+        $entryOf = static fn (ProductSaleElements $combination): Crawler => $tab->filter(\sprintf('[data-testid="combinations-set-default-%d"]', $combination->getId()));
+
+        self::assertNotNull($entryOf($default)->attr('disabled'), 'The default combination is already the default one.');
+        self::assertNull($entryOf($other)->attr('disabled'));
+        self::assertSame('bo-combination-default#choose', $entryOf($other)->attr('data-action'), 'The entry checks the default radio of the grid, saved with it.');
+        self::assertNull($tab->filter(\sprintf('[data-testid="combinations-default-badge-%d"]', $default->getId()))->attr('hidden'), 'The default combination wears the badge.');
+        self::assertNotNull($tab->filter(\sprintf('[data-testid="combinations-default-badge-%d"]', $other->getId()))->attr('hidden'));
+        self::assertSame(
+            (string) $default->getId(),
+            $tab->filter('form[data-testid="combinations-form"] input[name="default_pse"][checked]')->attr('value'),
+            'The grid still sends the default combination in its radio.',
         );
     }
 

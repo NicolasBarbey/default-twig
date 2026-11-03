@@ -4,6 +4,8 @@ import { tokenBody } from '../lib/post-request.js';
 /**
  * Native HTML5 drag-and-drop reorder for tables whose <tbody> hosts
  * the controller. Each <tr> must carry a `data-row-id="<id>"` attribute.
+ * A table with one <tbody> per item sets `item` to `tbody[data-row-id]` and hosts the controller on
+ * the <table>; `dragWhole` makes the drag image the whole item, not the handle.
  * On drop, POSTs the moved row's id and its new 1-based position to the
  * configured URL (the token in the request body), then reloads the page so the server-rendered table
  * reflects the persisted order.
@@ -22,6 +24,8 @@ export default class extends Controller {
         url: String,
         token: String,
         paramName: { type: String, default: 'id' },
+        item: { type: String, default: 'tr[data-row-id]' },
+        dragWhole: { type: Boolean, default: false },
         json: { type: Boolean, default: false },
         failureElement: String,
         reindexedFields: { type: Array, default: [] },
@@ -53,7 +57,7 @@ export default class extends Controller {
     }
 
     rows() {
-        return Array.from(this.element.querySelectorAll('tr[data-row-id]'));
+        return Array.from(this.element.querySelectorAll(this.itemValue));
     }
 
     makeDraggable(row) {
@@ -71,18 +75,31 @@ export default class extends Controller {
     }
 
     onDragStart(event) {
-        const row = event.target.closest('tr[data-row-id]');
+        const row = event.target.closest(this.itemValue);
         if (!row || row.parentElement !== this.element) {
             return;
         }
         this.dragged = row;
-        row.classList.add('bo-sortable-dragging');
         event.dataTransfer.effectAllowed = 'move';
         event.dataTransfer.setData('text/plain', row.dataset.rowId || '');
+        if (!this.dragWholeValue) {
+            row.classList.add('bo-sortable-dragging');
+
+            return;
+        }
+
+        // The browser snapshots the item once this handler returns: dim it after, or the snapshot is dimmed too.
+        const box = row.getBoundingClientRect();
+        event.dataTransfer.setDragImage(row, event.clientX - box.left, event.clientY - box.top);
+        window.requestAnimationFrame(() => {
+            if (this.dragged === row) {
+                row.classList.add('bo-sortable-dragging');
+            }
+        });
     }
 
     onDragOver(event) {
-        const row = event.target.closest('tr[data-row-id]');
+        const row = event.target.closest(this.itemValue);
         // No drop once a move failed: the browser would handle it itself.
         if (!row || !this.dragged || row === this.dragged || this.broken) {
             return;
@@ -95,14 +112,14 @@ export default class extends Controller {
     }
 
     onDragLeave(event) {
-        const row = event.target.closest('tr[data-row-id]');
+        const row = event.target.closest(this.itemValue);
         if (row) {
             row.classList.remove('bo-sortable-target', 'bo-sortable-target--after');
         }
     }
 
     onDrop(event) {
-        const target = event.target.closest('tr[data-row-id]');
+        const target = event.target.closest(this.itemValue);
         if (!target || !this.dragged || target === this.dragged || this.broken) {
             return;
         }

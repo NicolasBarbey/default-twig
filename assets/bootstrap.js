@@ -22,6 +22,7 @@ import BoCategoryTreeController from './controllers/bo-category-tree_controller.
 import BoChartController from './controllers/bo-chart_controller.js';
 import BoCombinationBuilderController from './controllers/bo-combination-builder_controller.js';
 import BoCombinationCreationController from './controllers/bo-combination-creation_controller.js';
+import BoCombinationDefaultController from './controllers/bo-combination-default_controller.js';
 import BoCouponAttributePickerController from './controllers/bo-coupon-attribute-picker_controller.js';
 import BoCouponBuyXGetYController from './controllers/bo-coupon-buy-x-get-y_controller.js';
 import BoCouponFormController from './controllers/bo-coupon-form_controller.js';
@@ -95,6 +96,7 @@ app.register('bo-category-tree', BoCategoryTreeController);
 app.register('bo-chart', BoChartController);
 app.register('bo-combination-builder', BoCombinationBuilderController);
 app.register('bo-combination-creation', BoCombinationCreationController);
+app.register('bo-combination-default', BoCombinationDefaultController);
 app.register('bo-coupon-attribute-picker', BoCouponAttributePickerController);
 app.register('bo-coupon-buy-x-get-y', BoCouponBuyXGetYController);
 app.register('bo-coupon-form', BoCouponFormController);

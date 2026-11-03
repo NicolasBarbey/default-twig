@@ -1,17 +1,25 @@
-{# The actions of one combination of the combinations tab, in their own template so that a theme that
-   overrides the back office can change them without copying the whole tab.
-   Expects: row (a combination of the grid: row.id, row.label), product (the product of the sheet: product.id). #}
-{# The row-actions menu of the lists (components/DataTable/cells/actions.html.twig):
-   a fixed-position dropdown, so the table's scrolling box does not clip it. A lone
-   button: in a .btn-group, the menu that follows it would square its end corners. #}
+{# The actions of one combination, in their own template so that an override can change them without copying the whole tab.
+   Expects: row (row.id, row.label, row.isdefault), product (product.id).
+   A copy keeps data-bo-combination-default-target="choice" and data-pse-id on the "Set as default" entry, or it does nothing. #}
+{# Fixed-position dropdown, so the scrolling box does not clip it. A lone button: in a .btn-group, the menu would square its end corners. #}
 <div class="dropdown d-inline-block" data-controller="bo-overflow-dropdown">
-    <button type="button" class="btn btn-sm btn-outline-secondary"
+    <button type="button" class="btn btn-sm btn-outline-secondary btn-icon"
             data-bs-toggle="dropdown" data-bs-boundary="viewport" aria-expanded="false"
             title="{{ 'More actions'|trans }}" aria-label="{{ 'Actions of %combination%'|trans({ '%combination%': row.label }) }}"
             data-testid="combinations-actions-{{ row.id }}">
         <i class="bi bi-three-dots-vertical" aria-hidden="true"></i>
     </button>
     <ul class="dropdown-menu dropdown-menu-end bo-action-row-dropdown" data-testid="combinations-actions-menu-{{ row.id }}">
+        <li>
+            <button type="button" class="dropdown-item"
+                    data-action="bo-combination-default#choose"
+                    data-bo-combination-default-target="choice" data-pse-id="{{ row.id }}"
+                    {% if row.isdefault %}disabled{% endif %}
+                    data-testid="combinations-set-default-{{ row.id }}">
+                <i class="bi bi-star me-2" aria-hidden="true"></i>{{ 'Set as default'|trans }}
+            </button>
+        </li>
+        <li><hr class="dropdown-divider"></li>
         <li>
             <button type="button" class="dropdown-item"
                     data-bs-toggle="modal" data-bs-target="#pse-assoc-modal"

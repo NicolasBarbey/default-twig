@@ -1190,4 +1190,13 @@ return [
     'Reload the grid' => 'Reload the grid',
     'Actions of %combination%' => 'Actions of %combination%',
     'The price could not be converted with the tax rule. Type the price without taxes, or try again.' => 'The price could not be converted with the tax rule. Type the price without taxes, or try again.',
+    'Identifiers' => 'Identifiers',
+    'Stock and weight' => 'Stock and weight',
+    'Price excl. taxes' => 'Price excl. taxes',
+    'Price incl. taxes' => 'Price incl. taxes',
+    'Ref.' => 'Ref.',
+    'Show the other fields' => 'Show the other fields',
+    'By default' => 'By default',
+    'On promotion' => 'On promotion',
+    'Visible in the shop' => 'Visible in the shop',
 ];
