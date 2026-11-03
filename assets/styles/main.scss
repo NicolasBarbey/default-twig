@@ -2594,6 +2594,8 @@ tr.bo-order-row--urgent {
     // The borderless grid dropped the header line of the DataTable lists.
     > thead > tr > th {
         border-bottom-width: var(--bs-border-width);
+        // High enough for the bulk edit's "select all" box: a cell height is a minimum, the header would grow.
+        height: 3rem;
     }
 
     .bo-combinations-grid__more-fields {
@@ -2792,6 +2794,167 @@ form[data-bo-unsaved-changes-dirty] .bo-combinations-savebar {
     display: inline-flex;
     align-items: center;
     gap: .35rem;
+}
+
+.bo-combinations-bulk-toggle__exit,
+.bo-combinations-card--bulk .bo-combinations-bulk-toggle__enter {
+    display: none;
+}
+
+.bo-combinations-card--bulk .bo-combinations-bulk-toggle__exit {
+    display: inline;
+}
+
+.bo-combinations-grid .bo-combinations-grid__select {
+    display: none;
+}
+
+.bo-combinations-card--bulk .bo-combinations-grid {
+    .bo-combinations-grid__grip {
+        display: none;
+    }
+
+    input.bo-combinations-grid__select,
+    label.bo-combinations-grid__select .form-check-input {
+        font-size: 1.25rem;
+    }
+
+    // On the baseline, the box would add the room of descenders to the header height.
+    input.bo-combinations-grid__select {
+        display: inline-block;
+        margin: 0;
+        vertical-align: middle;
+    }
+
+    > tbody > tr > td.bo-combinations-grid__handle {
+        position: relative;
+    }
+
+    label.bo-combinations-grid__select {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+        cursor: pointer;
+
+        .form-check-input {
+            margin: 0;
+            cursor: pointer;
+        }
+    }
+}
+
+// A non-modal side panel (`dialog.show()`): the page stays usable, on a phone a band of it is left
+// on the start side for the selection boxes and the notch.
+.bo-side-panel {
+    position: fixed;
+    inset-block: 0;
+    inset-inline: auto 0;
+    // Over the sticky bars, under a Bootstrap modal and its backdrop.
+    z-index: 1040;
+    width: min(24rem, 100vw - 5rem);
+    max-width: none;
+    height: auto;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-inline-start: var(--bs-border-width) solid var(--bs-border-color);
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    box-shadow: var(--bs-box-shadow-lg);
+
+    &[open] {
+        display: flex;
+        flex-direction: column;
+        transition: transform .2s ease;
+
+        @media (prefers-reduced-motion: reduce) {
+            transition: none;
+        }
+    }
+}
+
+@starting-style {
+    .bo-side-panel[open] {
+        transform: translateX(100%);
+    }
+
+    [dir="rtl"] .bo-side-panel[open] {
+        transform: translateX(-100%);
+    }
+}
+
+.bo-side-panel__form {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.bo-side-panel__header {
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    padding: .75rem 1rem;
+    border-block-end: var(--bs-border-width) solid var(--bs-border-color);
+}
+
+.bo-side-panel__body {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+// Grey of its own: the theme backgrounds are white (`--bs-secondary-bg` too), as are the fields it lies on.
+// Two classes: the TheliaBlocks editor loads a Tailwind preflight after this sheet that makes every
+// `[type="button"]` transparent, and wins over a single class.
+.bo-side-panel .bo-side-panel__notch {
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-end: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 2.5rem;
+    margin-block-start: -1.25rem;
+    padding: 0;
+    border: var(--bs-border-width) solid var(--bs-border-color);
+    border-inline-end: 0;
+    border-start-start-radius: var(--bs-border-radius);
+    border-end-start-radius: var(--bs-border-radius);
+    background-color: var(--bs-gray-300);
+    color: var(--bs-body-color);
+    box-shadow: var(--bs-box-shadow-sm);
+
+    &:hover {
+        background-color: var(--bs-gray-400);
+    }
+}
+
+// The selectors outweigh the one that mirrors the chevrons from right to left.
+.bo-side-panel .bo-side-panel__notch .bo-side-panel__notch-unfold,
+.bo-side-panel--folded .bo-side-panel__notch .bo-side-panel__notch-fold {
+    display: none;
+}
+
+.bo-side-panel--folded .bo-side-panel__notch .bo-side-panel__notch-unfold {
+    display: inline-block;
+}
+
+.bo-side-panel.bo-side-panel--folded {
+    transform: translateX(100%);
+    box-shadow: none;
+}
+
+[dir="rtl"] .bo-side-panel.bo-side-panel--folded {
+    transform: translateX(-100%);
 }
 
 // ---------- Reports: conversion funnel ----------

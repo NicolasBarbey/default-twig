@@ -10,14 +10,10 @@ import { tokenBody } from '../lib/post-request.js';
  * configured URL (the token in the request body), then reloads the page so the server-rendered table
  * reflects the persisted order.
  *
- * With `json` set, the URL answers in JSON and the page is not reloaded: the table already shows
- * the new order, and the fields being typed in it are kept. The fields `reindexedFields` names, read
- * by the index of their row (`onsale[2]`), take the index of its new place, or the form would give
- * each row the boxes of the row that was there before. Only those: a field a module adds to a row
- * may be named by the id of its record. The moves are sent one after the other. A move refused or failed
- * reveals the element `failureElement` selects (a message and a way to reload, so that nothing
- * typed is lost without the administrator choosing) and stops the moves that follow, whose
- * positions would be those of an order the shop does not have.
+ * With `json` set, the URL answers in JSON and the page is not reloaded, so typed fields are kept;
+ * the `reindexedFields` (read by row index, `onsale[2]`) take the index of their new place. A failed
+ * move reveals `failureElement` and stops the moves after it, whose positions would be wrong.
+ * `disabled` freezes dragging while the handles serve another use (a selection box).
  */
 export default class extends Controller {
     static values = {
@@ -29,6 +25,7 @@ export default class extends Controller {
         json: { type: Boolean, default: false },
         failureElement: String,
         reindexedFields: { type: Array, default: [] },
+        disabled: { type: Boolean, default: false },
     };
 
     connect() {
@@ -65,18 +62,23 @@ export default class extends Controller {
         // drag so inline form fields stay editable. Otherwise the whole row
         // is draggable (default behaviour for handle-less lists).
         const handle = row.querySelector('[data-bo-sortable-handle]');
+        const draggable = String(!this.disabledValue);
         if (handle) {
-            handle.setAttribute('draggable', 'true');
-            handle.classList.add('bo-sortable-handle');
+            handle.setAttribute('draggable', draggable);
+            handle.classList.toggle('bo-sortable-handle', !this.disabledValue);
         } else {
-            row.setAttribute('draggable', 'true');
+            row.setAttribute('draggable', draggable);
         }
-        row.classList.add('bo-sortable-row');
+        row.classList.toggle('bo-sortable-row', !this.disabledValue);
+    }
+
+    disabledValueChanged() {
+        this.rows().forEach((row) => this.makeDraggable(row));
     }
 
     onDragStart(event) {
         const row = event.target.closest(this.itemValue);
-        if (!row || row.parentElement !== this.element) {
+        if (!row || row.parentElement !== this.element || this.disabledValue) {
             return;
         }
         this.dragged = row;

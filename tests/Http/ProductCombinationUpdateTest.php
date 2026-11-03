@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Tests\Http;
 
+use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\Currency;
@@ -340,6 +341,80 @@ final class ProductCombinationUpdateTest extends WebIntegrationTestCase
         self::assertCount(1, $bar->filter('button[type="submit"][data-testid="combinations-submit"]'));
         self::assertStringContainsString('Save changes', $bar->filter('[data-testid="combinations-submit"]')->text(), 'The bar saves the changes, the only thing it shows up for.');
         self::assertCount(1, $bar->filter('button[type="reset"][data-testid="combinations-discard"]'), 'The changes of the grid can be cancelled from its save bar.');
+    }
+
+    public function testABulkEditModePutsABoxInPlaceOfEachHandleAndOpensAPanelThatIsNeverSent(): void
+    {
+        $this->loginFullAdmin();
+        [$product, $pse] = $this->productWithACombination();
+
+        $crawler = $this->client->request('GET', '/admin/products/update?product_id='.$product->getId().'&current_tab=pse');
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $area = $crawler->filter('[data-testid="product-combinations-section"][data-controller="bo-bulk-select bo-combinations-bulk-edit"]');
+        self::assertCount(1, $area, 'The card holds the button, the boxes and the panel.');
+        self::assertSame("form[data-testid='combinations-form']", $area->attr('data-bo-combinations-bulk-edit-bo-pse-price-with-tax-outlet'), 'The panel converts its prices with the controller of the grid.');
+        self::assertSame('bo-combinations-card--bulk', $area->attr('data-bo-combinations-bulk-edit-active-class'));
+        self::assertSame('bo-side-panel--folded', $area->attr('data-bo-combinations-bulk-edit-folded-class'));
+
+        $toggle = $area->filter('.card-header [data-testid="combinations-bulk-toggle"]');
+        self::assertSame('bo-combinations-bulk-edit#toggle', $toggle->attr('data-action'), 'A button turns the mode on.');
+        self::assertSame('combinations-bulk-panel', $toggle->attr('aria-controls'));
+        self::assertSame('false', $toggle->attr('aria-expanded'));
+        self::assertStringContainsString('Bulk edit', $toggle->filter('.bo-combinations-bulk-toggle__enter')->text());
+        self::assertStringContainsString('Exit bulk edit', $toggle->filter('.bo-combinations-bulk-toggle__exit')->text(), 'In the mode, the button says it leaves it.');
+
+        $grid = $crawler->filter('form[data-testid="combinations-form"]');
+        self::assertSame('sortable', $grid->filter('table[data-controller="bo-sortable"]')->attr('data-bo-combinations-bulk-edit-target'), 'The mode stops the dragging of the combinations.');
+        $all = $grid->filter('thead th.bo-combinations-grid__col-handle [data-testid="combinations-select-all"]');
+        self::assertSame('combinations-bulk-edit', $all->attr('form'));
+        $box = $grid->filter(\sprintf('tbody[data-testid="combinations-row-%d"] td.bo-combinations-grid__handle [data-testid="combinations-select-%d"]', $pse->getId(), $pse->getId()));
+        self::assertCount(1, $box, 'The box of a combination is in its handle.');
+        self::assertSame('combinations-bulk-edit', $box->attr('form'), 'A selection box is neither sent nor reset with the grid.');
+        self::assertNull($box->attr('name'));
+        self::assertSame('off', $box->attr('autocomplete'), 'A reload does not tick again a box of a mode that is off.');
+        self::assertSame('off', $all->attr('autocomplete'));
+        self::assertSame((string) $pse->getId(), $box->attr('value'));
+
+        $panel = $area->filter('dialog#combinations-bulk-panel[data-testid="combinations-bulk-panel"]');
+        self::assertCount(1, $panel);
+        self::assertNull($panel->attr('open'), 'The panel waits for the button.');
+        self::assertSame('close->bo-combinations-bulk-edit#closed keydown.esc->bo-combinations-bulk-edit#close', $panel->attr('data-action'), 'Closing the panel, Escape included, ends the mode.');
+        self::assertCount(0, $crawler->filter('form[data-testid="combinations-form"] dialog, form[data-testid="combinations-form"] form'), 'The panel and its form are not nested in the grid.');
+
+        $notch = $panel->filter('button[data-testid="combinations-bulk-notch"]');
+        self::assertSame('bo-combinations-bulk-edit#fold', $notch->attr('data-action'), 'A notch slides the panel aside and back.');
+        self::assertSame('true', $notch->attr('aria-expanded'));
+        self::assertSame('combinations-bulk-panel', $notch->attr('aria-controls'));
+
+        $bulkForm = $panel->filter('form#combinations-bulk-edit');
+        self::assertSame('submit->bo-combinations-bulk-edit#apply', $bulkForm->attr('data-action'), 'Enter in a field of the panel applies it.');
+        $apply = $bulkForm->filter('.bo-side-panel__header button[type="submit"][data-testid="combinations-bulk-apply"]');
+        self::assertCount(1, $apply, 'The buttons of the panel are on top of it.');
+        self::assertSame('Bulk edit', $panel->filter('#combinations-bulk-panel-title')->text());
+        self::assertNotNull($apply->attr('disabled'), 'Nothing is ticked yet.');
+        self::assertSame('bo-combinations-bulk-edit#close', $bulkForm->filter('.bo-side-panel__header [data-testid="combinations-bulk-close"]')->attr('data-action'));
+
+        $fields = $bulkForm->filter('[data-bo-combinations-bulk-edit-target="field"]');
+        $names = $fields->each(static fn (Crawler $field): string => (string) $field->attr('data-bulk-field'));
+        self::assertSame(['quantity', 'weight', 'price', 'price-incl', 'onsale', 'sale-price', 'sale-price-incl', 'isnew', 'visible', 'brand'], $names);
+        $fields->each(static function (Crawler $field): void {
+            self::assertNull($field->attr('form'), 'A field of the panel belongs to the form of the panel.');
+            self::assertNull($field->attr('name'), 'A field of the panel is never sent.');
+        });
+
+        $row = $grid->filter(\sprintf('tbody[data-testid="combinations-row-%d"]', $pse->getId()));
+        foreach ($names as $name) {
+            $target = $row->filter(\sprintf('[data-bulk-field="%s"]', $name));
+            self::assertCount(1, $target, 'The row has the field the panel fills: '.$name);
+            self::assertNull($target->attr('form'), 'The field of the row is sent with the grid: '.$name);
+        }
+        self::assertSame('manufacturer_brand_id[]', $row->filter('[data-bulk-field="brand"]')->attr('name'));
+        self::assertSame(
+            $row->filter('[data-bulk-field="brand"] option')->each(static fn (Crawler $option): string => (string) $option->attr('value')),
+            \array_slice($bulkForm->filter('[data-bulk-field="brand"] option')->each(static fn (Crawler $option): string => (string) $option->attr('value')), 1),
+            'The panel offers the brands of a row, after "Unchanged".',
+        );
     }
 
     public function testTheLeavingModalCanSayThatSeveralTabsAreToBeSavedOneByOne(): void

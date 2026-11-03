@@ -15,18 +15,10 @@ import { Modal } from 'bootstrap';
  *
  * The modal drives the outcome through three actions: #save submits the dirty
  * form (the server brings the user back to the same screen), #leave follows the
- * link, and dismissing keeps editing. One page can only send one form: when
- * several are changed, the modal hides its `saveButton` and shows its
- * `severalFormsMessage` instead of its `oneFormMessage`, so that each one is
- * saved on its own rather than all but one dropped.
- *
- * Each watched form is followed on its own: the modal saves the one that was
- * changed, and a changed form carries `data-bo-unsaved-changes-dirty`, which a
- * screen can show (a button to cancel the changes, for one). A form reset (a
- * `<button type="reset">`) is clean again. A submit that another controller holds
- * back (`preventDefault`) leaves the form changed until it is really sent. With
- * `warnOnUnload`, the browser also asks before the page is left any other way:
- * reloaded, closed, or left through a link that is not a target.
+ * link, and dismissing keeps editing. A page sends one form only: with several changed forms the
+ * modal hides `saveButton` and swaps `oneFormMessage` for `severalFormsMessage`. A changed form
+ * carries `data-bo-unsaved-changes-dirty`. With `warnOnUnload`, the browser also asks before any
+ * other way of leaving the page.
  */
 export default class extends Controller {
     static targets = ['form', 'link', 'saveButton', 'oneFormMessage', 'severalFormsMessage'];
@@ -40,7 +32,7 @@ export default class extends Controller {
         // The form targets connect before connect() runs.
         this.dirtyForms = new Set();
         this.pendingUrl = null;
-        this.onFieldChange = (event) => this.markDirty(event.currentTarget);
+        this.onFieldChange = (event) => this.fieldChanged(event);
         this.onSubmit = (event) => this.submitted(event);
         this.onReset = (event) => this.markClean(event.currentTarget);
         this.onLinkClick = (event) => this.guard(event);
@@ -77,6 +69,15 @@ export default class extends Controller {
 
     get dirty() {
         return this.dirtyForms.size > 0;
+    }
+
+    fieldChanged(event) {
+        const form = event.currentTarget;
+        // A field given to another form by its `form` attribute is not a change of this one.
+        if ('form' in event.target && event.target.form !== form) {
+            return;
+        }
+        this.markDirty(form);
     }
 
     markDirty(form) {
