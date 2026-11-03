@@ -1,0 +1,21 @@
+{# The other fields of one combination, folded under it; an override copies this file to add its own.
+   A field it adds is named by the combination (mymodule[{{ row.id }}]), never by its place: dragging renumbers only the grid's own fields.
+   A copy keeps data-bulk-field="brand" on the brand, which the bulk edit fills.
+   Expects: row (row.id, row.mpn, row.manufacturer_brand_id), field_id (prefix of the field ids),
+   brand_options (id, title), product_brand_title (brand of the product, or null). #}
+{# Not .bo-datatable__details-grid: bo-datatable-details would pin it to the scrolling box width and widen the grid to the whole card. #}
+<div class="bo-combinations-grid__more-fields">
+    <div>
+        <label class="form-label small" for="{{ field_id }}-mpn">{{ 'Manufacturer part number'|trans }}</label>
+        <input type="text" id="{{ field_id }}-mpn" name="mpn[]" value="{{ row.mpn }}" maxlength="255" autocomplete="off" class="form-control form-control-sm bo-combinations-grid__mpn" data-testid="combinations-mpn-{{ row.id }}">
+    </div>
+    <div>
+        <label class="form-label small" for="{{ field_id }}-manufacturer">{{ 'Manufacturer'|trans }}</label>
+        <select id="{{ field_id }}-manufacturer" name="manufacturer_brand_id[]" data-bulk-field="brand" class="form-select form-select-sm bo-combinations-grid__brand" data-testid="combinations-manufacturer-{{ row.id }}">
+            <option value="0">{{ product_brand_title is not null ? 'Brand of the product (%brand%)'|trans({ '%brand%': product_brand_title }) : 'Brand of the product'|trans }}</option>
+            {% for brand in brand_options %}
+                <option value="{{ brand.id }}"{{ brand.id == row.manufacturer_brand_id ? ' selected' }}>{{ brand.title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>

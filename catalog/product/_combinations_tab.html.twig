@@ -85,7 +85,6 @@
                     {% endif %}
 
                     {{ safe_hook('product.before-combinations', { location: 'product_before_combinations' }) }}
-                    {{ safe_hook('product.combinations-list-caption', { location: 'product_combinations_list_caption' }) }}
 
                     <div id="combinations-sort-failure" data-testid="combinations-sort-failure" hidden>
                         <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
@@ -123,6 +122,10 @@
                                     <th class="bo-combinations-grid__col-promo"><span class="visually-hidden">{{ 'Promotion'|trans }}</span></th>
                                     <th class="bo-combinations-grid__col-price">{{ 'Price excl. taxes'|trans }}</th>
                                     <th class="bo-combinations-grid__col-price">{{ 'Price incl. taxes'|trans }}</th>
+                                    {# A module returns its own <th>; counted, so that the lines spanning the grid span them too. #}
+                                    {% set module_headers %}{{ safe_hook('product.combinations-list-caption', { location: 'product_combinations_list_caption', product: product.id, product_id: product.id }) }}{% endset %}
+                                    {% set module_columns = (module_headers|split('<th')|length) - 1 %}
+                                    {{ module_headers }}
                                     <th class="bo-combinations-grid__col-actions"><span class="visually-hidden">{{ 'Actions'|trans }}</span></th>
                                 </tr>
                             </thead>
@@ -148,6 +151,8 @@
                                                    aria-label="{{ 'Default combination'|trans }}"
                                                    data-bo-combination-default-target="radio" data-pse-id="{{ row.id }}">
                                         </td>
+                                        {# A module returns its own <td>, rowspan="3" to cover the three lines of the combination. #}
+                                        {{ safe_hook('product.combinations-row', { pse_id: row.id, pse: row.id, idx: idx, product: product.id, product_id: product.id }) }}
                                         {# datatable-sticky-actions is the lists' class: bo-overflow-dropdown lifts it above the next lines while the menu is open. #}
                                         <td class="text-end bo-combinations-grid__actions datatable-sticky-actions">
                                             <div class="d-inline-flex align-items-center gap-1">
@@ -160,7 +165,6 @@
                                                 {{ include('@BackOfficeDefaultTwig/catalog/product/_combination_row_actions.html.twig', { row: row, product: product }, with_context = false) }}
                                             </div>
                                         </td>
-                                        {{ safe_hook('product.combinations-row', { pse_id: row.id, pse: row.id, idx: idx, product: product.id, product_id: product.id }) }}
                                     </tr>
                                     <tr>
                                         <td>
@@ -269,27 +273,11 @@
                                     </tr>
                                     <tr id="{{ field_id }}-more" hidden data-testid="combinations-more-{{ row.id }}">
                                         <td class="bo-combinations-grid__handle-cont"></td>
-                                        <td colspan="7">
-                                            {# Not .bo-datatable__details-grid: bo-datatable-details would pin it to the width
-                                               of the scrolling box, and widen the grid to the whole card. #}
-                                            <div class="bo-combinations-grid__more-fields">
-                                                <div>
-                                                    <label class="form-label small" for="{{ field_id }}-mpn">{{ 'Manufacturer part number'|trans }}</label>
-                                                    <input type="text" id="{{ field_id }}-mpn" name="mpn[]" value="{{ row.mpn }}" maxlength="255" autocomplete="off" class="form-control form-control-sm bo-combinations-grid__mpn" data-testid="combinations-mpn-{{ row.id }}">
-                                                </div>
-                                                <div>
-                                                    <label class="form-label small" for="{{ field_id }}-manufacturer">{{ 'Manufacturer'|trans }}</label>
-                                                    <select id="{{ field_id }}-manufacturer" name="manufacturer_brand_id[]" data-bulk-field="brand" class="form-select form-select-sm bo-combinations-grid__brand" data-testid="combinations-manufacturer-{{ row.id }}">
-                                                        <option value="0">{{ product_brand_title is not null ? 'Brand of the product (%brand%)'|trans({ '%brand%': product_brand_title }) : 'Brand of the product'|trans }}</option>
-                                                        {% for brand in brand_options %}
-                                                            <option value="{{ brand.id }}"{{ brand.id == row.manufacturer_brand_id ? ' selected' }}>{{ brand.title }}</option>
-                                                        {% endfor %}
-                                                    </select>
-                                                </div>
-                                            </div>
+                                        <td colspan="{{ 7 + module_columns }}">
+                                            {{ include('@BackOfficeDefaultTwig/catalog/product/_combination_more_fields.html.twig', { row: row, field_id: field_id, brand_options: brand_options, product_brand_title: product_brand_title }, with_context = false) }}
                                         </td>
                                     </tr>
-                                    <tr class="bo-combinations-grid__band-end" aria-hidden="true"><td class="bo-combinations-grid__handle-cont"></td><td colspan="7"></td></tr>
+                                    <tr class="bo-combinations-grid__band-end" aria-hidden="true"><td class="bo-combinations-grid__handle-cont"></td><td colspan="{{ 7 + module_columns }}"></td></tr>
                                 </tbody>
                             {% endfor %}
                         </table>

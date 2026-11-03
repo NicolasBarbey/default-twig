@@ -254,6 +254,38 @@ Each row of the combinations tab of a product sheet opens a menu of actions, the
 that overrides the back office changes the menu in `catalog/product/_combination_row_actions.html.twig`, a copy of
 that file, without copying the whole tab.
 
+#### Adding a column or a field to the combinations
+
+A module adds a column to the grid of combinations as it does to the lists: it returns its own cells. Its header
+comes from `product.combinations-list-caption` (one `<th>` per column, without `colspan`, context `product_id`), its cell from
+`product.combinations-row` (a `<td>`, context `pse_id`, `idx`, `product_id`). Both sit right before the column of the
+actions. A combination spans three lines of the grid: `rowspan="3"` covers them, without it the cell holds the title
+line only. The module returns a cell for every combination, an empty `<td rowspan="3"></td>` when it has nothing to
+show: a line short of a cell moves the actions under its column.
+
+The other fields of a combination, folded under it, come from `catalog/product/_combination_more_fields.html.twig`. A
+theme or a project that overrides the back office adds its fields there, in a copy of that file, without copying the
+whole tab.
+
+What a module adds to the grid is sent with it. The theme does not save it: the module listens to
+`TheliaEvents::PRODUCT_UPDATE_PRODUCT_SALE_ELEMENT`, dispatched for each combination the grid saves (not for one left
+without a price), and reads its fields from the current request (`RequestStack`): the event does not carry them. It
+names them by the combination (`mymodule_stock[12]`), **never by `idx`**, their place in the grid: dragging the
+combinations renumbers only the fields of the grid itself.
+
+```php
+public function onCombinationsRow(HookRenderEvent $event): void
+{
+    $pseId = (int) $event->getArgument('pse_id');
+    $event->add(\sprintf(
+        '<td rowspan="3"><input type="number" class="form-control form-control-sm" name="mymodule_stock[%d]" value="%d" aria-label="%s"></td>',
+        $pseId,
+        $this->supplierStockOf($pseId),
+        htmlspecialchars($this->trans('Supplier stock', [], MyModule::DOMAIN_NAME)),
+    ));
+}
+```
+
 ## Tests
 
 - **PHPStan**: `ddev exec composer phpstan` (baseline 60 errors).
