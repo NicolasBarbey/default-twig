@@ -1,12 +1,20 @@
 import { Controller } from '@hotwired/stimulus';
 
 /**
- * The default combination of the combinations grid, saved with the grid: "Set as default" in the
- * menu of a combination checks its hidden `default_pse` radio, shows the badge on that combination
- * only, and disables the entry of the menu of the default one. Each target carries `data-pse-id`.
+ * Default combination of the combinations grid: "Set as default" checks its hidden `default_pse`
+ * radio and moves the badge. Each target carries `data-pse-id`; hosted by the form, to follow its reset.
  */
 export default class extends Controller {
     static targets = ['radio', 'badge', 'choice'];
+
+    connect() {
+        this.onReset = () => window.setTimeout(() => this.refresh());
+        this.element.addEventListener('reset', this.onReset);
+    }
+
+    disconnect() {
+        this.element.removeEventListener('reset', this.onReset);
+    }
 
     choose(event) {
         const pseId = event.currentTarget.dataset.pseId;

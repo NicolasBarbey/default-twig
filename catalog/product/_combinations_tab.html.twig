@@ -1,7 +1,7 @@
 <div data-testid="product-combinations-tab">
     {{ safe_hook('product.combinations-tab.top', { product: product.id }) }}
 
-    <div class="card mb-3" data-testid="product-combinations-section">
+    <div class="card mb-3 bo-combinations-card" data-testid="product-combinations-section">
         <div class="card-header d-flex justify-content-between align-items-end gap-2 flex-wrap">
             {% if available_currencies|default([])|length > 1 %}
                 <div data-testid="combinations-currency-wrapper">
@@ -33,6 +33,7 @@
         <div class="card-body">
             {% if has_combinations %}
                 <form method="post" action="{{ path('admin.product.combination.update') }}" data-testid="combinations-form"
+                      data-bo-unsaved-changes-target="form"
                       data-controller="bo-pse-price-with-tax bo-combination-default"
                       data-bo-pse-price-with-tax-calc-url-value="{{ path('admin.product.calculate-price') }}"
                       data-bo-pse-price-with-tax-product-id-value="{{ product.id }}">
@@ -270,9 +271,15 @@
 
                     {{ safe_hook('product.after-combinations', { location: 'product_after_combinations' }) }}
 
-                    <button type="submit" class="btn btn-primary" data-testid="combinations-submit">
-                        <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save all combinations'|trans }}
-                    </button>
+                    {# Shown by CSS once bo-unsaved-changes marks the form dirty. #}
+                    <div class="bo-combinations-savebar" data-testid="combinations-savebar">
+                        <button type="submit" class="btn btn-primary" data-testid="combinations-submit">
+                            <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save changes'|trans }}
+                        </button>
+                        <button type="reset" class="btn btn-outline-secondary bo-combinations-savebar__discard" data-testid="combinations-discard">
+                            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i> {{ 'Cancel the changes'|trans }}
+                        </button>
+                    </div>
                 </form>
             {% else %}
                 {% if default_pse is null %}

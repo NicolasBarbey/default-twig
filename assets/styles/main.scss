@@ -2764,6 +2764,36 @@ tr.bo-order-row--urgent {
     }
 }
 
+// `overflow: hidden` would make the card the box the save bar sticks to, never the screen.
+.card.bo-combinations-card {
+    overflow: clip;
+}
+
+// Shown once something is changed, stuck to the bottom of the screen.
+.bo-combinations-savebar {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    display: none;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin-top: .5rem;
+    padding-block: .75rem;
+    background-color: var(--bs-body-bg);
+    border-block-start: var(--bs-border-width) solid var(--bs-border-color);
+}
+
+form[data-bo-unsaved-changes-dirty] .bo-combinations-savebar {
+    display: flex;
+}
+
+.bo-combinations-savebar__discard {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+}
+
 // ---------- Reports: conversion funnel ----------
 
 // The funnel reads as two groups of steps, carts then orders: roomy rows, labels

@@ -290,6 +290,7 @@ return [
     'Thelia Installation Wizard' => ' Thelia Installation Wizard',
     'Thelia log level' => 'Thelia log level',
     'This product has changes you have not saved yet. Leaving now discards them.' => 'This product has changes you have not saved yet. Leaving now discards them.',
+    'This product has changes in several tabs. Save each tab first, or leave without saving them.' => 'This product has changes in several tabs. Save each tab first, or leave without saving them.',
     'Title or reference' => 'Title or reference',
     'Total stock over %count% combinations' => 'Total stock over %count% combinations',
     'Translations' => 'Translation',
@@ -1199,4 +1200,5 @@ return [
     'By default' => 'By default',
     'On promotion' => 'On promotion',
     'Visible in the shop' => 'Visible in the shop',
+    'Cancel the changes' => 'Cancel the changes',
 ];

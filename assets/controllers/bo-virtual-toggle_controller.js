@@ -5,8 +5,8 @@ import { Controller } from '@hotwired/stimulus';
  * show the virtual-document selector only when "virtual product" is ticked.
  * State is synced on connect and on every change of the trigger.
  *
- * With `mode` set to `readonly`, the fields stay in place and are only made read-only while the
- * trigger is unchecked: a read-only field is still sent with its form, a disabled one would not be.
+ * `mode="readonly"` makes the fields read-only instead of hiding them: a read-only field is still
+ * sent with its form, a disabled one is not.
  */
 export default class extends Controller {
     static targets = ['trigger', 'field'];
@@ -14,7 +14,15 @@ export default class extends Controller {
     static values = { mode: { type: String, default: 'hide' } };
 
     connect() {
+        this.form = this.hasTriggerTarget ? this.triggerTarget.form : null;
+        // `reset` fires before the browser gives the trigger back its first state.
+        this.onReset = () => window.setTimeout(() => this.update());
+        this.form?.addEventListener('reset', this.onReset);
         this.update();
+    }
+
+    disconnect() {
+        this.form?.removeEventListener('reset', this.onReset);
     }
 
     update() {

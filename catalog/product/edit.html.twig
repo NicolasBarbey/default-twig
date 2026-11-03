@@ -27,7 +27,8 @@
 
     <div class="container-fluid" data-testid="product-edit-page"
          data-controller="bo-unsaved-changes"
-         data-bo-unsaved-changes-modal-value="#product-unsaved-changes-modal">
+         data-bo-unsaved-changes-modal-value="#product-unsaved-changes-modal"
+         data-bo-unsaved-changes-warn-on-unload-value="true">
         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
             <h1 class="h3 mb-0">{{ product.title }} <small class="text-muted">#{{ product.id }}</small></h1>
             <div class="d-flex flex-wrap gap-2">
@@ -507,7 +508,8 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'Close'|trans }}"></button>
                     </div>
                     <div class="modal-body">
-                        <p class="mb-0">{{ 'This product has changes you have not saved yet. Leaving now discards them.'|trans }}</p>
+                        <p class="mb-0" data-bo-unsaved-changes-target="oneFormMessage">{{ 'This product has changes you have not saved yet. Leaving now discards them.'|trans }}</p>
+                        <p class="mb-0" data-bo-unsaved-changes-target="severalFormsMessage" data-testid="product-unsaved-several" hidden>{{ 'This product has changes in several tabs. Save each tab first, or leave without saving them.'|trans }}</p>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-testid="product-unsaved-cancel">
@@ -519,6 +521,7 @@
                             {{ 'Leave without saving'|trans }}
                         </button>
                         <button type="button" class="btn btn-primary"
+                                data-bo-unsaved-changes-target="saveButton"
                                 data-action="bo-unsaved-changes#save"
                                 data-testid="product-unsaved-save">
                             <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}

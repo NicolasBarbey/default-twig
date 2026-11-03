@@ -323,6 +323,43 @@ final class ProductCombinationUpdateTest extends WebIntegrationTestCase
         self::assertNull($box->attr('checked'), 'A hidden combination shows its box unticked.');
     }
 
+    public function testTheGridIsWatchedBeforeLeavingAndOffersToCancelItsChanges(): void
+    {
+        $this->loginFullAdmin();
+        [$product] = $this->productWithACombination();
+
+        $crawler = $this->client->request('GET', '/admin/products/update?product_id='.$product->getId().'&current_tab=pse');
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $page = $crawler->filter('[data-testid="product-edit-page"]');
+        self::assertSame('bo-unsaved-changes', $page->attr('data-controller'));
+        self::assertSame('true', $page->attr('data-bo-unsaved-changes-warn-on-unload-value'), 'Leaving the page any other way asks too.');
+        self::assertCount(1, $page->filter('form[data-testid="combinations-form"][data-bo-unsaved-changes-target="form"]'), 'The grid is one of the forms the page watches.');
+
+        $bar = $crawler->filter('form[data-testid="combinations-form"] [data-testid="combinations-savebar"]');
+        self::assertCount(1, $bar->filter('button[type="submit"][data-testid="combinations-submit"]'));
+        self::assertStringContainsString('Save changes', $bar->filter('[data-testid="combinations-submit"]')->text(), 'The bar saves the changes, the only thing it shows up for.');
+        self::assertCount(1, $bar->filter('button[type="reset"][data-testid="combinations-discard"]'), 'The changes of the grid can be cancelled from its save bar.');
+    }
+
+    public function testTheLeavingModalCanSayThatSeveralTabsAreToBeSavedOneByOne(): void
+    {
+        $this->loginFullAdmin();
+        [$product] = $this->productWithACombination();
+
+        $crawler = $this->client->request('GET', '/admin/products/update?product_id='.$product->getId().'&current_tab=pse');
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $modal = $crawler->filter('[data-testid="product-edit-page"] [data-testid="product-unsaved-changes-modal"]');
+        self::assertCount(1, $modal, 'The modal is inside the controller that drives it.');
+        self::assertCount(1, $modal->filter('[data-testid="product-unsaved-save"][data-bo-unsaved-changes-target="saveButton"]'), 'The modal can hide its save button.');
+        self::assertCount(1, $modal->filter('[data-bo-unsaved-changes-target="oneFormMessage"]'));
+        $several = $modal->filter('[data-bo-unsaved-changes-target="severalFormsMessage"]');
+        self::assertCount(1, $several);
+        self::assertNotNull($several->attr('hidden'), 'Until several forms are changed, the modal offers to save the one that is.');
+        self::assertStringContainsString('Save each tab first', $several->text());
+    }
+
     public function testTheDefaultPriceCannotBeUpdatedThroughAGet(): void
     {
         $this->loginFullAdmin();

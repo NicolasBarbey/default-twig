@@ -30,13 +30,23 @@ export default class extends Controller {
         this.holding = false;
         this.boundInput = this.onInput.bind(this);
         this.boundSubmit = this.onSubmit.bind(this);
+        this.boundReset = this.onReset.bind(this);
         this.element.addEventListener('input', this.boundInput);
         this.element.addEventListener('submit', this.boundSubmit);
+        this.element.addEventListener('reset', this.boundReset);
     }
 
     disconnect() {
         this.element.removeEventListener('input', this.boundInput);
         this.element.removeEventListener('submit', this.boundSubmit);
+        this.element.removeEventListener('reset', this.boundReset);
+    }
+
+    /** A conversion still under way is dropped when it answers: its price is no longer in the field. */
+    onReset() {
+        this.edited.clear();
+        this.failures.clear();
+        this.showError(false);
     }
 
     onPriceExclBlur(event) {
