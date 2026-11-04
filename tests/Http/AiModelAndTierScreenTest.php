@@ -158,6 +158,29 @@ final class AiModelAndTierScreenTest extends WebIntegrationTestCase
         self::assertSame('mistral-small-latest', AiModelQuery::create()->findPk($assignment->getModelId())?->getName());
     }
 
+    public function testTheEffortOfARangeIsWrittenShownAndKeptWhenTheModelChanges(): void
+    {
+        $connection = $this->connection('range-effort');
+
+        $this->client->request('GET', '/admin/configuration/ai/tiers');
+        $form = $this->client->getCrawler()->filter('form[name="thelia_ai_tiers"]')->form([
+            'thelia_ai_tiers[fast]' => $connection->getId().'|mistral-small-latest',
+            'thelia_ai_tiers[fast_effort]' => 'high',
+        ]);
+        $this->client->submit($form);
+
+        self::assertSame('high', AiTierAssignmentQuery::create()->findOneByTier('fast')?->getEffort());
+
+        $this->client->request('GET', '/admin/configuration/ai/tiers');
+        self::assertSame('high', $this->client->getCrawler()->filter('select[name="thelia_ai_tiers[fast_effort]"] option[selected]')->attr('value'));
+        self::assertStringContainsString('ai-tier-effort-ignored-fast', $this->html(), 'a Mistral range says it ignores the effort');
+
+        $form = $this->client->getCrawler()->filter('form[name="thelia_ai_tiers"]')->form(['thelia_ai_tiers[fast_effort]' => '']);
+        $this->client->submit($form);
+
+        self::assertNull(AiTierAssignmentQuery::create()->findOneByTier('fast')?->getEffort(), 'empty clears the effort');
+    }
+
     public function testARangeFormWithoutItsTokenWritesNothing(): void
     {
         $connection = $this->connection('range-forged');

@@ -35,9 +35,13 @@
                         {% form_theme form with bo_form_themes only %}
                         {{ form_start(form, { action: path('admin.configuration.ai.tiers.save'), method: 'post' }) }}
                             {{ form_errors(form) }}
-                            {{ form_row(form.fast) }}
-                            {{ form_row(form.standard) }}
-                            {{ form_row(form.advanced) }}
+                            {% for tier in ['fast', 'standard', 'advanced'] %}
+                                {{ form_row(form[tier]) }}
+                                {{ form_row(form[tier ~ '_effort']) }}
+                                {% if ignored_efforts[tier] %}
+                                    <div class="alert alert-info" role="status" data-testid="ai-tier-effort-ignored-{{ tier }}">{{ 'The provider of this range ignores the reasoning effort: it is kept but nothing is sent.'|trans }}</div>
+                                {% endif %}
+                            {% endfor %}
                             {{ form_rest(form) }}
                             <div class="d-flex justify-content-end mt-3">
                                 {% if is_granted('UPDATE', 'admin.configuration.ai') %}

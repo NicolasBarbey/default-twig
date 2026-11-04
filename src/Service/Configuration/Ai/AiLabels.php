@@ -15,6 +15,7 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Service\Configuration\Ai;
 
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Thelia\Domain\Ai\AiEffort;
 use Thelia\Domain\Ai\AiJurisdiction;
 use Thelia\Domain\Ai\AiProvider;
 use Thelia\Domain\Ai\AiTier;
@@ -91,6 +92,31 @@ final readonly class AiLabels
     public function jurisdiction(?string $jurisdiction): string
     {
         return $this->translator->trans(AiJurisdiction::EuropeanUnion->value === $jurisdiction ? 'In the European Union' : 'Outside the European Union');
+    }
+
+    public function effort(AiEffort $effort): string
+    {
+        return $this->translator->trans(match ($effort) {
+            AiEffort::Low => 'Low',
+            AiEffort::Medium => 'Medium',
+            AiEffort::High => 'High',
+            AiEffort::XHigh => 'Very high',
+            AiEffort::Max => 'Maximum',
+        });
+    }
+
+    /**
+     * @return array<string, string> label => level, in the order of the levels
+     */
+    public function effortChoices(): array
+    {
+        $choices = [];
+
+        foreach (AiEffort::cases() as $effort) {
+            $choices[$this->effort($effort)] = $effort->value;
+        }
+
+        return $choices;
     }
 
     public function tierName(string $tier): string

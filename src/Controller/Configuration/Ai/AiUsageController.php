@@ -145,6 +145,7 @@ final class AiUsageController
                 $this->limits($request),
                 $this->guardrailChoices($request),
                 $this->privacy($request),
+                $field('effort', $this->usages->effortOf($id)),
             );
         } catch (AiExceptionInterface|\InvalidArgumentException $refusal) {
             // The message is plain text of the core: the flash is escaped by the layout.
@@ -177,6 +178,9 @@ final class AiUsageController
             'inactive_reason' => null === $row['inactive_reason'] ? null : $this->labels->inactiveReason((string) $row['inactive_reason'], (string) $row['tier']),
             'budget' => $this->usages->budgetOf($id),
             'pinned' => $this->usages->pinnedChoiceOf($id),
+            'effort' => $this->usages->effortOf($id),
+            'effort_choices' => $this->labels->effortChoices(),
+            'effort_ignored' => $this->usages->ignoresEffort($id),
             'model_choices' => $this->usages->modelChoices(),
             'switched_on' => $this->usages->isSwitchedOn($id),
             'limits' => $this->usages->limitsOf($id),
