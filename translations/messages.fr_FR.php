@@ -3279,4 +3279,5 @@ return [
     'The default customer group has no registration link: every account that registers without one joins it.' => 'Le groupe de clients par défaut n\'a pas de lien d\'inscription : tout compte créé sans lien le rejoint.',
     'Customer group registration link' => 'Lien d\'inscription d\'un groupe de clients',
     'Customer group restriction' => 'Restriction d\'un groupe de clients',
+    'No model serves this usage: choose one for "%range%" (Ranges tab).' => 'Aucun modèle ne sert cet usage : choisissez-en un pour « %range% » (onglet Gammes).',
 ];

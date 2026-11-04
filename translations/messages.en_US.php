@@ -1135,4 +1135,5 @@ return [
     'The default customer group has no registration link: every account that registers without one joins it.' => 'The default customer group has no registration link: every account that registers without one joins it.',
     'Customer group registration link' => 'Customer group registration link',
     'Customer group restriction' => 'Customer group restriction',
+    'No model serves this usage: choose one for "%range%" (Ranges tab).' => 'No model serves this usage: choose one for "%range%" (Ranges tab).',
 ];
