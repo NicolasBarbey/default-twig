@@ -31,7 +31,7 @@
 
         {% if categories_list_emptied %}
             <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert" data-testid="customer-group-categories-emptied">
-                <span>{{ 'This group is restricted, but none of the categories on its list exists any more: it sees no category. Tick categories and save to restrict it to them, or lift the restriction to open the whole catalogue.'|trans }}</span>
+                <span>{{ 'This group is restricted, but none of the categories on its list exists any more: it sees no category. Select categories and save to restrict it to them, or lift the restriction to open the whole catalogue.'|trans }}</span>
                 {% if not sale_unit_restricted() %}
                     <form method="post" action="{{ path('admin.configuration.customer-groups.lift-restriction') }}" class="m-0">
                         <input type="hidden" name="_token" value="{{ assignToken() }}">
@@ -44,7 +44,7 @@
         {% endif %}
         {% if payment_modules_list_emptied %}
             <div class="alert alert-warning d-flex justify-content-between align-items-center gap-3" role="alert" data-testid="customer-group-payment-modules-emptied">
-                <span>{{ 'This group is restricted, but none of the payment modules on its list exists any more: it cannot pay with any payment module. Tick payment modules and save to restrict it to them, or lift the restriction to open every payment module.'|trans }}</span>
+                <span>{{ 'This group is restricted, but none of the payment modules on its list exists any more: it cannot pay with any payment module. Select payment modules and save to restrict it to them, or lift the restriction to open every payment module.'|trans }}</span>
                 {% if not sale_unit_restricted() %}
                     <form method="post" action="{{ path('admin.configuration.customer-groups.lift-restriction') }}" class="m-0">
                         <input type="hidden" name="_token" value="{{ assignToken() }}">
@@ -96,7 +96,7 @@
                                    data-action="input->bo-multiselect-search#filter"
                                    data-testid="customer-group-payment-modules-filter">
                             {{ form_widget(form.payment_module_ids, { attr: { class: 'form-select', size: 8, 'data-bo-multiselect-search-target': 'select', 'data-testid': 'customer-group-payment-modules' } }) }}
-                            <div class="form-text">{{ 'No payment module ticked: the group can use every payment module. Otherwise it can use only the ticked ones. Only the active payment modules are listed.'|trans }}</div>
+                            <div class="form-text">{{ 'No payment module selected: the group can use every payment module. Otherwise it can use only the selected ones. Only the active payment modules are listed. Ctrl/Cmd+click to select several.'|trans }}</div>
                         </div>
                         <div class="col-md-6" data-controller="bo-multiselect-search">
                             {{ form_label(form.category_ids) }}
@@ -105,7 +105,7 @@
                                    data-action="input->bo-multiselect-search#filter"
                                    data-testid="customer-group-categories-filter">
                             {{ form_widget(form.category_ids, { attr: { class: 'form-select', size: 8, 'data-bo-multiselect-search-target': 'select', 'data-testid': 'customer-group-categories' } }) }}
-                            <div class="form-text">{{ 'No category ticked: the group sees the whole catalogue. Otherwise it sees only the ticked categories and their subcategories. The parent categories of a ticked category stay open to browse, so that it can be reached, but their own products are not shown.'|trans }}</div>
+                            <div class="form-text">{{ 'No category selected: the group sees the whole catalogue. Otherwise it sees only the selected categories and their subcategories. The parent categories of a selected category stay open to browse, so that it can be reached, but their own products are not shown. Ctrl/Cmd+click to select several.'|trans }}</div>
                         </div>
                     </div>
                     {{ form_widget(form.id) }}
