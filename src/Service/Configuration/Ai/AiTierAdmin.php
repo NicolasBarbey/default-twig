@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Configuration\Ai;
 
+use Thelia\Domain\Ai\AiEffort;
 use Thelia\Domain\Ai\AiProvider;
 use Thelia\Domain\Ai\AiTier;
 use Thelia\Domain\Ai\Catalog\AiModelCatalog;
@@ -70,6 +71,27 @@ final readonly class AiTierAdmin
         return $choices;
     }
 
+    /**
+     * @return string|null the effort stored for the range (low, medium, high, xhigh or max), null when none is set
+     */
+    public function effortOf(AiTier $tier): ?string
+    {
+        $effort = $this->assignment($tier)?->getEffort();
+
+        return null === AiEffort::tryFrom((string) $effort) ? null : $effort;
+    }
+
+    /**
+     * Whether the model the range runs on belongs to a provider that sends no effort: the setting is kept and does nothing.
+     */
+    public function ignoresEffort(AiTier $tier): bool
+    {
+        $assignment = $this->assignment($tier);
+        $provider = null === $assignment ? null : AiProvider::tryFrom((string) AiConnectionQuery::create()->findPk($assignment->getConnectionId())?->getProvider());
+
+        return null !== $provider && null !== $this->effortOf($tier) && !AiEffort::isTranslatedFor($provider);
+    }
+
     public function choiceOf(AiTier $tier): ?string
     {
         $assignment = $this->assignment($tier);
@@ -102,10 +124,11 @@ final readonly class AiTierAdmin
 
     /**
      * @param string|null $choice "connection id|model name", null or empty to leave the range without a model
+     * @param string|null $effort low, medium, high, xhigh or max; empty clears it; null keeps the one stored
      *
      * @throws \InvalidArgumentException when the choice is not one of choices()
      */
-    public function assign(AiTier $tier, ?string $choice): void
+    public function assign(AiTier $tier, ?string $choice, ?string $effort = null): void
     {
         $assignment = $this->assignment($tier);
 
@@ -120,6 +143,6 @@ final readonly class AiTierAdmin
         $row = $this->resolve($choice);
         $connection = (int) explode(self::SEPARATOR, $choice, 2)[0];
 
-        $this->writer->assignTier($assignment, $tier->value, $connection, $row->getId());
+        $this->writer->assignTier($assignment, $tier->value, $connection, $row->getId(), $effort ?? $assignment?->getEffort());
     }
 }

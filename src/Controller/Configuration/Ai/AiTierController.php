@@ -81,7 +81,7 @@ final class AiTierController
         if ($form->isSubmitted() && $form->isValid()) {
             try {
                 foreach (AiTier::cases() as $tier) {
-                    $this->tiers->assign($tier, $form->get($tier->value)->getData());
+                    $this->tiers->assign($tier, $form->get($tier->value)->getData(), (string) $form->get($tier->value.'_effort')->getData());
                 }
             } catch (AiExceptionInterface $refusal) {
                 $form->addError(new FormError($this->failureMessage($refusal, $request)));
@@ -103,6 +103,7 @@ final class AiTierController
         $data = [];
         foreach (AiTier::cases() as $tier) {
             $data[$tier->value] = $this->tiers->choiceOf($tier);
+            $data[$tier->value.'_effort'] = $this->tiers->effortOf($tier);
         }
 
         return $this->formFactory->createNamed('thelia_ai_tiers', AiTierType::class, $data, ['choices' => $this->tiers->choices()]);
@@ -113,6 +114,7 @@ final class AiTierController
         return new Response($this->twig->render('@BackOfficeDefaultTwig/configuration/ai/tier/index.html.twig', [
             'form' => $form->createView(),
             'has_choices' => [] !== $this->tiers->choices(),
+            'ignored_efforts' => array_map(fn (AiTier $tier): bool => $this->tiers->ignoresEffort($tier), array_column(AiTier::cases(), null, 'value')),
         ]));
     }
 

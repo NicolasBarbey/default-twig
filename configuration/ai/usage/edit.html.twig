@@ -88,6 +88,18 @@
                                     <div class="form-text">{{ 'By default the usage runs on the model of its range (Ranges tab). Pick a model here only if this usage needs its own.'|trans }}</div>
                                 </div>
 
+                                <div class="mb-3">
+                                    <label class="form-label" for="ai-usage-effort">{{ 'Reasoning effort for this usage'|trans }}</label>
+                                    <select class="form-select" id="ai-usage-effort" name="effort" data-testid="ai-usage-effort">
+                                        <option value="">{{ 'Follow the range'|trans }}</option>
+                                        {% for label, value in effort_choices %}<option value="{{ value }}"{{ value == effort ? ' selected' : '' }}>{{ label }}</option>{% endfor %}
+                                    </select>
+                                    <div class="form-text">{{ 'How hard the model thinks before it answers. Only Anthropic models use it; the other providers ignore it. A module that sets its own effort in its request keeps it.'|trans }}</div>
+                                    {% if effort_ignored %}
+                                        <div class="form-text text-warning-emphasis" data-testid="ai-usage-effort-ignored">{{ 'The provider this usage runs on ignores the reasoning effort.'|trans }}</div>
+                                    {% endif %}
+                                </div>
+
                                 <input type="hidden" name="sections[]" value="guardrails">
                                 <h2 class="h6 mt-4" data-testid="ai-usage-section-guardrails">{{ 'Safety checks'|trans }}</h2>
                                 <p class="form-text">{{ 'Optional checks run on what is sent to the model and on its answer. Block stops the request. Annotate lets it through and notes the problem in the log and in the response. Thelia always applies its own checks (limits, budget, untrusted content, output format) whatever you choose here.'|trans }}</p>

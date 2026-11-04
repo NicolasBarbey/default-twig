@@ -38,6 +38,13 @@ final class AiTierType extends AbstractType
                 'label' => $this->labels->tier($tier),
                 'help' => $this->labels->tierHelp($tier),
             ]);
+            $builder->add($tier->value.'_effort', ChoiceType::class, [
+                'choices' => $this->labels->effortChoices(),
+                'required' => false,
+                'placeholder' => $this->translator->trans('Provider default'),
+                'label' => $this->translator->trans('Reasoning effort'),
+                'help' => $this->translator->trans('How hard the model thinks before it answers. Only Anthropic models use it; the other providers ignore it. Empty: the provider decides.'),
+            ]);
         }
     }
 

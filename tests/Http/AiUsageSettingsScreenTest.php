@@ -87,6 +87,27 @@ final class AiUsageSettingsScreenTest extends WebIntegrationTestCase
         self::assertSame(['requests_per_minute', 'transparency_notice'], array_keys($after), 'tier, budget and pinned model were not carried: they stay');
     }
 
+    public function testTheEffortOfAUsageIsWrittenKeptWhenTheFormDoesNotCarryItAndClearedWhenSentEmpty(): void
+    {
+        $this->everySettingSet();
+        $token = $this->getService(TokenProvider::class)->assignToken();
+
+        $this->client->request('GET', self::URL);
+        self::assertSame('medium', $this->client->getCrawler()->filter('select[data-testid="ai-usage-effort"] option[selected]')->attr('value'));
+
+        $this->client->request('POST', self::URL, ['_token' => $token, 'sections' => ['limits'], 'requests_per_minute' => '9']);
+        self::assertSame('medium', $this->row()['effort'], 'a form that does not carry the field keeps it');
+
+        $this->client->request('POST', self::URL, ['_token' => $token, 'sections' => ['general'], 'enabled' => '1', 'notice' => '1', 'effort' => 'xhigh']);
+        self::assertSame('xhigh', $this->row()['effort']);
+
+        $this->client->request('POST', self::URL, ['_token' => $token, 'sections' => ['general'], 'enabled' => '1', 'notice' => '1', 'effort' => '']);
+        self::assertNull($this->row()['effort'], 'empty goes back to the effort of the range');
+
+        $this->client->request('POST', self::URL, ['_token' => $token, 'sections' => ['general'], 'enabled' => '1', 'notice' => '1', 'effort' => 'turbo']);
+        self::assertNull($this->row()['effort'], 'a level that does not exist is refused and nothing is written');
+    }
+
     public function testAFieldLeftEmptyGoesBackToTheDefaultAndTheScreenSaysWhich(): void
     {
         $this->everySettingSet();
@@ -206,6 +227,7 @@ final class AiUsageSettingsScreenTest extends WebIntegrationTestCase
             provenanceMark: false,
             storePrompt: true,
             promptRetentionDays: 7,
+            effort: 'medium',
         );
     }
 }

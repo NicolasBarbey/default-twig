@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Configuration\Ai;
 
+use Thelia\Domain\Ai\AiEffort;
+use Thelia\Domain\Ai\AiProvider;
 use Thelia\Domain\Ai\AiTier;
 use Thelia\Domain\Ai\AiUsageRegistryInterface;
 use Thelia\Domain\Ai\Exception\AiExceptionInterface;
@@ -127,6 +129,29 @@ final readonly class AiUsageAdmin
         return null === $tier || null === AiTier::tryFrom($tier) ? null : $tier;
     }
 
+    /**
+     * @return string|null the effort the merchant set on the usage itself, null when it follows the one of its range
+     */
+    public function effortOf(string $usageId): ?string
+    {
+        $effort = AiUsageSettingQuery::create()->findOneByUsageId($usageId)?->getEffort();
+
+        return null === AiEffort::tryFrom((string) $effort) ? null : $effort;
+    }
+
+    /**
+     * Whether an effort applies to the usage (its own, else the one of its range) and the provider it runs on sends none.
+     */
+    public function ignoresEffort(string $usageId): bool
+    {
+        $provider = $this->withTarget(['id' => $usageId])['provider'];
+        $tier = AiTier::tryFrom((string) ($this->row($usageId)['tier'] ?? ''));
+
+        return null !== $provider
+            && null !== ($this->effortOf($usageId) ?? (null === $tier ? null : $this->tiers->effortOf($tier)))
+            && !AiEffort::isTranslatedFor(AiProvider::from($provider));
+    }
+
     public function budgetOf(string $usageId): ?string
     {
         $budget = AiUsageSettingQuery::create()->findOneByUsageId($usageId)?->getMonthlyBudget();
@@ -194,11 +219,12 @@ final readonly class AiUsageAdmin
      * @param array<string, int|null>|null                 $limits           requests_per_minute, requests_per_day, max_output_tokens, max_input_characters
      * @param array<string, string>|null                   $guardrailChoices guardrail name => follow, block, annotate or off
      * @param array{store_prompt: bool, prompt_retention_days?: int|null}|null $privacy
+     * @param string|null                                  $effort           low, medium, high, xhigh or max; empty follows the range; null keeps the one stored
      *
      * @throws AiExceptionInterface      when the core refuses a value
      * @throws \InvalidArgumentException when no guardrail would stay applied
      */
-    public function save(string $usageId, bool $enabled, ?string $tier, ?string $budget, ?string $pinnedChoice, bool $notice, bool $mark, ?array $limits = null, ?array $guardrailChoices = null, ?array $privacy = null): void
+    public function save(string $usageId, bool $enabled, ?string $tier, ?string $budget, ?string $pinnedChoice, bool $notice, bool $mark, ?array $limits = null, ?array $guardrailChoices = null, ?array $privacy = null, ?string $effort = null): void
     {
         $existing = AiUsageSettingQuery::create()->findOneByUsageId($usageId);
         $pinnedModel = null === $pinnedChoice || '' === $pinnedChoice ? null : $this->tiers->resolve($pinnedChoice);
@@ -224,6 +250,7 @@ final readonly class AiUsageAdmin
             $mark,
             null === $privacy ? (bool) $existing?->getStorePrompt() : $privacy['store_prompt'],
             null === $privacy || !\array_key_exists('prompt_retention_days', $privacy) ? $existing?->getPromptRetentionDays() : $privacy['prompt_retention_days'],
+            $effort ?? $existing?->getEffort(),
         );
     }
 
