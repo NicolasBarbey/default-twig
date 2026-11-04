@@ -85,6 +85,7 @@
                     {% endif %}
 
                     {{ safe_hook('product.before-combinations', { location: 'product_before_combinations' }) }}
+                    {{ safe_hook('product.combinations-list-caption', { location: 'product_combinations_list_caption' }) }}
 
                     <div id="combinations-sort-failure" data-testid="combinations-sort-failure" hidden>
                         <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
@@ -122,8 +123,8 @@
                                     <th class="bo-combinations-grid__col-promo"><span class="visually-hidden">{{ 'Promotion'|trans }}</span></th>
                                     <th class="bo-combinations-grid__col-price">{{ 'Price excl. taxes'|trans }}</th>
                                     <th class="bo-combinations-grid__col-price">{{ 'Price incl. taxes'|trans }}</th>
-                                    {# A module returns its own <th>; counted, so that the lines spanning the grid span them too. #}
-                                    {% set module_headers %}{{ safe_hook('product.combinations-list-caption', { location: 'product_combinations_list_caption', product: product.id, product_id: product.id }) }}{% endset %}
+                                    {# A module returns its own <th> on product.combinations-table-header; counted, so that the lines spanning the grid span them too. #}
+                                    {% set module_headers %}{{ safe_hook('product.combinations-table-header', { location: 'product_combinations_table_header', product: product.id, product_id: product.id }) }}{% endset %}
                                     {% set module_columns = (module_headers|split('<th')|length) - 1 %}
                                     {{ module_headers }}
                                     <th class="bo-combinations-grid__col-actions"><span class="visually-hidden">{{ 'Actions'|trans }}</span></th>
@@ -151,8 +152,8 @@
                                                    aria-label="{{ 'Default combination'|trans }}"
                                                    data-bo-combination-default-target="radio" data-pse-id="{{ row.id }}">
                                         </td>
-                                        {# A module returns its own <td>, rowspan="3" to cover the three lines of the combination. #}
-                                        {{ safe_hook('product.combinations-row', { pse_id: row.id, pse: row.id, idx: idx, product: product.id, product_id: product.id }) }}
+                                        {# A module returns its own <td>, rowspan="3" to cover the three lines of the combination, on product.combinations-table-row. #}
+                                        {{ safe_hook('product.combinations-table-row', { pse_id: row.id, pse: row.id, idx: idx, product: product.id, product_id: product.id }) }}
                                         {# datatable-sticky-actions is the lists' class: bo-overflow-dropdown lifts it above the next lines while the menu is open. #}
                                         <td class="text-end bo-combinations-grid__actions datatable-sticky-actions">
                                             <div class="d-inline-flex align-items-center gap-1">
@@ -277,6 +278,11 @@
                                             {{ include('@BackOfficeDefaultTwig/catalog/product/_combination_more_fields.html.twig', { row: row, field_id: field_id, brand_options: brand_options, product_brand_title: product_brand_title }, with_context = false) }}
                                         </td>
                                     </tr>
+                                    {# product.combinations-row keeps its contract: it is rendered inside a line, where a module returns its own <tr> lines, as under the line of a combination before. #}
+                                    {% set module_lines %}{{ safe_hook('product.combinations-row', { pse_id: row.id, pse: row.id, idx: idx, product: product.id, product_id: product.id }) }}{% endset %}
+                                    {% if module_lines|trim is not empty %}
+                                        <tr class="bo-combinations-grid__module-lines" data-testid="combinations-module-lines-{{ row.id }}">{{ module_lines }}</tr>
+                                    {% endif %}
                                     <tr class="bo-combinations-grid__band-end" aria-hidden="true"><td class="bo-combinations-grid__handle-cont"></td><td colspan="{{ 7 + module_columns }}"></td></tr>
                                 </tbody>
                             {% endfor %}

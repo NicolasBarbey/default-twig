@@ -256,12 +256,21 @@ that file, without copying the whole tab.
 
 #### Adding a column or a field to the combinations
 
-A module adds a column to the grid of combinations as it does to the lists: it returns its own cells. Its header
-comes from `product.combinations-list-caption` (one `<th>` per column, without `colspan`, context `product_id`), its cell from
-`product.combinations-row` (a `<td>`, context `pse_id`, `idx`, `product_id`). Both sit right before the column of the
-actions. A combination spans three lines of the grid: `rowspan="3"` covers them, without it the cell holds the title
-line only. The module returns a cell for every combination, an empty `<td rowspan="3"></td>` when it has nothing to
-show: a line short of a cell moves the actions under its column.
+A module adds a column to the grid of combinations as it does to the lists: it returns its own cells, through two
+hooks of their own. The header comes from `product.combinations-table-header` (one `<th>` per column, without
+`colspan`, context `location`, `product`, `product_id`), the cell of each combination from
+`product.combinations-table-row` (a `<td>`, context `pse_id`, `pse`, `idx`, `product`, `product_id`). Both sit right
+before the column of the actions. A combination spans three lines of the grid: `rowspan="3"` covers them, without it
+the cell holds the title line only. The module returns a cell for every combination, an empty `<td rowspan="3"></td>`
+when it has nothing to show: a line short of a cell moves the actions under its column.
+
+The two hooks that were already there keep their contract, which is not a column:
+
+- `product.combinations-list-caption` (context `location`) is rendered above the grid, inside the form of the
+  combinations, right after `product.before-combinations`;
+- `product.combinations-row` (context `pse_id`, `pse`, `idx`, `product`, `product_id`) is rendered inside a line of
+  the combination, where a module returns its own `<tr>` lines. They come under the combination, after its other
+  lines. Nothing is rendered, and no line added, for a combination the module returns nothing for.
 
 The other fields of a combination, folded under it, come from `catalog/product/_combination_more_fields.html.twig`. A
 theme or a project that overrides the back office adds its fields there, in a copy of that file, without copying the
@@ -274,7 +283,7 @@ names them by the combination (`mymodule_stock[12]`), **never by `idx`**, their 
 combinations renumbers only the fields of the grid itself.
 
 ```php
-public function onCombinationsRow(HookRenderEvent $event): void
+public function onCombinationsTableRow(HookRenderEvent $event): void
 {
     $pseId = (int) $event->getArgument('pse_id');
     $event->add(\sprintf(

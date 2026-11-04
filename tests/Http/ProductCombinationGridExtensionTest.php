@@ -29,12 +29,19 @@ use Thelia\Test\WebIntegrationTestCase;
 use Thelia\Tests\Support\BackOffice\AdminSessionInjector;
 use Twig\Environment;
 
-/** What a module adds to the combinations grid: a column through the hooks, and fields in the folded template. */
+/**
+ * What a module adds to the combinations grid: a column through the cell hooks, lines through the two hooks whose
+ * contract has not changed, and fields in the folded template.
+ */
 final class ProductCombinationGridExtensionTest extends WebIntegrationTestCase
 {
-    private const HEADER_HOOK_EVENT = 'hook.'.TemplateDefinition::BACK_OFFICE.'.product.combinations-list-caption';
+    private const HEADER_HOOK_EVENT = 'hook.'.TemplateDefinition::BACK_OFFICE.'.product.combinations-table-header';
 
-    private const ROW_HOOK_EVENT = 'hook.'.TemplateDefinition::BACK_OFFICE.'.product.combinations-row';
+    private const ROW_HOOK_EVENT = 'hook.'.TemplateDefinition::BACK_OFFICE.'.product.combinations-table-row';
+
+    private const CAPTION_HOOK_EVENT = 'hook.'.TemplateDefinition::BACK_OFFICE.'.product.combinations-list-caption';
+
+    private const LINES_HOOK_EVENT = 'hook.'.TemplateDefinition::BACK_OFFICE.'.product.combinations-row';
 
     private AdminSessionInjector $injector;
 
@@ -121,6 +128,67 @@ final class ProductCombinationGridExtensionTest extends WebIntegrationTestCase
             self::assertCount(5, $lines);
             self::assertSame(array_fill(0, 5, $columns), $lines, 'Each line of the combination, the folded fields and the air under it included, spans the grid.');
         }
+    }
+
+    public function testTheRowHookKeepsItsContractAndItsLinesComeUnderTheirCombination(): void
+    {
+        [$product, $combination] = $this->productWithACombination();
+        $other = $this->factory->productSaleElement($product);
+        $this->factory->attributeCombination($other, $this->factory->attributeAv($this->factory->attribute(['title' => 'Color']), ['title' => 'Red']));
+
+        $arguments = [];
+        // The shape of the CustomerFamily module: an empty line, then its own lines.
+        $this->listen(self::LINES_HOOK_EVENT, static function (HookRenderEvent $event) use (&$arguments): void {
+            $arguments[(int) $event->getArgument('pse_id')] = [$event->getArgument('idx'), $event->getArgument('product_id')];
+            $event->add(\sprintf('<tr></tr><tr class="module-line" data-testid="module-line-%1$d"><td colspan="3">Purchase price</td><td><input name="purchase_price[%2$d]"></td></tr>', (int) $event->getArgument('pse_id'), (int) $event->getArgument('idx')));
+        });
+
+        $crawler = $this->tab($product);
+        $grid = $crawler->filter('table[data-testid="combinations-table"]');
+        self::assertCount(0, $grid->filter('tr tr'), 'No line is nested in another one.');
+
+        foreach ([$combination, $other] as $pse) {
+            $block = $grid->filter(\sprintf('tbody[data-row-id="%d"]', $pse->getId()));
+            $lines = $block->children('tr.module-line');
+            self::assertCount(1, $lines, 'The line of the module is a line of the block of its combination, whatever it returns before it.');
+            self::assertSame(\sprintf('module-line-%d', $pse->getId()), $lines->attr('data-testid'), 'The line is the one of its own combination.');
+            self::assertCount(2, $lines->children('td'));
+            self::assertCount(1, $block->children('tr')->first()->children('td.bo-combinations-grid__actions'), 'The title line keeps its actions: the lines of the module do not cut the combination.');
+            self::assertCount(1, $lines->previousAll()->filter(\sprintf('tr#combination-%d-more', $pse->getId())), 'The line comes after the folded fields, the last line of the combination, so under every line it spans.');
+            self::assertSame($pse->getProductId(), $arguments[$pse->getId()][1] ?? null, 'The hook hands the module the product.');
+        }
+        self::assertSame(['0', '1'], array_map(static fn (array $values): string => (string) $values[0], array_values($arguments)), 'And the place of the combination, idx.');
+        self::assertCount(2, $grid->filter('tbody > tr.module-line'));
+    }
+
+    public function testTheRowHookRendersNothingAroundACombinationItLeavesEmpty(): void
+    {
+        [$product] = $this->productWithACombination();
+
+        $grid = $this->tab($product)->filter('table[data-testid="combinations-table"]');
+
+        self::assertCount(0, $grid->filter('tr.bo-combinations-grid__module-lines'));
+        self::assertCount(5, $grid->filter('tbody[data-row-id] > tr'));
+    }
+
+    public function testTheCaptionHookKeepsItsPlaceAndItsContext(): void
+    {
+        [$product] = $this->productWithACombination();
+
+        $location = null;
+        $this->listen(self::CAPTION_HOOK_EVENT, static function (HookRenderEvent $event) use (&$location): void {
+            $location = $event->getArgument('location');
+            $event->add('<p data-testid="module-caption">Caption</p>');
+        });
+
+        $form = $this->tab($product)->filter('form[data-testid="combinations-form"]');
+        self::assertSame('product_combinations_list_caption', $location);
+        self::assertCount(1, $form->filter('[data-testid="module-caption"]'));
+        self::assertCount(0, $form->filter('table [data-testid="module-caption"]'), 'It sits above the grid, as it did, not in it.');
+        $siblings = $form->filter('[data-testid="module-caption"]')->nextAll()->filter('.table-responsive');
+        self::assertCount(1, $siblings, 'And before the grid.');
+        $columns = array_sum($form->filter('thead > tr > th')->each(static fn (Crawler $cell): int => (int) ($cell->attr('colspan') ?? 1)));
+        self::assertSame(8, $columns, 'It adds no column to the grid.');
     }
 
     public function testTheOtherFieldsOfACombinationComeFromATemplateOfTheirOwn(): void
