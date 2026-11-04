@@ -148,6 +148,20 @@ final class CustomerGroupBackOfficeTest extends WebIntegrationTestCase
         self::assertSame(1, $group->getDisplayTaxedPrice());
     }
 
+    public function testThePaymentModulesAreListedByTitleAndCode(): void
+    {
+        $titled = $this->paymentModule('B1PayTitled');
+        $titled->setLocale('en_US')->setTitle('You have nothing to pay')->save($this->getPropelConnection());
+        $this->paymentModule('B1PayUntitled');
+        $group = $this->group('labels-b1', 'Labels');
+
+        $crawler = $this->client->request('GET', self::LIST_URL.'/update/'.$group->getId());
+        $labels = $crawler->filter('[data-testid="customer-group-payment-modules"] option')->each(static fn ($option): string => trim($option->text()));
+
+        self::assertContains('You have nothing to pay (B1PayTitled)', $labels, 'The title and the code, as on the modules page.');
+        self::assertContains('B1PayUntitled', $labels, 'Without a title, the code alone.');
+    }
+
     public function testThePaymentModulesAndTheCategoriesOfAGroupPersist(): void
     {
         $group = $this->group('links-b1', 'Links');

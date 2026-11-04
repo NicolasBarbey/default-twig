@@ -145,7 +145,10 @@ final readonly class CustomerGroupRepository
             ->joinI18n($locale, null, Criteria::LEFT_JOIN)
             ->withColumn(ModuleI18nTableMap::COL_TITLE, self::TITLE_COLUMN)
             ->find() as $module) {
-            $choices[] = ['id' => (int) $module->getId(), 'label' => trim((string) $module->getVirtualColumn(self::TITLE_COLUMN)) ?: (string) $module->getCode()];
+            $code = (string) $module->getCode();
+            $title = trim((string) $module->getVirtualColumn(self::TITLE_COLUMN));
+            // Same reading as the modules page: the shop title alone can be a sentence ("You have nothing to pay").
+            $choices[] = ['id' => (int) $module->getId(), 'label' => '' === $title ? $code : \sprintf('%s (%s)', $title, $code)];
         }
 
         return $choices;
