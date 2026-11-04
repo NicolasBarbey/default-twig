@@ -16,6 +16,8 @@ namespace BackOfficeDefaultTwigBundle\Controller\Configuration;
 
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
+use BackOfficeDefaultTwigBundle\Service\Shipping\ZipCodeLog;
+use BackOfficeDefaultTwigBundle\Service\Shipping\ZipCodeRuleDraft;
 use Propel\Runtime\Exception\ExceptionInterface as PropelError;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -48,6 +50,7 @@ final class AreaZipCodeRuleController
     private const RESOURCE = AdminResources::AREA;
     private const EDIT_ROUTE = 'admin.configuration.shipping-configuration.update.view';
     private const WRITER = 'Thelia\\Domain\\Shipping\\ZipCode\\AreaZipCodeRuleWriter';
+    private const INVALID_RULE = 'Thelia\\Domain\\Shipping\\ZipCode\\Exception\\InvalidZipCodeRuleException';
 
     public function __construct(
         private readonly AdminAccessChecker $access,
@@ -58,6 +61,7 @@ final class AreaZipCodeRuleController
         private readonly TokenProvider $tokens,
         private readonly AdminLogger $adminLogger,
         private readonly LoggerInterface $logger,
+        private readonly ZipCodeRuleDraft $draft,
     ) {
     }
 
@@ -80,13 +84,17 @@ final class AreaZipCodeRuleController
                 '1' === $request->request->get('excluded'),
                 0 === $countryId ? null : $countryId,
             );
-        } catch (\InvalidArgumentException $exception) {
-            $this->flash($request, 'danger', $exception->getMessage());
-
-            return $this->backToTheZone($area_id);
         } catch (PropelError $exception) {
+            // First: Propel's own InvalidArgumentException is a native one too, and its
+            // message is the database layer's, not a sentence for the merchant.
             $this->logger->error('Postal code rule not saved.', ['exception' => $exception, 'area_id' => $area_id]);
             $this->flash($request, 'danger', 'The postal code rule could not be saved. Try again later.');
+            $this->draft->keep($request, $area_id);
+
+            return $this->backToTheZone($area_id);
+        } catch (\InvalidArgumentException $exception) {
+            $this->flash($request, 'danger', $this->refusalOf($exception, $area_id));
+            $this->draft->keep($request, $area_id);
 
             return $this->backToTheZone($area_id);
         }
@@ -94,7 +102,7 @@ final class AreaZipCodeRuleController
         $this->adminLogger->log(
             self::RESOURCE,
             AccessManager::UPDATE,
-            \sprintf('Postal code rule "%s" (ID %d) added to shipping zone %d', (string) $rule->getPattern(), (int) $rule->getId(), $area_id),
+            \sprintf('Postal code rule "%s" (ID %d) added to shipping zone %d', ZipCodeLog::escape((string) $rule->getPattern()), (int) $rule->getId(), $area_id),
             $area_id,
         );
         $this->flash($request, 'success', 'The postal code rule was added.');
@@ -141,6 +149,23 @@ final class AreaZipCodeRuleController
         $this->flash($request, 'success', 'The postal code rule was deleted.');
 
         return $this->backToTheZone($area_id);
+    }
+
+    /**
+     * The sentence the merchant reads for a refused rule. A core that tells its refusals
+     * apart (InvalidZipCodeRuleException) has only those worded for a merchant: any other
+     * invalid argument is a fault, logged and told in a general sentence. An older core has
+     * no such class, and its refusals are shown as they come, as before.
+     */
+    private function refusalOf(\InvalidArgumentException $exception, int $areaId): string
+    {
+        if (!class_exists(self::INVALID_RULE) || is_a($exception, self::INVALID_RULE)) {
+            return $exception->getMessage();
+        }
+
+        $this->logger->error('Postal code rule refused for an unexpected reason.', ['exception' => $exception, 'area_id' => $areaId]);
+
+        return 'The postal code rule could not be saved. Try again later.';
     }
 
     private function writer(): mixed

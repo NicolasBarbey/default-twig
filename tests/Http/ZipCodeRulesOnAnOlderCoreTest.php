@@ -17,33 +17,46 @@ namespace BackOfficeDefaultTwigBundle\Tests\Http;
 use BackOfficeDefaultTwigBundle\Controller\Configuration\AreaZipCodeRuleController;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
+use BackOfficeDefaultTwigBundle\Service\Shipping\ZipCodeRuleDraft;
+use Propel\Runtime\Exception\InvalidArgumentException as PropelInvalidArgumentException;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\DependencyInjection\ServiceLocator;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Model\Area;
 use Thelia\Model\ConfigQuery;
+use Thelia\Model\CountryArea;
+use Thelia\Model\CountryQuery;
 use Thelia\Test\FixtureFactory;
 use Thelia\Test\WebIntegrationTestCase;
 use Thelia\Tests\Support\BackOffice\AdminSessionInjector;
 use Thelia\Tools\TokenProvider;
 
 /**
- * The postal code rules of a shipping zone on a core that has none: the writer the
- * controller asks its locator for does not exist there, and the actions answer 404 instead
- * of failing. The controller is given an empty locator, as the container of such a core
- * builds it.
+ * The postal code rule actions of a shipping zone, given the writer a core hands them.
  *
- * The zone page itself checks `class_exists()` on a class of the core, which a test running
- * on a core that has the class cannot take away: the CI of the theme, which installs it on
- * the released core, covers that side.
+ * On a core that has no postal code rules, the writer the controller asks its locator for
+ * does not exist, and the actions answer 404 instead of failing: the controller is given
+ * an empty locator, as the container of such a core builds it. The zone page itself checks
+ * `class_exists()` on a class of the core, which a test running on a core that has the
+ * class cannot take away: the CI of the theme, which installs it on the released core,
+ * covers that side.
  */
 final class ZipCodeRulesOnAnOlderCoreTest extends WebIntegrationTestCase
 {
     private const string RULE_QUERY = 'Thelia\\Model\\AreaZipCodeRuleQuery';
 
+    private const string INVALID_RULE = 'Thelia\\Domain\\Shipping\\ZipCode\\Exception\\InvalidZipCodeRuleException';
+
     private AdminSessionInjector $injector;
+
+    /**
+     * The services the controller asked its locator about.
+     */
+    private \ArrayObject $asked;
 
     protected function setUp(): void
     {
@@ -53,22 +66,13 @@ final class ZipCodeRulesOnAnOlderCoreTest extends WebIntegrationTestCase
             self::markTestSkipped('The Twig back-office is not the active admin template of the test shop: its routes are not registered.');
         }
 
+        $this->asked = new \ArrayObject();
         $this->injector = new AdminSessionInjector();
         $this->getService(EventDispatcherInterface::class)->addSubscriber($this->injector);
 
         $admin = (new FixtureFactory($this->getPropelConnection()))->admin();
         $admin->eraseCredentials();
         $this->injector->setAdmin($admin);
-
-        static::getContainer()->set(AreaZipCodeRuleController::class, new AreaZipCodeRuleController(
-            $this->getService(AdminAccessChecker::class),
-            new ServiceLocator([]),
-            $this->getService(UrlGeneratorInterface::class),
-            $this->getService(TranslatorInterface::class),
-            $this->getService(TokenProvider::class),
-            $this->getService(AdminLogger::class),
-            $this->getService(LoggerInterface::class),
-        ));
     }
 
     protected function tearDown(): void
@@ -82,23 +86,204 @@ final class ZipCodeRulesOnAnOlderCoreTest extends WebIntegrationTestCase
         parent::tearDown();
     }
 
-    public function testAddingARuleAnswersNotFound(): void
+    public function testAddingARuleOnACoreWithoutRulesIsNotFoundByTheAction(): void
     {
         $area = $this->area();
+        $this->controllerWith(new ServiceLocator([]));
 
-        $this->client->request('POST', '/admin/configuration/shipping_configuration/'.$area->getId().'/zip-code-rules', ['pattern' => '20*', 'excluded' => '1']);
+        $this->assertTheActionAnswersNotFound('/admin/configuration/shipping_configuration/'.$area->getId().'/zip-code-rules', ['pattern' => '20*', 'excluded' => '1']);
 
-        self::assertSame(404, $this->client->getResponse()->getStatusCode());
-        $this->assertNoRuleWritten($area);
+        if (class_exists(self::RULE_QUERY)) {
+            self::assertSame(0, (self::RULE_QUERY)::create()->filterByAreaId($area->getId())->count());
+        }
     }
 
-    public function testDeletingARuleAnswersNotFound(): void
+    public function testDeletingARuleOnACoreWithoutRulesIsNotFoundByTheAction(): void
     {
         $area = $this->area();
+        $this->controllerWith(new ServiceLocator([]));
 
-        $this->client->request('POST', '/admin/configuration/shipping_configuration/'.$area->getId().'/zip-code-rules/delete', ['rule_id' => '1']);
+        $this->assertTheActionAnswersNotFound('/admin/configuration/shipping_configuration/'.$area->getId().'/zip-code-rules/delete', ['rule_id' => '1']);
+    }
 
-        self::assertSame(404, $this->client->getResponse()->getStatusCode());
+    /**
+     * Propel's InvalidArgumentException is a native one too: its message comes from the
+     * database layer and must not reach the merchant as the reason of a refusal.
+     */
+    public function testAnInvalidArgumentOfTheDatabaseLayerIsNotShownToTheMerchant(): void
+    {
+        $area = $this->area();
+        $failingWriter = new class {
+            public function add(int $areaId, string $pattern, bool $excluded, ?int $countryId): never
+            {
+                throw new PropelInvalidArgumentException('Internal detail of the database layer');
+            }
+        };
+        $this->controllerWith(new ServiceLocator(['writer' => static fn (): object => $failingWriter]));
+        $token = $this->token($area);
+
+        $this->client->request('POST', '/admin/configuration/shipping_configuration/'.$area->getId().'/zip-code-rules', ['pattern' => '20*', 'excluded' => '1', '_token' => $token]);
+
+        self::assertTrue($this->client->getResponse()->isRedirect());
+        $this->client->followRedirect();
+        $flash = $this->client->getCrawler()->filter('[data-testid="bo-flash-danger"]')->text();
+        self::assertStringContainsString('The postal code rule could not be saved. Try again later.', $flash);
+        self::assertStringNotContainsString('Internal detail', $flash);
+    }
+
+    /**
+     * A core that tells its refusals apart: a refused rule is told as the core words it.
+     */
+    public function testARefusedRuleIsToldInTheWordsOfTheCore(): void
+    {
+        $this->skipUnlessTheCoreTellsItsRefusalsApart();
+
+        $this->assertTheAddingFlashes($this->area(), new (self::INVALID_RULE)('A rule can only name a country of its zone.'), 'A rule can only name a country of its zone.');
+    }
+
+    /**
+     * Any other invalid argument is a fault: a general sentence, not its message.
+     */
+    public function testAnotherInvalidArgumentIsToldInAGeneralSentence(): void
+    {
+        $this->skipUnlessTheCoreTellsItsRefusalsApart();
+
+        $this->assertTheAddingFlashes($this->area(), new \InvalidArgumentException('Internal detail of a fault'), 'The postal code rule could not be saved. Try again later.');
+    }
+
+    /**
+     * The zone page the refusal leads back to shows the rule as it was typed, to be
+     * corrected rather than typed again, and only once.
+     */
+    public function testARefusedRuleComesBackInTheFormToBeCorrected(): void
+    {
+        if (!class_exists(self::RULE_QUERY)) {
+            self::markTestSkipped('The zone page shows no postal code card on a core without postal code rules.');
+        }
+
+        $area = $this->area();
+        $countryId = (int) CountryQuery::create()->findOneByIsoalpha2('FR')?->getId();
+        (new CountryArea())->setAreaId($area->getId())->setCountryId($countryId)->save($this->getPropelConnection());
+        $this->controllerWith(new ServiceLocator(['writer' => static fn (): object => new class {
+            public function add(int $areaId, string $pattern, bool $excluded, ?int $countryId): never
+            {
+                throw new \InvalidArgumentException('Refused');
+            }
+        }]));
+        $token = $this->token($area);
+
+        $this->client->request('POST', '/admin/configuration/shipping_configuration/'.$area->getId().'/zip-code-rules', [
+            'pattern' => '75020...75001 <b>',
+            'excluded' => '0',
+            'country_id' => (string) $countryId,
+            '_token' => $token,
+        ]);
+        $this->client->followRedirect();
+
+        $form = $this->client->getCrawler()->filter('[data-testid="shipping-configuration-zip-code-rule-form"]');
+        self::assertSame('75020...75001 <b>', $form->filter('#zip-code-rule-pattern')->attr('value'));
+        self::assertSame('0', $form->filter('#zip-code-rule-excluded option[selected]')->attr('value'));
+        self::assertSame((string) $countryId, $form->filter('#zip-code-rule-country option[selected]')->attr('value'));
+
+        $this->client->request('GET', '/admin/configuration/shipping_configuration/update/'.$area->getId());
+        $form = $this->client->getCrawler()->filter('[data-testid="shipping-configuration-zip-code-rule-form"]');
+        self::assertSame('', (string) $form->filter('#zip-code-rule-pattern')->attr('value'));
+        self::assertCount(0, $form->filter('option[selected]'));
+    }
+
+    private function skipUnlessTheCoreTellsItsRefusalsApart(): void
+    {
+        if (!class_exists(self::INVALID_RULE)) {
+            self::markTestSkipped('The core predates the refusal of its own for a postal code rule.');
+        }
+    }
+
+    private function assertTheAddingFlashes(Area $area, \InvalidArgumentException $refusal, string $expected): void
+    {
+        $writer = new class($refusal) {
+            public function __construct(private readonly \InvalidArgumentException $refusal)
+            {
+            }
+
+            public function add(int $areaId, string $pattern, bool $excluded, ?int $countryId): never
+            {
+                throw $this->refusal;
+            }
+        };
+        $this->controllerWith(new ServiceLocator(['writer' => static fn (): object => $writer]));
+        $token = $this->token($area);
+
+        $this->client->request('POST', '/admin/configuration/shipping_configuration/'.$area->getId().'/zip-code-rules', ['pattern' => '20*', 'excluded' => '1', '_token' => $token]);
+
+        self::assertTrue($this->client->getResponse()->isRedirect());
+        $this->client->followRedirect();
+        $flash = $this->client->getCrawler()->filter('[data-testid="bo-flash-danger"]')->text();
+        self::assertStringContainsString($expected, $flash);
+        self::assertStringNotContainsString('Internal detail', $flash);
+    }
+
+    /**
+     * The 404 comes from the action, which asked for the writer and threw: not from a router
+     * that found no route.
+     *
+     * @param array<string, string> $body
+     */
+    private function assertTheActionAnswersNotFound(string $path, array $body): void
+    {
+        $this->client->catchExceptions(false);
+
+        try {
+            $this->client->request('POST', $path, $body);
+            self::fail('The action answered instead of throwing.');
+        } catch (NotFoundHttpException $exception) {
+            self::assertSame('This version of Thelia has no postal code rules.', $exception->getMessage());
+        } finally {
+            $this->client->catchExceptions(true);
+        }
+
+        self::assertSame(['writer'], $this->asked->getArrayCopy(), 'The controller asked for the writer.');
+    }
+
+    private function controllerWith(ContainerInterface $locator): void
+    {
+        $spy = new class($locator, $this->asked) implements ContainerInterface {
+            public function __construct(
+                private readonly ContainerInterface $locator,
+                private readonly \ArrayObject $asked,
+            ) {
+            }
+
+            public function get(string $id): mixed
+            {
+                return $this->locator->get($id);
+            }
+
+            public function has(string $id): bool
+            {
+                $this->asked->append($id);
+
+                return $this->locator->has($id);
+            }
+        };
+
+        static::getContainer()->set(AreaZipCodeRuleController::class, new AreaZipCodeRuleController(
+            $this->getService(AdminAccessChecker::class),
+            $spy,
+            $this->getService(UrlGeneratorInterface::class),
+            $this->getService(TranslatorInterface::class),
+            $this->getService(TokenProvider::class),
+            $this->getService(AdminLogger::class),
+            $this->getService(LoggerInterface::class),
+            $this->getService(ZipCodeRuleDraft::class),
+        ));
+    }
+
+    private function token(Area $area): string
+    {
+        $html = (string) $this->client->request('GET', '/admin/configuration/shipping_configuration/update/'.$area->getId())->html();
+        self::assertSame(1, preg_match('/<meta name="bo-token" content="([^"]+)"/', $html, $matches) ?: preg_match('/name="_token" value="([^"]+)"/', $html, $matches), 'The zone page renders the back-office token.');
+
+        return $matches[1];
     }
 
     private function area(): Area
@@ -107,12 +292,5 @@ final class ZipCodeRulesOnAnOlderCoreTest extends WebIntegrationTestCase
         $area->save($this->getPropelConnection());
 
         return $area;
-    }
-
-    private function assertNoRuleWritten(Area $area): void
-    {
-        if (class_exists(self::RULE_QUERY)) {
-            self::assertSame(0, (self::RULE_QUERY)::create()->filterByAreaId($area->getId())->count());
-        }
     }
 }
