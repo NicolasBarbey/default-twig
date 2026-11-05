@@ -3372,4 +3372,11 @@ return [
     'Reload the grid' => 'Recharger la grille',
     'Actions of %combination%' => 'Actions de %combination%',
     'The price could not be converted with the tax rule. Type the price without taxes, or try again.' => 'Le prix n\'a pas pu être converti avec la règle de taxe. Saisissez le prix hors taxes, ou réessayez.',
+    'Newsletter sign-up is on' => 'L\'inscription à la newsletter est activée',
+    'Newsletter sign-up is off' => 'L\'inscription à la newsletter est désactivée',
+    'Turn newsletter sign-up on' => 'Activer l\'inscription à la newsletter',
+    'Turn newsletter sign-up off' => 'Désactiver l\'inscription à la newsletter',
+    'The shop no longer offers newsletter sign-up. Existing subscribers are kept.' => 'La boutique ne propose plus l\'inscription à la newsletter. Les abonnés existants sont conservés.',
+    'Newsletter sign-up switch' => 'Interrupteur d\'inscription à la newsletter',
+    'The state asked for the newsletter is not valid.' => 'L\'état demandé pour la newsletter n\'est pas valide.',
 ];
