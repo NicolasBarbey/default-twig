@@ -361,35 +361,55 @@
         {% endif %}
 
         <div class="mt-3">
-            {% if is_granted('UPDATE', 'admin.order') %}
-                <div class="bo-bulk-toolbar card border-0 shadow-sm mb-3" data-bo-bulk-select-target="toolbar" hidden data-testid="order-bulk-toolbar">
-                    <form method="post" action="{{ bulk_status_url }}" class="card-body d-flex flex-wrap align-items-center gap-2 py-2"
-                          data-bo-bulk-select-target="form" data-testid="order-bulk-status-form">
+            <div class="d-flex justify-content-end mb-2">
+                {#- The whole filter, not the page: a picking slip is what the warehouse asks for the day's orders. -#}
+                <form method="post" action="{{ picking_slip_filter_url }}" data-testid="order-picking-slip-filter-form">
+                    <input type="hidden" name="_token" value="{{ assignToken() }}">
+                    <input type="hidden" name="scope" value="filter">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary" {{ total > 0 ? '' : 'disabled' }} data-testid="order-picking-slip-filter-submit">
+                        <i class="bi bi-clipboard-check" aria-hidden="true"></i>
+                        {{ 'Picking slip of the %count% orders matching the filters'|trans({'%count%': total}) }}
+                    </button>
+                </form>
+            </div>
+
+            <div class="bo-bulk-toolbar card border-0 shadow-sm mb-3" data-bo-bulk-select-target="toolbar" hidden data-testid="order-bulk-toolbar">
+                <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
+                    <span class="badge text-bg-primary" data-testid="order-bulk-count">
+                        <span data-bo-bulk-select-target="count">0</span>
+                        {{ 'selected'|trans }}
+                    </span>
+                    {% if is_granted('UPDATE', 'admin.order') %}
+                        <form method="post" action="{{ bulk_status_url }}" class="d-flex flex-wrap align-items-center gap-2"
+                              data-bo-bulk-select-target="form" data-testid="order-bulk-status-form">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                            <label class="visually-hidden" for="order-bulk-status">{{ 'Move the selected orders to'|trans }}</label>
+                            {#- Each target names the statuses it is within reach of, so the
+                                browser can drop the ones no selected order could take. The
+                                server partitions again on submit whatever the browser did. -#}
+                            <select id="order-bulk-status" name="status_id" class="form-select form-select-sm w-auto" required
+                                    data-bo-bulk-select-target="restrict" data-testid="order-bulk-status-select">
+                                <option value="">{{ 'Move the selected orders to'|trans }}</option>
+                                {% for status in bulk_statuses %}
+                                    <option value="{{ status.id }}" data-bulk-from="{{ status.from_status_ids|join(',') }}">{{ status.title }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary" data-testid="order-bulk-status-submit">{{ 'Apply'|trans }}</button>
+                            <span class="small text-muted">{{ 'Orders whose current status does not allow the transition are skipped and named.'|trans }}</span>
+                            <span class="small text-danger" data-bo-bulk-select-target="restrictHint" hidden data-testid="order-bulk-no-target">
+                                {{ 'No status can be reached from every order selected: narrow the selection.'|trans }}
+                            </span>
+                        </form>
+                    {% endif %}
+                    <form method="post" action="{{ picking_slip_url }}" data-bo-bulk-select-target="form" data-testid="order-picking-slip-selection-form">
                         <input type="hidden" name="_token" value="{{ assignToken() }}">
-                        <span class="badge text-bg-primary" data-testid="order-bulk-count">
-                            <span data-bo-bulk-select-target="count">0</span>
-                            {{ 'selected'|trans }}
-                        </span>
-                        <label class="visually-hidden" for="order-bulk-status">{{ 'Move the selected orders to'|trans }}</label>
-                        {#- Each target names the statuses it is within reach of, so the
-                            browser can drop the ones no selected order could take. The
-                            server partitions again on submit whatever the browser did. -#}
-                        <select id="order-bulk-status" name="status_id" class="form-select form-select-sm w-auto" required
-                                data-bo-bulk-select-target="restrict" data-testid="order-bulk-status-select">
-                            <option value="">{{ 'Move the selected orders to'|trans }}</option>
-                            {% for status in bulk_statuses %}
-                                <option value="{{ status.id }}" data-bulk-from="{{ status.from_status_ids|join(',') }}">{{ status.title }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-sm btn-primary" data-testid="order-bulk-status-submit">{{ 'Apply'|trans }}</button>
-                        <span class="small text-muted">{{ 'Orders whose current status does not allow the transition are skipped and named.'|trans }}</span>
-                        <span class="small text-danger" data-bo-bulk-select-target="restrictHint" hidden data-testid="order-bulk-no-target">
-                            {{ 'No status can be reached from every order selected: narrow the selection.'|trans }}
-                        </span>
-                        <button type="button" class="btn btn-sm btn-link" data-action="bo-bulk-select#clear" data-testid="order-bulk-clear">{{ 'Clear selection'|trans }}</button>
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" data-testid="order-picking-slip-selection-submit">
+                            <i class="bi bi-clipboard-check" aria-hidden="true"></i> {{ 'Picking slip of the selection'|trans }}
+                        </button>
                     </form>
+                    <button type="button" class="btn btn-sm btn-link" data-action="bo-bulk-select#clear" data-testid="order-bulk-clear">{{ 'Clear selection'|trans }}</button>
                 </div>
-            {% endif %}
+            </div>
 
             {#- By what the list is read for: the total comes right after the customer, the number of
                 lines under it; the sale unit sits under the status, and is empty for a national order
@@ -402,9 +422,8 @@
                 column_html('payment_delivery_html', ('Payment'|trans) ~ ' / ' ~ ('Delivery'|trans), visibleFrom: 'xl'),
                 column_actions('_actions', 'Actions'|trans, labelHidden: true),
             ] %}
-            {% if is_granted('UPDATE', 'admin.order') %}
-                {% set order_columns = [column_select('_select', 'Select this order'|trans, 'id', 'ref', stateKey: 'status_id')]|merge(order_columns) %}
-            {% endif %}
+            {#- Selecting needs no right to change orders: a viewer prints the picking slip of a selection. -#}
+            {% set order_columns = [column_select('_select', 'Select this order'|trans, 'id', 'ref', stateKey: 'status_id')]|merge(order_columns) %}
 
             {{ component('BoDataTable', {
                 id: 'orders',

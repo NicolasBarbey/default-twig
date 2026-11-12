@@ -39,12 +39,14 @@ use BackOfficeDefaultTwigBundle\Service\Order\OrderStatusChangeContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Order\PaymentActionAmount;
 use BackOfficeDefaultTwigBundle\Service\OrderReturn\OrderReturnContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Pdf\OrderPdfRenderer;
+use BackOfficeDefaultTwigBundle\Service\Pdf\OrderPickingSlipRenderer;
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
@@ -63,6 +65,7 @@ use Thelia\Domain\Payment\Exception\CancellationNeedsCaptureRightException;
 use Thelia\Domain\Payment\Exception\CancellationWaitsForCaptureException;
 use Thelia\Domain\Payment\Exception\PaymentException;
 use Thelia\Domain\Payment\Service\PaymentAmount;
+use Thelia\Domain\Order\Exception\PickingSlipException;
 use Thelia\Log\Tlog;
 use Thelia\Messenger\JobFailureMessage;
 use Thelia\Model\CountryQuery;
@@ -85,6 +88,7 @@ final class OrderController
     private const DETAIL_ROUTE = 'admin.order.update.view';
     private const LIST_TEMPLATE = '@BackOfficeDefaultTwig/order/list.html.twig';
     private const DETAIL_TEMPLATE = '@BackOfficeDefaultTwig/order/detail.html.twig';
+    private const PICKING_SLIP_BATCH_ROUTE = 'admin.order.picking_slip.batch';
     private const PAGE_SIZE = 25;
     // The line types of the bundles, as strings: the constants do not exist on a core without them.
     private const BUNDLE_LINE_TYPE = 'bundle';
@@ -118,6 +122,7 @@ final class OrderController
         private readonly OrderEditContextBuilder $editContext,
         private readonly OrderPaymentContextBuilder $paymentContextBuilder,
         private readonly CompanyLinks $companyLinks,
+        private readonly OrderPickingSlipRenderer $pickingSlipRenderer,
     ) {
     }
 
@@ -139,6 +144,8 @@ final class OrderController
             'currency_code' => (string) Currency::getDefaultCurrency()->getCode(),
             'bulk_statuses' => $this->bulkStatusPlanner->targets($locale),
             'bulk_status_url' => $this->urls->generate('admin.order.list.update.status'),
+            'picking_slip_url' => $this->urls->generate(self::PICKING_SLIP_BATCH_ROUTE),
+            'picking_slip_filter_url' => $this->urls->generate(self::PICKING_SLIP_BATCH_ROUTE, $filters->toQueryParams()),
             'total' => $paginated['total'],
             'pages' => $paginated['lastPage'],
             'current_page' => min($page, $paginated['lastPage']),
@@ -203,6 +210,8 @@ final class OrderController
                 'invoice_download_url' => $this->urls->generate('admin.order.pdf.invoice', ['order_id' => $order_id, 'browser' => 0]),
                 'delivery_url' => $this->urls->generate('admin.order.pdf.delivery', ['order_id' => $order_id, 'browser' => 1]),
                 'delivery_download_url' => $this->urls->generate('admin.order.pdf.delivery', ['order_id' => $order_id, 'browser' => 0]),
+                'picking_slip_url' => $this->urls->generate('admin.order.pdf.preparation', ['order_id' => $order_id, 'browser' => 1]),
+                'picking_slip_download_url' => $this->urls->generate('admin.order.pdf.preparation', ['order_id' => $order_id, 'browser' => 0]),
                 'token' => $this->tokens->assignToken(),
                 'prev_url' => $navigation['previous'] !== null ? $this->urls->generate('admin.order.update.view', ['order_id' => $navigation['previous']]) : null,
                 'next_url' => $navigation['next'] !== null ? $this->urls->generate('admin.order.update.view', ['order_id' => $navigation['next']]) : null,
@@ -671,6 +680,88 @@ final class OrderController
     public function pdfDelivery(int $order_id, int $browser): Response
     {
         return $this->renderOrderPdf($order_id, OrderPdfRenderer::KIND_DELIVERY, 1 === $browser);
+    }
+
+    #[Route('/admin/order/pdf/preparation/{order_id}/{browser}', name: 'admin.order.pdf.preparation', methods: ['GET'], requirements: ['order_id' => '\d+', 'browser' => '\d+'])]
+    public function pdfPickingSlip(int $order_id, int $browser): Response
+    {
+        if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::VIEW)) {
+            return $denied;
+        }
+
+        // An order of another sale unit does not exist for this administrator.
+        if (null === $this->reachableOrder($order_id)) {
+            throw new NotFoundHttpException(\sprintf('Order %d not found', $order_id));
+        }
+
+        try {
+            return $this->pickingSlipRenderer->respond([$order_id], 1 === $browser);
+        } catch (PickingSlipException $exception) {
+            $this->flash('danger', $this->translator->trans('The picking slip could not be produced: %reason%', ['%reason%' => $exception->getMessage()]));
+
+            return new RedirectResponse($this->urls->generate(self::DETAIL_ROUTE, ['order_id' => $order_id]));
+        }
+    }
+
+    /**
+     * One PDF for the orders ticked (`order_ids[]`) or, with `scope=filter`, for every order the filters
+     * of the query string match, whatever the page on screen.
+     */
+    #[Route('/admin/orders/picking-slip', name: self::PICKING_SLIP_BATCH_ROUTE, methods: ['POST'])]
+    public function pickingSlipBatch(Request $request): Response
+    {
+        if ($denied = $this->access->check(self::RESOURCE, [], AccessManager::VIEW)) {
+            return $denied;
+        }
+
+        $filters = OrderFilters::fromRequest($request);
+        $redirect = new RedirectResponse($this->urls->generate(self::LIST_ROUTE, $filters->toQueryParams()));
+
+        try {
+            $this->tokens->checkToken((string) $request->request->get('_token', ''));
+        } catch (TokenAuthenticationException) {
+            $this->flash('danger', $this->translator->trans('Invalid security token, please try again.'));
+
+            return $redirect;
+        }
+
+        $limit = $this->pickingSlipRenderer->limit();
+
+        if ('filter' === $request->request->get('scope')) {
+            // One more than accepted tells that there are too many, without reading them all.
+            $orderIds = $this->orderRepository->findIdsMatching($filters, $limit + 1);
+
+            if (\count($orderIds) > $limit) {
+                $this->flash('warning', $this->translator->trans('The filters match more than %limit% orders, which is the most a picking slip holds. Narrow the filters down.', ['%limit%' => $limit]));
+
+                return $redirect;
+            }
+        } else {
+            $selected = array_values(array_unique(array_filter(array_map('intval', $request->request->all('order_ids')), static fn (int $id): bool => $id > 0)));
+
+            if (\count($selected) > $limit) {
+                $this->flash('warning', $this->translator->trans('%count% orders are selected, and a picking slip holds %limit% at most. Select fewer orders.', ['%count%' => \count($selected), '%limit%' => $limit]));
+
+                return $redirect;
+            }
+
+            // An order out of the reach of the administrator is dropped as an order that does not exist.
+            $orderIds = $this->orderRepository->findReachableIds($selected);
+        }
+
+        if ([] === $orderIds) {
+            $this->flash('warning', $this->translator->trans('No order to print: select at least one order, or change the filters.'));
+
+            return $redirect;
+        }
+
+        try {
+            return $this->pickingSlipRenderer->respond($orderIds, false);
+        } catch (PickingSlipException $exception) {
+            $this->flash('danger', $this->translator->trans('The picking slip could not be produced: %reason%', ['%reason%' => $exception->getMessage()]));
+
+            return $redirect;
+        }
     }
 
     private function renderOrderPdf(int $orderId, string $kind, bool $browser): Response

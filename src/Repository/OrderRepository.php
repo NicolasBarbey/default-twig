@@ -172,6 +172,49 @@ final class OrderRepository
         return iterator_to_array($query->find(), false);
     }
 
+    /**
+     * The ids among the given ones that exist and that the administrator reaches, in the order asked.
+     *
+     * @param list<int> $orderIds
+     *
+     * @return list<int>
+     */
+    public function findReachableIds(array $orderIds): array
+    {
+        if ($orderIds === []) {
+            return [];
+        }
+
+        $query = OrderQuery::create()->filterById($orderIds, Criteria::IN);
+        $this->access->restrict($query);
+
+        $reachable = array_flip(array_map('intval', $query->select(['Id'])->find()->toArray()));
+
+        return array_values(array_filter($orderIds, static fn (int $id): bool => isset($reachable[$id])));
+    }
+
+    /**
+     * The ids of every order the filters match, not only the page on screen, in the order of the list.
+     * At most `$limit` of them are read: a caller that wants to know whether there are more asks for one
+     * more than it accepts.
+     *
+     * @return list<int>
+     */
+    public function findIdsMatching(OrderFilters $filters, int $limit): array
+    {
+        $sortColumn = self::SORT_FIELDS[$filters->sort] ?? self::SORT_FIELDS[OrderFilters::DEFAULT_SORT];
+        $sortDirection = $filters->direction === 'asc' ? Criteria::ASC : Criteria::DESC;
+
+        $ids = $this->buildFilteredQuery($filters)
+            ->orderBy('order.'.$sortColumn, $sortDirection)
+            ->orderBy('order.id', $sortDirection)
+            ->limit($limit)
+            ->select(['Id'])
+            ->find();
+
+        return array_map('intval', $ids->toArray());
+    }
+
     public function countItemsForOrder(int $orderId): int
     {
         return OrderProductQuery::create()->filterByOrderId($orderId)->count();

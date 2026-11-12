@@ -93,6 +93,17 @@
                         <i class="bi bi-download" aria-hidden="true"></i>
                     </a>
                 </div>
+                <div class="btn-group" data-controller="bo-print-iframe" data-bo-print-iframe-url-value="{{ picking_slip_url }}" data-bo-print-iframe-name-value="order-picking-slip">
+                    <a href="{{ picking_slip_url }}" target="_blank" class="btn btn-outline-secondary" data-testid="order-picking-slip-link" title="{{ 'View picking slip as PDF'|trans }}">
+                        <i class="bi bi-file-pdf" aria-hidden="true"></i> {{ 'Picking slip'|trans }}
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary" data-action="bo-print-iframe#print" data-testid="order-picking-slip-print" title="{{ 'Print picking slip'|trans }}">
+                        <i class="bi bi-printer" aria-hidden="true"></i>
+                    </button>
+                    <a href="{{ picking_slip_download_url }}" class="btn btn-outline-secondary" data-testid="order-picking-slip-download" title="{{ 'Download picking slip as PDF'|trans }}">
+                        <i class="bi bi-download" aria-hidden="true"></i>
+                    </a>
+                </div>
                 {% if cancel_status_id > 0 and not is_canceled and can_cancel %}
                     <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#order-cancel-modal" data-testid="order-cancel-btn">
                         <i class="bi bi-x-circle" aria-hidden="true"></i> {{ 'Cancel order'|trans }}
