@@ -72,6 +72,17 @@ final class OrderListLayoutTest extends WebIntegrationTestCase
         self::assertSame('Actions', trim($actions->filter('.visually-hidden')->text('')), 'The title of the actions is read out, out of sight: the single button of the column speaks for itself.');
     }
 
+    public function testTheTotalOffersNoSortAndALinkAskingForItFallsBackOnTheDefaultOne(): void
+    {
+        $crawler = $this->client->request('GET', '/admin/orders');
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('[data-testid="datatable-orders-sort-amount"]'), 'The orders were sorted by id under the title of the total.');
+
+        $crawler = $this->client->request('GET', '/admin/orders?order=amount');
+        self::assertResponseIsSuccessful();
+        self::assertCount(1, $crawler->filter('[data-testid="datatable-orders-sort-created_at"] .bi-sort-down'), 'The newest orders first, as without a sort.');
+    }
+
     public function testTheTotalShowsTheNumberOfLinesUnderneathAndTheActionsSitBehindOneButton(): void
     {
         $order = $this->factory->order($this->factory->customer($this->factory->customerTitle()), ['statusCode' => OrderStatus::CODE_PAID]);

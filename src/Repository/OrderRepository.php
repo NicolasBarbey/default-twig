@@ -52,7 +52,6 @@ final class OrderRepository
         'id' => 'id',
         'ref' => 'ref',
         'created_at' => 'createdAt',
-        'amount' => 'id', // total is computed; we fall back to id (insertion order ≈ creation order).
     ];
 
     /**

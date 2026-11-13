@@ -397,7 +397,7 @@
             {% set order_columns = [
                 column_html('order_html', 'Order'|trans, 'start', 'created_at'),
                 column_html('customer_html', 'Customer'|trans, visibleFrom: 'lg'),
-                column_html('total_html', 'Total'|trans, 'end', 'amount'),
+                column_html('total_html', 'Total'|trans, 'end'),
                 column_badge('status_code', 'Status'|trans, {}, 'start', 'status', 'status_color', noteKey: 'sale_unit'),
                 column_html('payment_delivery_html', ('Payment'|trans) ~ ' / ' ~ ('Delivery'|trans), visibleFrom: 'xl'),
                 column_actions('_actions', 'Actions'|trans, labelHidden: true),

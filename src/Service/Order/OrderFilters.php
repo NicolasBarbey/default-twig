@@ -34,7 +34,9 @@ final readonly class OrderFilters
     public const DEFAULT_SORT = 'created_at';
     public const DEFAULT_DIRECTION = 'desc';
     public const ALLOWED_DIRECTIONS = ['asc', 'desc'];
-    public const ALLOWED_SORTS = ['id', 'ref', 'created_at', 'amount'];
+    // No sort on the amount: the total is computed per order, and sorting a whole shop on it
+    // is a costly query. A link still asking for it falls back on the default sort.
+    public const ALLOWED_SORTS = ['id', 'ref', 'created_at'];
 
     public const TRISTATE_WITH = 'with';
     public const TRISTATE_WITHOUT = 'without';
