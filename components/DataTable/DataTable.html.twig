@@ -57,6 +57,9 @@
     {% endif %}
 
     <div class="table-responsive" role="region" tabindex="0"{% if caption %} aria-label="{{ caption }}"{% endif %}>
+        {#- The columns a module adds through the table-header / table-row hooks come before the
+            actions, as the Smarty lists had them, and the actions stay the last column. -#}
+        {%- set hooked_columns_before = columns|filter(column => column.kind.value == 'actions')|map(column => column.key)|first|default(null) -%}
         <table class="table table-striped table-hover align-middle mb-0" data-testid="datatable-{{ id }}-table">
             <thead class="table-light">
                 <tr>
@@ -69,6 +72,9 @@
                         </th>
                     {% endif %}
                     {% for column in columns %}
+                        {% if column.key is same as(hooked_columns_before) %}
+                            {{ safe_hook(extraColumnsHeaderHook ?? ((hook ?: id) ~ '.table-header'), { table_id: id }|merge(headerHookContext)) }}
+                        {% endif %}
                         <th scope="col" class="text-{{ column.cellAlign }}{{ column.kind.value == 'actions' ? ' datatable-sticky-actions' : '' }}{{ column.options.wrap|default(false) or column.options.wrap_head|default(false) ? ' bo-datatable__wrap-head' : '' }}{{ column.responsiveClass() }}{{ column.visibleFrom != 'always' ? ' d-none d-' ~ column.visibleFrom ~ '-table-cell' : '' }}">
                             {%- if column.kind.value == 'select' -%}
                                 <input type="checkbox" class="form-check-input"
@@ -93,7 +99,9 @@
                             {%- endif -%}
                         </th>
                     {% endfor %}
-                    {{ safe_hook(extraColumnsHeaderHook ?? ((hook ?: id) ~ '.table-header'), { table_id: id }|merge(headerHookContext)) }}
+                    {% if hooked_columns_before is null %}
+                        {{ safe_hook(extraColumnsHeaderHook ?? ((hook ?: id) ~ '.table-header'), { table_id: id }|merge(headerHookContext)) }}
+                    {% endif %}
                 </tr>
             </thead>
             <tbody{% for attr, value in tbodyAttributes %} {{ attr }}="{{ value }}"{% endfor %}>
@@ -119,7 +127,14 @@
                                 </button>
                             </td>
                         {% endif %}
+                        {% set row_hook_context = { table_id: id, row: row, row_id: row.id|default(null) }|merge(rowHookContext) %}
+                        {% for argName, rowKey in rowHookArgs %}
+                            {% set row_hook_context = row_hook_context|merge({ (argName): row[rowKey]|default(null) }) %}
+                        {% endfor %}
                         {% for column in columns %}
+                            {% if column.key is same as(hooked_columns_before) %}
+                                {{ safe_hook(extraColumnsHook ?? ((hook ?: id) ~ '.table-row'), row_hook_context) }}
+                            {% endif %}
                             <td class="text-{{ column.cellAlign }}{{ column.kind.value == 'actions' ? ' datatable-sticky-actions' : '' }}{{ column.responsiveClass() }}{{ column.visibleFrom != 'always' ? ' d-none d-' ~ column.visibleFrom ~ '-table-cell' : '' }}" data-testid="datatable-{{ id }}-cell-{{ column.key }}">
                                 {% include '@BackOfficeDefaultTwig/components/DataTable/cells/' ~ column.kind.value ~ '.html.twig' with {
                                     column: column,
@@ -128,11 +143,9 @@
                                 } only %}
                             </td>
                         {% endfor %}
-                        {% set row_hook_context = { table_id: id, row: row, row_id: row.id|default(null) }|merge(rowHookContext) %}
-                        {% for argName, rowKey in rowHookArgs %}
-                            {% set row_hook_context = row_hook_context|merge({ (argName): row[rowKey]|default(null) }) %}
-                        {% endfor %}
-                        {{ safe_hook(extraColumnsHook ?? ((hook ?: id) ~ '.table-row'), row_hook_context) }}
+                        {% if hooked_columns_before is null %}
+                            {{ safe_hook(extraColumnsHook ?? ((hook ?: id) ~ '.table-row'), row_hook_context) }}
+                        {% endif %}
                     </tr>
                     {% if maxBp %}
                         {#- d-{{ maxBp }}-none mirrors the toggle button/cell above: without it, a
