@@ -391,19 +391,17 @@
                 </div>
             {% endif %}
 
+            {#- By what the list is read for: the total comes right after the customer, the number of
+                lines under it; the sale unit sits under the status, and is empty for a national order
+                or on a single shop. Payment and delivery come last: they give way first on a narrow screen. -#}
             {% set order_columns = [
                 column_html('order_html', 'Order'|trans, 'start', 'created_at'),
                 column_html('customer_html', 'Customer'|trans, visibleFrom: 'lg'),
-                column_html('items_html', 'Items'|trans, 'center', visibleFrom: 'lg'),
-                column_badge('status_code', 'Status'|trans, {}, 'start', 'status', 'status_color'),
+                column_html('total_html', 'Total'|trans, 'end', 'amount'),
+                column_badge('status_code', 'Status'|trans, {}, 'start', 'status', 'status_color', noteKey: 'sale_unit'),
                 column_html('payment_delivery_html', ('Payment'|trans) ~ ' / ' ~ ('Delivery'|trans), visibleFrom: 'xl'),
-                column_text('amount', 'Total'|trans, 'end', 'amount', leftToRight: true),
                 column_actions('_actions', 'Actions'|trans),
             ] %}
-            {% if filters.sale_unit_options %}
-                {#- Right after the status, where it is read without scrolling; absent from a single shop. -#}
-                {% set order_columns = order_columns|slice(0, 4)|merge([column_text('sale_unit', 'Sale unit'|trans, visibleFrom: 'lg')])|merge(order_columns|slice(4)) %}
-            {% endif %}
             {% if is_granted('UPDATE', 'admin.order') %}
                 {% set order_columns = [column_select('_select', 'Select this order'|trans, 'id', 'ref', stateKey: 'status_id')]|merge(order_columns) %}
             {% endif %}

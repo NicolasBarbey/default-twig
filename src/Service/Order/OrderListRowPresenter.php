@@ -147,6 +147,9 @@ final readonly class OrderListRowPresenter
             && (OrderStatus::CODE_AWAITING_CAPTURE !== $status?->getCode()
                 || $this->securityContext->isGranted(['ADMIN'], [AdminResources::ORDER_PAYMENT_CAPTURE], [], [AccessManager::CREATE]));
 
+        $items = $this->renderItems($orderId, $itemCounts, $preorderOrderIds, $itemLines);
+        $amount = $this->formatAmount($order, $totals, $locale);
+
         return [
             'id' => $orderId,
             'ref' => (string) $order->getRef(),
@@ -162,10 +165,11 @@ final readonly class OrderListRowPresenter
             'status_code' => (string) ($status?->getCode() ?? ''),
             'status_color' => (string) ($status?->getColor() ?: self::FALLBACK_STATUS_COLOR),
             'customer_html' => $this->renderCustomer($order, $locale),
-            'items_html' => $this->renderItems($orderId, $itemCounts, $preorderOrderIds, $itemLines),
+            'items_html' => $items,
             'payment_delivery_html' => $this->renderModule($paymentTitle, 'bi-credit-card')
                 .'<div class="mt-1">'.$this->renderDelivery($order, $deliveryTitle).'</div>',
-            'amount' => $this->formatAmount($order, $totals, $locale),
+            'amount' => $amount,
+            'total_html' => $this->renderTotal($amount, $items),
             'sale_unit' => $this->saleUnitTitle($order, $saleUnitTitles, $locale),
             'is_urgent' => $isUrgent,
             '_row_class' => $isUrgent ? 'bo-order-row--urgent' : '',
@@ -238,11 +242,25 @@ final readonly class OrderListRowPresenter
         $flag = CountryFlag::named($country['iso'] ?? null, $country['title'] ?? '');
 
         return \sprintf(
-            '<div class="bo-order-customer"><div class="fw-semibold">%s%s %s</div><div class="text-muted small text-truncate">%s</div></div>',
+            '<div class="bo-order-customer bo-order-customer--compact"><div class="fw-semibold">%s%s %s</div><div class="text-muted small text-truncate" title="%s">%s</div></div>',
             $flag,
             $firstname,
             $lastname,
             $email,
+            $email,
+        );
+    }
+
+    /**
+     * The amount of the order, with its number of lines underneath: the figure the list
+     * is read for comes first, the lines no longer take a column of their own.
+     */
+    private function renderTotal(string $amount, string $items): string
+    {
+        return \sprintf(
+            '<div class="fw-semibold"><span dir="ltr">%s</span></div><div class="small">%s</div>',
+            htmlspecialchars($amount),
+            $items,
         );
     }
 
@@ -264,16 +282,16 @@ final readonly class OrderListRowPresenter
             ['%count%' => $count],
         );
 
-        $content = '<i class="bi bi-box-seam me-1" aria-hidden="true"></i>'.htmlspecialchars($label);
+        $content = htmlspecialchars($label);
 
         $lines = \array_key_exists($orderId, $itemLines)
             ? $itemLines[$orderId]
             : ($this->orderRepository->findLinesByOrder([$orderId])[$orderId] ?? []);
         // Plain text, one line each: the tooltip keeps the line breaks without HTML.
         $items = $lines === []
-            ? '<span class="badge text-bg-light bo-order-items">'.$content.'</span>'
+            ? '<span class="text-body-secondary bo-order-items">'.$content.'</span>'
             : \sprintf(
-                '<span class="badge text-bg-light bo-order-items" tabindex="0" data-bs-toggle="tooltip" data-bs-custom-class="bo-order-items-tooltip" title="%s">%s</span>',
+                '<span class="text-body-secondary bo-order-items" tabindex="0" data-bs-toggle="tooltip" data-bs-custom-class="bo-order-items-tooltip" title="%s">%s</span>',
                 htmlspecialchars($this->describeLines($lines)),
                 $content,
             );
@@ -283,9 +301,9 @@ final readonly class OrderListRowPresenter
         }
 
         return $items.\sprintf(
-            ' <span class="badge text-bg-warning bo-order-preorder" data-testid="bo-order-preorder-badge"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>%s</span>',
+            '<div class="mt-1"><span class="badge text-bg-warning bo-order-preorder" data-testid="bo-order-preorder-badge"><i class="bi bi-hourglass-split me-1" aria-hidden="true"></i>%s</span>',
             htmlspecialchars($this->translator->trans('Preorder')),
-        );
+        ).'</div>';
     }
 
     /**
@@ -407,6 +425,9 @@ final readonly class OrderListRowPresenter
     }
 
     /**
+     * Behind a single button at the end of the row. The reference opens the order too; the
+     * menu keeps that entry for whoever looked for it among the actions.
+     *
      * @return list<RowAction>
      */
     private function buildActions(int $orderId, bool $canCancel, string $orderRef, bool $hasInvoice): array
@@ -418,6 +439,7 @@ final readonly class OrderListRowPresenter
                 href: $this->urls->generate(self::DETAIL_ROUTE, ['order_id' => $orderId]),
                 grantedAttribute: AccessManager::VIEW,
                 grantedSubject: self::RESOURCE,
+                inMenu: true,
             ),
             new RowAction(
                 kind: 'delivery-slip',
@@ -425,7 +447,7 @@ final readonly class OrderListRowPresenter
                 href: $this->urls->generate(self::DELIVERY_PDF_ROUTE, ['order_id' => $orderId, 'browser' => 1]),
                 grantedAttribute: AccessManager::VIEW,
                 grantedSubject: self::RESOURCE,
-                inlineFrom: 'md',
+                inMenu: true,
             ),
         ];
 
@@ -436,7 +458,7 @@ final readonly class OrderListRowPresenter
                 href: $this->urls->generate(self::INVOICE_PDF_ROUTE, ['order_id' => $orderId, 'browser' => 1]),
                 grantedAttribute: AccessManager::VIEW,
                 grantedSubject: self::RESOURCE,
-                inlineFrom: 'md',
+                inMenu: true,
             )]);
         }
 
@@ -452,7 +474,7 @@ final readonly class OrderListRowPresenter
                     'order-ref' => $orderRef,
                     'order-cancel-url' => $this->urls->generate(self::CANCEL_FROM_LIST_ROUTE, ['order_id' => $orderId]),
                 ],
-                inlineFrom: 'md',
+                inMenu: true,
             );
         }
 

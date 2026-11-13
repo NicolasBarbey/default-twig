@@ -380,6 +380,14 @@ final class SaleUnitBackOfficeTest extends WebIntegrationTestCase
         $refs = $crawler->filter('[data-testid="bo-order-ref-link"]')->each(static fn ($link): string => trim($link->text()));
         self::assertContains($northOrder->getRef(), $refs);
         self::assertNotContains($southOrder->getRef(), $refs, 'The filter only keeps the orders of its sale unit.');
+        $row = $crawler->filter('[data-testid="datatable-orders-row"][data-row-id="'.$northOrder->getId().'"]');
+        self::assertSame('north title', trim($row->filter('[data-testid="datatable-orders-cell-status_code"] [data-testid="datatable-badge-note"]')->text('')), 'The sale unit of the order sits under its status.');
+
+        $nationalOrder = $this->factory->order();
+        $crawler = $this->client->request('GET', '/admin/orders?q='.urlencode((string) $nationalOrder->getRef()));
+        $row = $crawler->filter('[data-testid="datatable-orders-row"][data-row-id="'.$nationalOrder->getId().'"]');
+        self::assertCount(1, $row);
+        self::assertCount(0, $row->filter('[data-testid="datatable-badge-note"]'), 'A national order has nothing under its status.');
 
         $crawler = $this->client->request('GET', '/admin/order/update/'.$northOrder->getId());
         self::assertStringContainsString('north title', $crawler->filter('[data-testid="order-sale-unit"]')->text(''));
