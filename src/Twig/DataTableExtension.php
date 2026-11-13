@@ -51,9 +51,9 @@ final class DataTableExtension extends AbstractExtension
      * push every other column out of sight. $wrapHead only breaks the header, for a short
      * value under a long title.
      */
-    public function textColumn(string $key, string $label, string $cellAlign = 'start', ?string $sortKey = null, ?string $hideBelow = null, string $visibleFrom = 'always', bool $leftToRight = false, bool $wrap = false, bool $wrapHead = false): Column
+    public function textColumn(string $key, string $label, string $cellAlign = 'start', ?string $sortKey = null, ?string $hideBelow = null, string $visibleFrom = 'always', bool $leftToRight = false, bool $wrap = false, bool $wrapHead = false, bool $labelHidden = false): Column
     {
-        $options = array_filter(['left_to_right' => $leftToRight, 'wrap' => $wrap, 'wrap_head' => $wrapHead]);
+        $options = array_filter(['left_to_right' => $leftToRight, 'wrap' => $wrap, 'wrap_head' => $wrapHead, 'label_hidden' => $labelHidden]);
 
         return new Column($key, $label, ColumnKind::TEXT, $cellAlign, $options, sortKey: $sortKey, hideBelow: $hideBelow, visibleFrom: $visibleFrom);
     }
@@ -61,9 +61,9 @@ final class DataTableExtension extends AbstractExtension
     /**
      * $wrapHead breaks the header over several lines, for a short value under a long title.
      */
-    public function htmlColumn(string $key, string $label, string $cellAlign = 'start', ?string $sortKey = null, ?string $hideBelow = null, string $visibleFrom = 'always', bool $wrapHead = false): Column
+    public function htmlColumn(string $key, string $label, string $cellAlign = 'start', ?string $sortKey = null, ?string $hideBelow = null, string $visibleFrom = 'always', bool $wrapHead = false, bool $labelHidden = false): Column
     {
-        return new Column($key, $label, ColumnKind::HTML, $cellAlign, $wrapHead ? ['wrap_head' => true] : [], sortKey: $sortKey, hideBelow: $hideBelow, visibleFrom: $visibleFrom);
+        return new Column($key, $label, ColumnKind::HTML, $cellAlign, array_filter(['wrap_head' => $wrapHead, 'label_hidden' => $labelHidden]), sortKey: $sortKey, hideBelow: $hideBelow, visibleFrom: $visibleFrom);
     }
 
     /**
@@ -103,13 +103,14 @@ final class DataTableExtension extends AbstractExtension
         ?string $sortKey = null,
         ?string $hideBelow = null,
         string $visibleFrom = 'always',
+        bool $labelHidden = false,
     ): Column {
         return new Column(
             $key,
             $label,
             ColumnKind::TOGGLE,
             $cellAlign,
-            ['url_key' => $urlKey, 'icon_on' => $iconOn, 'icon_off' => $iconOff],
+            ['url_key' => $urlKey, 'icon_on' => $iconOn, 'icon_off' => $iconOff] + self::labelHidden($labelHidden),
             $sortKey,
             $hideBelow,
             $visibleFrom,
@@ -119,14 +120,14 @@ final class DataTableExtension extends AbstractExtension
     /**
      * @param array<scalar, string> $variants
      */
-    public function badgeColumn(string $key, string $label, array $variants = [], string $cellAlign = 'start', ?string $labelKey = null, ?string $colorKey = null, ?string $sortKey = null, ?string $hideBelow = null, string $visibleFrom = 'always', ?string $noteKey = null): Column
+    public function badgeColumn(string $key, string $label, array $variants = [], string $cellAlign = 'start', ?string $labelKey = null, ?string $colorKey = null, ?string $sortKey = null, ?string $hideBelow = null, string $visibleFrom = 'always', ?string $noteKey = null, bool $labelHidden = false): Column
     {
         return new Column(
             $key,
             $label,
             ColumnKind::BADGE,
             $cellAlign,
-            ['variants' => $variants, 'label_key' => $labelKey, 'color_key' => $colorKey] + (null === $noteKey ? [] : ['note_key' => $noteKey]),
+            ['variants' => $variants, 'label_key' => $labelKey, 'color_key' => $colorKey] + (null === $noteKey ? [] : ['note_key' => $noteKey]) + self::labelHidden($labelHidden),
             $sortKey,
             $hideBelow,
             $visibleFrom,
@@ -138,14 +139,14 @@ final class DataTableExtension extends AbstractExtension
      * number opens a field to send it to any position. The table's <tbody> hosts the
      * bo-position controller, which knows where to post the move.
      */
-    public function positionColumn(string $key, string $label, string $cellAlign = 'center', ?string $sortKey = null, ?string $hideBelow = null, string $visibleFrom = 'always'): Column
+    public function positionColumn(string $key, string $label, string $cellAlign = 'center', ?string $sortKey = null, ?string $hideBelow = null, string $visibleFrom = 'always', bool $labelHidden = false): Column
     {
-        return new Column($key, $label, ColumnKind::POSITION, $cellAlign, sortKey: $sortKey, hideBelow: $hideBelow, visibleFrom: $visibleFrom);
+        return new Column($key, $label, ColumnKind::POSITION, $cellAlign, self::labelHidden($labelHidden), sortKey: $sortKey, hideBelow: $hideBelow, visibleFrom: $visibleFrom);
     }
 
-    public function actionsColumn(string $key = '_actions', string $label = 'Actions', string $cellAlign = 'end', string $visibleFrom = 'always'): Column
+    public function actionsColumn(string $key = '_actions', string $label = 'Actions', string $cellAlign = 'end', string $visibleFrom = 'always', bool $labelHidden = false): Column
     {
-        return new Column($key, $label, ColumnKind::ACTIONS, $cellAlign, visibleFrom: $visibleFrom);
+        return new Column($key, $label, ColumnKind::ACTIONS, $cellAlign, self::labelHidden($labelHidden), visibleFrom: $visibleFrom);
     }
 
     public function radioColumn(
@@ -159,16 +160,29 @@ final class DataTableExtension extends AbstractExtension
         string $cellAlign = 'center',
         ?string $hideBelow = null,
         string $visibleFrom = 'always',
+        bool $labelHidden = false,
     ): Column {
         return new Column(
             $key,
             $label,
             ColumnKind::RADIO,
             $cellAlign,
-            ['name' => $name, 'value_key' => $valueKey, 'checked_when_key' => $checkedWhenKey, 'label_key' => $labelKey, 'url_key' => $urlKey],
+            ['name' => $name, 'value_key' => $valueKey, 'checked_when_key' => $checkedWhenKey, 'label_key' => $labelKey, 'url_key' => $urlKey] + self::labelHidden($labelHidden),
             hideBelow: $hideBelow,
             visibleFrom: $visibleFrom,
         );
+    }
+
+    /**
+     * The title of a column stays in the header for screen readers, out of sight: a column
+     * whose content speaks for itself (a single "..." button) no longer takes the width of
+     * its title.
+     *
+     * @return array{label_hidden?: true}
+     */
+    private static function labelHidden(bool $labelHidden): array
+    {
+        return $labelHidden ? ['label_hidden' => true] : [];
     }
 
     /**

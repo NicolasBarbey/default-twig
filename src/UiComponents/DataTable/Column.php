@@ -33,6 +33,8 @@ final readonly class Column
      *                                            wrap lets a free text written by a person (a reason, a note) break over several lines instead of widening the grid
      *                                          - any kind: { wrap_head?: bool } the header breaks over several lines, the cells keep theirs (a short value under a long title); wrap implies it.
      *                                            In a template, column_text() and column_html() expose it (wrapHead); other kinds set it through $options
+     *                                          - any kind: { label_hidden?: bool } the title stays in the header for screen readers only, out of sight, for a column
+     *                                            whose content speaks for itself; every column_*() but column_select() exposes it (labelHidden)
      *                                          In the row details, a TEXT or HTML cell whose value is empty (null, '' or false) leaves out its label; any other value, 0 included, is shown
      *                                          - HTML / ACTIONS: empty
      * @param ?string              $sortKey     Sort field this column maps to. When set, the header becomes a sortable link.

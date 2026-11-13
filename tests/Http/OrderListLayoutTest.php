@@ -68,6 +68,8 @@ final class OrderListLayoutTest extends WebIntegrationTestCase
         ));
 
         self::assertSame(['Order', 'Customer', 'Total', 'Status', 'Payment / Delivery', 'Actions'], $headers);
+        $actions = $crawler->filter('[data-testid="datatable-orders-table"] thead th.datatable-sticky-actions');
+        self::assertSame('Actions', trim($actions->filter('.visually-hidden')->text('')), 'The title of the actions is read out, out of sight: the single button of the column speaks for itself.');
     }
 
     public function testTheTotalShowsTheNumberOfLinesUnderneathAndTheActionsSitBehindOneButton(): void

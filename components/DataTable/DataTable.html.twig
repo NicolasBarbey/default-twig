@@ -83,9 +83,11 @@
                                 <a class="text-decoration-none text-reset d-inline-flex align-items-center gap-1"
                                    href="{{ sort_base_url }}?{{ sortParams|url_encode }}"
                                    data-testid="datatable-{{ id }}-sort-{{ column.sortKey }}">
-                                    {{ column.label }}
+                                    {% if column.options.label_hidden|default(false) %}<span class="visually-hidden">{{ column.label }}</span>{% else %}{{ column.label }}{% endif %}
                                     <i class="bi {{ isActive ? (sortDirection == 'asc' ? 'bi-sort-up' : 'bi-sort-down') : 'bi-arrow-down-up text-muted' }}" aria-hidden="true"></i>
                                 </a>
+                            {%- elseif column.options.label_hidden|default(false) -%}
+                                <span class="visually-hidden">{{ column.label }}</span>
                             {%- else -%}
                                 {{ column.label }}
                             {%- endif -%}
