@@ -19,6 +19,7 @@ use Propel\Runtime\Connection\ConnectionWrapper;
 use Propel\Runtime\Propel;
 use Psr\Log\AbstractLogger;
 use Thelia\Model\ConfigQuery;
+use Thelia\Model\CountryQuery;
 use Thelia\Model\OrderProduct;
 use Thelia\Model\OrderProductAttributeCombination;
 use Thelia\Model\OrderStatus;
@@ -142,6 +143,23 @@ final class OrderListRowPresenterTest extends IntegrationTestCase
         self::assertSame((string) $order->getId(), $link->textContent);
         self::assertSame('ORD"<b>1', $link->getAttribute('title'));
         self::assertStringNotContainsString('<b>', $html);
+    }
+
+    public function testTheFlagOfTheDeliveryCountryCarriesItsNameOnHover(): void
+    {
+        $order = $this->factory->order($this->factory->customer($this->factory->customerTitle()));
+        // A country whose name differs from one language to the other, so the locale shows.
+        $germany = CountryQuery::create()->findOneByIsoalpha2('DE');
+        self::assertNotNull($germany);
+        $order->getOrderAddressRelatedByDeliveryOrderAddressId()->setCountryId((int) $germany->getId())->save($this->getPropelConnection());
+        $presenter = static::getContainer()->get(OrderListRowPresenter::class);
+
+        $customer = $presenter->presentAll([$order], 'fr_FR')[0]['customer_html'];
+
+        self::assertStringContainsString(
+            '<span class="bo-country-flag" data-bs-toggle="tooltip" title="Allemagne">',
+            $customer,
+        );
     }
 
     public function testAnOrderWithoutLinesHasNoTooltip(): void

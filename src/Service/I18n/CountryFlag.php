@@ -43,4 +43,23 @@ final class CountryFlag
 
         return $flag === '' ? '' : $flag.' ';
     }
+
+    /**
+     * The flag with the name of the country on hover, followed by a space, as HTML to write
+     * before a name: the flag alone tells few countries apart. The bare flag when the country
+     * has no name in this locale, an empty string when there is no flag.
+     */
+    public static function named(?string $iso, string $name): string
+    {
+        $flag = self::of($iso);
+        if ($flag === '' || $name === '') {
+            return htmlspecialchars(self::prefix($iso));
+        }
+
+        return \sprintf(
+            '<span class="bo-country-flag" data-bs-toggle="tooltip" title="%s">%s</span> ',
+            htmlspecialchars($name),
+            $flag,
+        );
+    }
 }

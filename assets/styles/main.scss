@@ -2074,6 +2074,11 @@ main[data-testid="bo-main"] {
     min-height: 0;
 }
 
+// The flag before a customer name names its country on hover; it is not text to select.
+.bo-country-flag {
+    cursor: default;
+}
+
 // ---------- Order list ----------
 
 .bo-order-customer {

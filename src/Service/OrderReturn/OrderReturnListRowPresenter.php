@@ -16,6 +16,7 @@ namespace BackOfficeDefaultTwigBundle\Service\OrderReturn;
 
 use BackOfficeDefaultTwigBundle\Repository\OrderReturnRepository;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryFlag;
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -43,6 +44,7 @@ final readonly class OrderReturnListRowPresenter
         private OrderReturnRepository $returns,
         private MoneyFormatter $money,
         private OrderReturnResolutionLabels $resolutionLabels,
+        private CountryStateProvider $countries,
     ) {
     }
 
@@ -78,11 +80,11 @@ final readonly class OrderReturnListRowPresenter
         $reasonTitles = $this->returns->findReasonTitles($locale);
         $statusTitles = array_column($this->returns->findStatusesLocalized($locale), 'title', 'id');
         $currencyCodes = $this->returns->findCurrencyCodes();
-        $countryCodes = $withCustomer ? $this->returns->findDeliveryCountryCodes(array_values(array_unique($orderIds))) : null;
+        $countryIds = $withCustomer ? $this->returns->findDeliveryCountryIds(array_values(array_unique($orderIds))) : null;
 
         $rows = [];
         foreach ($page as $orderReturn) {
-            $rows[] = $this->present($orderReturn, $locale, $lines, $reasonTitles, $statusTitles, $currencyCodes, $countryCodes, $linkProducts);
+            $rows[] = $this->present($orderReturn, $locale, $lines, $reasonTitles, $statusTitles, $currencyCodes, $countryIds, $linkProducts);
         }
 
         return $rows;
@@ -96,11 +98,11 @@ final readonly class OrderReturnListRowPresenter
      * @param array<int, string>                                                                                                                                $reasonTitles  current title of each reason
      * @param array<int, string>                                                                                                                                $statusTitles  title of each status in $locale
      * @param array<int, string>                                                                                                                                $currencyCodes code of each currency
-     * @param array<int, string>|null                                                                                                                           $countryCodes  ISO code of the delivery country of each order, null without a customer column
+     * @param array<int, int>|null                                                                                                                              $countryIds    id of the delivery country of each order, null without a customer column
      *
      * @return array<string, mixed>
      */
-    private function present(OrderReturn $orderReturn, string $locale, array $lines, array $reasonTitles, array $statusTitles, array $currencyCodes, ?array $countryCodes, bool $linkProducts): array
+    private function present(OrderReturn $orderReturn, string $locale, array $lines, array $reasonTitles, array $statusTitles, array $currencyCodes, ?array $countryIds, bool $linkProducts): array
     {
         $returnId = (int) $orderReturn->getId();
         // status_id is a required column behind a RESTRICT foreign key: a return
@@ -113,7 +115,7 @@ final readonly class OrderReturnListRowPresenter
             'id' => $returnId,
             'ref' => (string) $orderReturn->getRef(),
             'order_html' => $this->renderOrder($orderReturn, $returnId),
-            'customer_html' => $countryCodes === null ? '' : $this->renderCustomer($orderReturn, $countryCodes[(int) $orderReturn->getOrderId()] ?? null),
+            'customer_html' => $countryIds === null ? '' : $this->renderCustomer($orderReturn, $this->countries->countriesById($locale)[$countryIds[(int) $orderReturn->getOrderId()] ?? 0] ?? null),
             'products_html' => $this->renderProducts($lines[$returnId] ?? [], $locale, $linkProducts),
             'reason' => $this->reason($orderReturn, $reasonTitles),
             'resolution_html' => $this->renderResolution($orderReturn),
@@ -157,15 +159,17 @@ final readonly class OrderReturnListRowPresenter
     /**
      * The customer as the order list shows them: the flag of the delivery country before
      * the name, the e-mail underneath.
+     *
+     * @param array{title: string, iso: string}|null $country
      */
-    private function renderCustomer(OrderReturn $orderReturn, ?string $countryCode): string
+    private function renderCustomer(OrderReturn $orderReturn, ?array $country): string
     {
         // customer_id is a required column behind a RESTRICT foreign key.
         $customer = $orderReturn->getCustomer();
 
         return \sprintf(
             '<div class="bo-order-customer bo-order-customer--compact"><div class="fw-semibold">%s%s %s</div><div class="text-muted small text-truncate" title="%s">%s</div></div>',
-            CountryFlag::prefix($countryCode),
+            CountryFlag::named($country['iso'] ?? null, $country['title'] ?? ''),
             htmlspecialchars((string) $customer->getFirstname(), \ENT_QUOTES | \ENT_HTML5),
             htmlspecialchars((string) $customer->getLastname(), \ENT_QUOTES | \ENT_HTML5),
             htmlspecialchars((string) $customer->getEmail(), \ENT_QUOTES | \ENT_HTML5),

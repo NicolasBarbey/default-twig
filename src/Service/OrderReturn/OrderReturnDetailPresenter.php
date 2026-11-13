@@ -16,6 +16,7 @@ namespace BackOfficeDefaultTwigBundle\Service\OrderReturn;
 
 use BackOfficeDefaultTwigBundle\Repository\OrderReturnRepository;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryFlag;
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Action\OrderReturn as OrderReturnAction;
 use Thelia\Domain\OrderReturn\OrderReturnStateMachine;
@@ -61,6 +62,7 @@ final readonly class OrderReturnDetailPresenter
         private RefundAmountCalculator $refundCalculator,
         private TranslatorInterface $translator,
         private OrderReturnResolutionLabels $resolutionLabels,
+        private CountryStateProvider $countries,
     ) {
     }
 
@@ -88,7 +90,7 @@ final readonly class OrderReturnDetailPresenter
             'received_refund' => $this->refundCalculator->compute($orderReturn, true),
             'resolution_label' => $this->resolutionLabels->label((string) $orderReturn->getExpectedResolution()),
             'wished_exchange' => $this->resolutionLabels->wishedExchange($orderReturn),
-            'customer_flag' => $this->customerFlag($orderReturn),
+            'customer_flag_html' => $this->customerFlag($orderReturn, $locale),
         ];
     }
 
@@ -210,13 +212,15 @@ final readonly class OrderReturnDetailPresenter
     }
 
     /**
-     * The flag of the delivery country of the order, before the customer name as in
-     * the queue.
+     * The flag of the delivery country of the order, with its name on hover, before the
+     * customer name as in the queue.
      */
-    private function customerFlag(OrderReturn $orderReturn): string
+    private function customerFlag(OrderReturn $orderReturn, string $locale): string
     {
         // delivery_order_address_id and country_id are required columns behind foreign keys.
-        return CountryFlag::prefix($orderReturn->getOrder()->getOrderAddressRelatedByDeliveryOrderAddressId()->getCountry()->getIsoalpha2());
+        $country = $this->countries->countriesById($locale)[(int) $orderReturn->getOrder()->getOrderAddressRelatedByDeliveryOrderAddressId()->getCountryId()] ?? null;
+
+        return CountryFlag::named($country['iso'] ?? null, $country['title'] ?? '');
     }
 
     private function reasonTitle(OrderReturn $orderReturn, string $locale): string

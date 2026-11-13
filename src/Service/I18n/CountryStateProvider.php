@@ -45,6 +45,9 @@ final class CountryStateProvider
     /** @var array<string, list<array{id: int, title: string, iso: string, visible: bool}>> */
     private array $countries = [];
 
+    /** @var array<string, array<int, array{title: string, iso: string}>> */
+    private array $countriesById = [];
+
     /** @var array<string, list<array{id: int, country_id: int, title: string, visible: bool}>> */
     private array $states = [];
 
@@ -114,6 +117,25 @@ final class CountryStateProvider
         }
 
         return $titles;
+    }
+
+    /**
+     * Country titles and ISO codes indexed by id, for the lists that flag a country
+     * read from another table.
+     *
+     * @return array<int, array{title: string, iso: string}>
+     */
+    public function countriesById(?string $locale = null): array
+    {
+        $locale ??= self::DEFAULT_LOCALE;
+        if (!isset($this->countriesById[$locale])) {
+            $this->countriesById[$locale] = [];
+            foreach ($this->loadedCountries($locale) as $row) {
+                $this->countriesById[$locale][$row['id']] = ['title' => $row['title'], 'iso' => $row['iso']];
+            }
+        }
+
+        return $this->countriesById[$locale];
     }
 
     /**

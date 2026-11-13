@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Customer;
 
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryFlag;
 use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\Service\Tag\TagSwatch;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
@@ -56,7 +57,7 @@ final readonly class CustomerListRowPresenter
         float $totalSpent,
         ?\DateTimeImmutable $lastOrderAt,
         string $phone,
-        string $countryFlag,
+        string $countryIso,
         string $countryTitle,
         array $tags,
         string $groupLabel = '',
@@ -71,7 +72,7 @@ final readonly class CustomerListRowPresenter
             'id' => $customerId,
             'ref' => (string) ($customer->getRef() ?: '-'),
             'ref_html' => $this->renderRef($customerId, (string) ($customer->getRef() ?: '-')),
-            'name_html' => $this->renderName($customerId, $firstname, $lastname, $email, $countryFlag, $countryTitle),
+            'name_html' => $this->renderName($customerId, $firstname, $lastname, $email, $countryIso, $countryTitle),
             'phone_html' => $this->renderPhone($phone),
             'group_html' => $this->renderGroup($groupLabel),
             'orders_html' => $this->renderOrders($customerId, $orderCount),
@@ -98,7 +99,7 @@ final readonly class CustomerListRowPresenter
         );
     }
 
-    private function renderName(int $customerId, string $firstname, string $lastname, string $email, string $countryFlag, string $countryTitle): string
+    private function renderName(int $customerId, string $firstname, string $lastname, string $email, string $countryIso, string $countryTitle): string
     {
         $fullName = trim($firstname.' '.$lastname);
         if ($fullName === '') {
@@ -108,13 +109,7 @@ final readonly class CustomerListRowPresenter
         $href = $this->urls->generate(self::EDIT_ROUTE, ['customer_id' => $customerId]);
 
         // The flag stands before the name, as in the order list; the country name stays reachable on hover.
-        $flag = $countryFlag === ''
-            ? ''
-            : \sprintf(
-                '<span class="bo-customer-country" data-bs-toggle="tooltip" title="%s">%s</span> ',
-                htmlspecialchars($countryTitle),
-                htmlspecialchars($countryFlag),
-            );
+        $flag = CountryFlag::named($countryIso, $countryTitle);
 
         return \sprintf(
             '<div class="bo-customer-name"><div class="fw-semibold">%s<a href="%s" class="text-decoration-none" data-testid="bo-customer-name-link">%s</a></div><div class="text-muted small text-truncate">%s</div></div>',

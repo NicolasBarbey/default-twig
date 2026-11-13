@@ -27,11 +27,11 @@ final class CustomerListRowPresenterTest extends IntegrationTestCase
 {
     public function testTheFlagStandsBeforeTheNameWithTheCountryOnHover(): void
     {
-        $row = $this->present(CountryFlag::of('FR'), 'France <"Métropole">');
+        $row = $this->present('FR', 'France <"Métropole">');
 
         self::assertArrayNotHasKey('country_html', $row);
         self::assertStringContainsString(
-            '<div class="fw-semibold"><span class="bo-customer-country" data-bs-toggle="tooltip" title="France &lt;&quot;Métropole&quot;&gt;">'.CountryFlag::of('FR').'</span> <a href=',
+            '<div class="fw-semibold"><span class="bo-country-flag" data-bs-toggle="tooltip" title="France &lt;&quot;Métropole&quot;&gt;">'.CountryFlag::of('FR').'</span> <a href=',
             $row['name_html'],
         );
     }
@@ -40,14 +40,14 @@ final class CustomerListRowPresenterTest extends IntegrationTestCase
     {
         $row = $this->present('', '');
 
-        self::assertStringNotContainsString('bo-customer-country', $row['name_html']);
+        self::assertStringNotContainsString('bo-country-flag', $row['name_html']);
         self::assertStringContainsString('<div class="fw-semibold"><a href=', $row['name_html']);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function present(string $countryFlag, string $countryTitle): array
+    private function present(string $countryIso, string $countryTitle): array
     {
         $factory = $this->createFixtureFactory();
         $customer = $factory->customer($factory->customerTitle(), ['firstname' => 'Jeanne', 'lastname' => 'Martin']);
@@ -59,7 +59,7 @@ final class CustomerListRowPresenterTest extends IntegrationTestCase
             totalSpent: 0.0,
             lastOrderAt: null,
             phone: '',
-            countryFlag: $countryFlag,
+            countryIso: $countryIso,
             countryTitle: $countryTitle,
             tags: [],
         );

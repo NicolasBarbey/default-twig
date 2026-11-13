@@ -20,6 +20,7 @@ use Thelia\Core\Security\Resource\AdminResources;
 use BackOfficeDefaultTwigBundle\Repository\ModuleRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryFlag;
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -60,6 +61,7 @@ final readonly class OrderListRowPresenter
         private OrderSaleUnits $saleUnits,
         private MoneyFormatter $money,
         private SecurityContext $securityContext,
+        private CountryStateProvider $countries,
     ) {
     }
 
@@ -159,7 +161,7 @@ final readonly class OrderListRowPresenter
             'status_id' => (int) $order->getStatusId(),
             'status_code' => (string) ($status?->getCode() ?? ''),
             'status_color' => (string) ($status?->getColor() ?: self::FALLBACK_STATUS_COLOR),
-            'customer_html' => $this->renderCustomer($order),
+            'customer_html' => $this->renderCustomer($order, $locale),
             'items_html' => $this->renderItems($orderId, $itemCounts, $preorderOrderIds, $itemLines),
             'payment_delivery_html' => $this->renderModule($paymentTitle, 'bi-credit-card')
                 .'<div class="mt-1">'.$this->renderDelivery($order, $deliveryTitle).'</div>',
@@ -221,7 +223,7 @@ final readonly class OrderListRowPresenter
         ).$date;
     }
 
-    private function renderCustomer(Order $order): string
+    private function renderCustomer(Order $order, string $locale): string
     {
         $customer = $order->getCustomer();
         if ($customer === null) {
@@ -231,7 +233,9 @@ final readonly class OrderListRowPresenter
         $firstname = htmlspecialchars((string) $customer->getFirstname());
         $lastname = htmlspecialchars((string) $customer->getLastname());
         $email = htmlspecialchars((string) $customer->getEmail());
-        $flag = CountryFlag::prefix($order->getOrderAddressRelatedByDeliveryOrderAddressId()?->getCountry()?->getIsoalpha2());
+        // The countries are read once per request, titles included, instead of once per row.
+        $country = $this->countries->countriesById($locale)[(int) $order->getOrderAddressRelatedByDeliveryOrderAddressId()?->getCountryId()] ?? null;
+        $flag = CountryFlag::named($country['iso'] ?? null, $country['title'] ?? '');
 
         return \sprintf(
             '<div class="bo-order-customer"><div class="fw-semibold">%s%s %s</div><div class="text-muted small text-truncate">%s</div></div>',

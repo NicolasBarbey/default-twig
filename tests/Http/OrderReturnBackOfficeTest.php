@@ -137,6 +137,7 @@ final class OrderReturnBackOfficeTest extends WebIntegrationTestCase
         self::assertSame('Refund', trim($row->filter('[data-testid="datatable-order-returns-cell-resolution_html"]')->text()));
 
         self::assertStringStartsWith($this->flagOf($return).' ', trim($row->filter('[data-testid="datatable-order-returns-cell-customer_html"] .fw-semibold')->text()), 'The flag of the delivery country before the name, as in the order list.');
+        self::assertSame($this->countryNameOf($return), $row->filter('[data-testid="datatable-order-returns-cell-customer_html"] .bo-country-flag')->attr('title'), 'The name of the country on hover of its flag.');
 
         $orderCell = $row->filter('[data-testid="datatable-order-returns-cell-order_html"]');
         self::assertStringContainsString((string) $return->getOrder()->getRef(), $orderCell->text());
@@ -403,6 +404,7 @@ final class OrderReturnBackOfficeTest extends WebIntegrationTestCase
             trim($crawler->filter('[data-testid="order-return-customer-name"]')->text()),
             'The flag of the delivery country before the customer name, as in the queue.',
         );
+        self::assertSame($this->countryNameOf($return), $crawler->filter('[data-testid="order-return-customer-name"] .bo-country-flag')->attr('title'), 'The name of the country on hover of its flag.');
 
         $html = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('A returnable product', $html, 'The sheet must list the requested line.');
@@ -627,6 +629,15 @@ final class OrderReturnBackOfficeTest extends WebIntegrationTestCase
         $iso = strtoupper((string) $return->getOrder()->getOrderAddressRelatedByDeliveryOrderAddressId()->getCountry()->getIsoalpha2());
 
         return mb_chr(\ord($iso[0]) + 0x1F1E6 - \ord('A')).mb_chr(\ord($iso[1]) + 0x1F1E6 - \ord('A'));
+    }
+
+    private function countryNameOf(OrderReturn $return): string
+    {
+        $country = $return->getOrder()->getOrderAddressRelatedByDeliveryOrderAddressId()->getCountry();
+        // The language the test administrator works in.
+        $country->setLocale('en_US');
+
+        return (string) $country->getTitle();
     }
 
     private function loginFullAdmin(): void

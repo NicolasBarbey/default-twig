@@ -20,7 +20,7 @@ use Propel\Runtime\ActiveQuery\Criteria;
 use Propel\Runtime\Collection\ObjectCollection;
 use Thelia\Model\CurrencyQuery;
 use Thelia\Model\ExportQuery;
-use Thelia\Model\Map\CountryTableMap;
+use Thelia\Model\Map\OrderAddressTableMap;
 use Thelia\Model\Map\OrderReturnTableMap;
 use Thelia\Model\Order;
 use Thelia\Model\OrderProduct;
@@ -304,16 +304,16 @@ final class OrderReturnRepository
     }
 
     /**
-     * The ISO code of the delivery country of each of these orders, in one query: the
-     * queue flags the customer of each row as the order list does. The ids come from a
+     * The delivery country of each of these orders, by id, in one query: the queue flags
+     * the customer of each row as the order list does. The ids come from a
      * page of returns already restricted to the sale units of the administrator; the read
      * stays here, next to the other per-page reads of the queue.
      *
      * @param list<int> $orderIds
      *
-     * @return array<int, string>
+     * @return array<int, int>
      */
-    public function findDeliveryCountryCodes(array $orderIds): array
+    public function findDeliveryCountryIds(array $orderIds): array
     {
         if ($orderIds === []) {
             return [];
@@ -322,19 +322,17 @@ final class OrderReturnRepository
         $rows = OrderQuery::create()
             ->filterById($orderIds, Criteria::IN)
             ->useOrderAddressRelatedByDeliveryOrderAddressIdQuery()
-                ->useCountryQuery()
-                ->endUse()
             ->endUse()
-            ->withColumn(CountryTableMap::COL_ISOALPHA2, 'iso')
-            ->select(['Id', 'iso'])
+            ->withColumn(OrderAddressTableMap::COL_COUNTRY_ID, 'country_id')
+            ->select(['Id', 'country_id'])
             ->find();
 
-        $codes = [];
+        $countryIds = [];
         foreach ($rows as $row) {
-            $codes[(int) $row['Id']] = (string) $row['iso'];
+            $countryIds[(int) $row['Id']] = (int) $row['country_id'];
         }
 
-        return $codes;
+        return $countryIds;
     }
 
     public function countAll(): int
