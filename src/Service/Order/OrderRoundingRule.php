@@ -14,6 +14,8 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Order;
 
+use Thelia\Domain\Order\Sql\OrderAmountSql;
+use Thelia\Domain\Pricing\OrderLineRounding;
 use Thelia\Model\ConfigQuery;
 
 /**
@@ -111,6 +113,58 @@ enum OrderRoundingRule
     public static function floatLineRoundingPivot(): int
     {
         return (int) ConfigQuery::read('last_float_line_rounding_order_id', 0);
+    }
+
+    /**
+     * Whether the core holds the rounding rule of an order line (Thelia\Domain\Pricing\OrderLineRounding),
+     * which the order total, the export, the sales journal and the refunds of the core share.
+     * The template then reads it; on an older core it keeps its own copy.
+     */
+    public static function coreHasTheRule(): bool
+    {
+        return class_exists(OrderLineRounding::class);
+    }
+
+    /**
+     * Whether the core writes the amounts of an order in SQL for the queries that total many
+     * orders (Thelia\Domain\Order\Sql\OrderAmountSql), in a form that takes no parameter.
+     * The order list then reads it; on an older core it keeps its own copy.
+     */
+    public static function coreTotalsOrders(): bool
+    {
+        return method_exists(OrderAmountSql::class, 'withRoundingPivotsInlined');
+    }
+
+    /**
+     * The three figures of one line of the given order, each tax of the line given apart:
+     * under the sum of roundings, the order rounds each tax to the cent before adding them
+     * (a line of 10.00 with two taxes of 0.125 is charged 10.26, not 10.25).
+     *
+     * @param list<float> $unitTaxes
+     *
+     * @return array{ht: float, tax: float, ttc: float}
+     */
+    public static function lineTotalsOfOrder(int $orderId, float $unitPriceUntaxed, array $unitTaxes, float $quantity): array
+    {
+        $rule = self::forOrder($orderId);
+
+        // class_exists() rather than coreHasTheRule(): static analysis reads the guard only here.
+        if (!class_exists(OrderLineRounding::class)) {
+            return $rule->lineTotals($unitPriceUntaxed, array_sum($unitTaxes), $quantity);
+        }
+
+        $rounding = OrderLineRounding::ofOrder($orderId);
+        $untaxed = $rounding->lineTotal($quantity, $unitPriceUntaxed);
+        $taxed = $rounding->lineTotal($quantity, $unitPriceUntaxed, $unitTaxes);
+
+        if (self::Legacy === $rule) {
+            return ['ht' => $untaxed, 'tax' => $taxed - $untaxed, 'ttc' => $taxed];
+        }
+
+        $untaxed = self::toTheCent($untaxed);
+        $taxed = self::toTheCent($taxed);
+
+        return ['ht' => $untaxed, 'tax' => self::toTheCent($taxed - $untaxed), 'ttc' => $taxed];
     }
 
     /**

@@ -16,6 +16,7 @@ namespace BackOfficeDefaultTwigBundle\Service\Order;
 
 use Propel\Runtime\ActiveQuery\Criteria;
 use Symfony\Component\HttpFoundation\Request;
+use Thelia\Domain\Order\Sql\OrderAmountSql;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\Map\OrderTableMap;
 use Thelia\Model\OrderQuery;
@@ -484,6 +485,12 @@ final readonly class OrderFilters
      */
     public static function taxedItemsTotalSqlExpression(): string
     {
+        // A core that writes the order amounts in SQL is read: its pivots are written in the
+        // expression, which the order list hands to Propel criteria with positional parameters.
+        if (OrderRoundingRule::coreTotalsOrders()) {
+            return OrderAmountSql::withRoundingPivotsInlined(OrderAmountSql::itemsTaxedTotal('`'.OrderTableMap::TABLE_NAME.'`'));
+        }
+
         $textPromoPricePivot = (int) ConfigQuery::read('last_text_promo_price_order_id', 0);
 
         // An order placed while order_product.promo_price was a text keeps the total it was
@@ -566,8 +573,10 @@ final readonly class OrderFilters
             $lineTotal = 'ROUND('.($asDecimal && !$textPromoPrice ? 'CAST('.$lineTotal.' AS DECIMAL(20,6))' : $lineTotal).', 2)';
         }
 
+        // The order is charged in cents: the sum of its lines is rounded as a decimal, as
+        // MoneyRounding::toTheCent() does (two lines of 1.25 kg at 14.82 are 37.05, not 37.06).
         return '(
-            SELECT SUM('.$lineTotal.')
+            SELECT ROUND(CAST(SUM('.$lineTotal.') AS DECIMAL(20,6)), 2)
             FROM order_product op
             WHERE op.order_id = '.OrderTableMap::COL_ID.'
         )';

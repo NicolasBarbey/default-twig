@@ -52,10 +52,11 @@ final readonly class OrderDetailContextBuilder
             $wasInPromo = (bool) $orderProduct->getWasInPromo();
             $weight += (float) $orderProduct->getWeight() * $quantity;
 
-            $lineTax = 0.0;
+            $unitTaxes = [];
             foreach ($orderProduct->getOrderProductTaxes() as $orderProductTax) {
-                $lineTax += (float) ($wasInPromo ? $orderProductTax->getPromoAmount() : $orderProductTax->getAmount());
+                $unitTaxes[] = (float) ($wasInPromo ? $orderProductTax->getPromoAmount() : $orderProductTax->getAmount());
             }
+            $lineTax = array_sum($unitTaxes);
 
             // Old lines carry no rule title: they fall back on the rule description, then on
             // the empty label, which the template renders as the generic "Taxes". A taxed
@@ -68,8 +69,7 @@ final readonly class OrderDetailContextBuilder
                 // Totalled with the rule the order was invoiced with, so the per-rule
                 // breakdown adds up to the tax total read from Order::getTotalAmount().
                 $unitPriceUntaxed = (float) ($wasInPromo ? $orderProduct->getPromoPrice() : $orderProduct->getPrice());
-                $lineTotals = OrderRoundingRule::forOrder((int) $orderProduct->getOrderId())
-                    ->lineTotals($unitPriceUntaxed, $lineTax, $quantity);
+                $lineTotals = OrderRoundingRule::lineTotalsOfOrder((int) $orderProduct->getOrderId(), $unitPriceUntaxed, $unitTaxes, $quantity);
 
                 $itemsTaxes[$ruleTitle] = ($itemsTaxes[$ruleTitle] ?? 0.0) + $lineTotals['tax'];
             }

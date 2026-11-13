@@ -17,6 +17,7 @@ namespace BackOfficeDefaultTwigBundle\Tests\Query;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderFilters;
+use BackOfficeDefaultTwigBundle\Service\Order\OrderRoundingRule;
 use BackOfficeDefaultTwigBundle\Tests\Support\QueryCounter;
 use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 use Thelia\Model\ConfigQuery;
@@ -43,6 +44,9 @@ final class OrderListTotalsTest extends IntegrationTestCase
 
     /** Mirrors the pivot Thelia's 3.4 upgrade writes once. */
     private const FLOAT_LINE_ROUNDING_PIVOT = 'last_float_line_rounding_order_id';
+
+    /** Mirrors the pivot Thelia's 3.3 upgrade writes once. */
+    private const TEXT_PROMO_PRICE_PIVOT = 'last_text_promo_price_order_id';
 
     private const ROUNDING_MODE = 'order_rounding_mode';
 
@@ -224,6 +228,57 @@ final class OrderListTotalsTest extends IntegrationTestCase
         self::assertNotContains($orderId, $this->orderIdsOfAtLeast(18.53));
     }
 
+    /**
+     * An order placed while order_product.promo_price was a text was totalled with its unit
+     * prices read as floating point numbers: 1.005 rounds to 1.00 there, and 3 x 1.005 is
+     * charged 3.00, not 3.03.
+     */
+    public function testAnOrderPlacedWhileThePromotionalPriceWasATextKeepsItsAmount(): void
+    {
+        $this->skipUnlessTheCoreHasTheRule();
+        $this->givenConfig(self::ROUNDING_MODE, '1');
+
+        $order = $this->orderWith([['price' => '1.005000', 'tax' => '0.000000', 'quantity' => 3]], '0', '0');
+        $orderId = (int) $order->getId();
+
+        $this->givenConfig(self::TEXT_PROMO_PRICE_PIVOT, (string) $orderId);
+        $order->reload(true, $this->getPropelConnection());
+
+        self::assertSame(3.0, $order->getTotalAmount());
+        self::assertSame(3.0, $this->orders->findTotalAmountByOrder([$orderId])[$orderId]);
+        self::assertSame('3.00', $this->sqlTotalOf($orderId));
+    }
+
+    /**
+     * Under the sum of roundings, the order rounds each tax of a line to the cent before
+     * adding them: a line of 10.00 with two taxes of 0.125 is charged 10.26, and the order
+     * sheet shows it so.
+     */
+    public function testALineTaxedTwiceIsShownAtTheCentTheOrderCharges(): void
+    {
+        $this->skipUnlessTheCoreHasTheRule();
+        $this->givenConfig(self::ROUNDING_MODE, '1');
+
+        $order = $this->orderWith([['price' => '10.000000', 'tax' => '0.125000', 'quantity' => 1]], '0', '0');
+        foreach ($order->getOrderProducts() as $orderProduct) {
+            (new OrderProductTax())
+                ->setOrderProductId($orderProduct->getId())
+                ->setTitle('Second VAT')
+                ->setAmount('0.125000')
+                ->setPromoAmount('0.125000')
+                ->save($this->getPropelConnection());
+        }
+        $order->reload(true, $this->getPropelConnection());
+        $orderId = (int) $order->getId();
+
+        $line = OrderRoundingRule::lineTotalsOfOrder($orderId, 10.0, [0.125, 0.125], 1.0);
+
+        self::assertSame(10.26, $order->getTotalAmount());
+        self::assertSame(10.26, $line['ttc']);
+        self::assertSame(0.26, $line['tax']);
+        self::assertSame('10.26', $this->sqlTotalOf($orderId));
+    }
+
     public function testAWholePageOfAmountsCostsOneQuery(): void
     {
         $orders = [
@@ -293,6 +348,13 @@ final class OrderListTotalsTest extends IntegrationTestCase
         });
 
         self::assertSame(0, $queries);
+    }
+
+    private function skipUnlessTheCoreHasTheRule(): void
+    {
+        if (!OrderRoundingRule::coreHasTheRule()) {
+            self::markTestSkipped('The core predates Thelia\\Domain\\Pricing\\OrderLineRounding: the template reads its own copy of the rule.');
+        }
     }
 
     private function givenTheLegacyRoundingPivotAt(int $orderId): void

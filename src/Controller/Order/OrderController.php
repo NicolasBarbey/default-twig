@@ -670,17 +670,17 @@ final class OrderController
             $wasInPromo = (bool) $product->getWasInPromo();
             $unitPriceHt = (float) ($wasInPromo ? $product->getPromoPrice() : $product->getPrice());
 
-            $unitTax = 0.0;
+            $unitTaxes = [];
             foreach ($product->getOrderProductTaxes() as $orderProductTax) {
-                $unitTax += (float) ($wasInPromo ? $orderProductTax->getPromoAmount() : $orderProductTax->getAmount());
+                $unitTaxes[] = (float) ($wasInPromo ? $orderProductTax->getPromoAmount() : $orderProductTax->getAmount());
             }
+            $unitTax = array_sum($unitTaxes);
             $quantity = (float) $product->getQuantity();
 
             // The line has to be totalled with the rule its order was invoiced with,
             // otherwise the lines shown here do not add up to the items subtotal in
             // the footer, which comes straight from Order::getTotalAmount().
-            $lineTotals = OrderRoundingRule::forOrder((int) $product->getOrderId())
-                ->lineTotals($unitPriceHt, $unitTax, $quantity);
+            $lineTotals = OrderRoundingRule::lineTotalsOfOrder((int) $product->getOrderId(), $unitPriceHt, $unitTaxes, $quantity);
 
             // Resolve the catalog product by reference so the row can link back to
             // its edit page (the product may have been deleted: then no link).
