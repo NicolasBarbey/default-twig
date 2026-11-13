@@ -254,6 +254,12 @@
         margin-right: calc(-1 * var(--#{$prefix}border-width));
     }
 
+    // The button before a hidden "..." of a row closes the group: its end is on the left.
+    @include bo-row-menu-hidden-after {
+        border-top-left-radius: var(--#{$prefix}btn-border-radius);
+        border-bottom-left-radius: var(--#{$prefix}btn-border-radius);
+    }
+
     // ---------- Breadcrumb ----------
     .breadcrumb-item + .breadcrumb-item {
         padding-left: 0;

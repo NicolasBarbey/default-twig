@@ -86,7 +86,7 @@ final class OrderListLayoutTest extends WebIntegrationTestCase
         self::assertSame('2 articles', trim($total->filter('.bo-order-items')->text()));
 
         $actions = $row->filter('[data-testid="datatable-orders-cell-_actions"]');
-        self::assertCount(1, $actions->filter('[data-testid="datatable-action-overflow"]'));
+        self::assertCount(1, $actions->filter('.bo-row-menu > .dropdown-toggle[data-testid="datatable-action-overflow"]'), 'The button keeps its end corners, its menu following it in the group.');
         self::assertCount(0, $actions->filter('.btn.bo-action'), 'No action is drawn as a button of its own.');
         self::assertCount(1, $actions->filter('.dropdown-menu [data-testid="datatable-action-view"]'), 'The menu keeps the entry to the order, the reference opening it too.');
         self::assertCount(1, $actions->filter('.dropdown-menu [data-testid="datatable-action-invoice"]'));

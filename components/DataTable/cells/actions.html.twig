@@ -119,9 +119,10 @@
     {% endfor %}
 
     {% if overflow is not empty %}
-        <div class="btn-group btn-group-sm{{ kebabMaxBp ? ' d-' ~ kebabMaxBp ~ '-none' : '' }}" role="group" data-controller="bo-overflow-dropdown">
+        {#- dropdown-toggle keeps the end corners of the button, followed by its menu in the group. -#}
+        <div class="btn-group btn-group-sm bo-row-menu{{ kebabMaxBp ? ' d-' ~ kebabMaxBp ~ '-none' : '' }}" role="group" data-controller="bo-overflow-dropdown">
             <button type="button"
-                    class="btn btn-sm btn-outline-secondary"
+                    class="btn btn-sm btn-outline-secondary dropdown-toggle bo-row-menu__toggle"
                     data-bs-toggle="dropdown"
                     data-bs-boundary="viewport"
                     aria-expanded="false"

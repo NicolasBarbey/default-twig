@@ -2595,6 +2595,35 @@ tr.bo-order-row--urgent {
     max-width: max-content;
 }
 
+// The "..." of a row carries `dropdown-toggle`, which Bootstrap leaves its end corners to
+// although its menu follows it in the group; the caret that class draws is not wanted.
+.bo-row-menu__toggle::after {
+    display: none;
+}
+
+// From the breakpoint where the "..." gives way to the actions it holds, it is hidden but
+// still the last child of the group: the button before it would keep the square end
+// Bootstrap gives a middle child. @content gives the end corners back, per direction.
+// The selector only ties with the rule it corrects (Bootstrap's `.btn-group > .btn:not(:last-child)`
+// here, the button-group block of _rtl.scss there): it wins by coming after it, so this file
+// keeps importing Bootstrap first and _rtl.scss calls the mixin after its own button-group rules.
+@mixin bo-row-menu-hidden-after {
+    @each $breakpoint in map-keys($grid-breakpoints) {
+        @if $breakpoint != "xs" {
+            @include media-breakpoint-up($breakpoint) {
+                .btn-group > .btn:has(+ .bo-row-menu.d-#{$breakpoint}-none) {
+                    @content;
+                }
+            }
+        }
+    }
+}
+
+@include bo-row-menu-hidden-after {
+    border-top-right-radius: var(--#{$prefix}btn-border-radius);
+    border-bottom-right-radius: var(--#{$prefix}btn-border-radius);
+}
+
 // A row action that is offered but cannot run: the reason wraps under the label,
 // so it reads without hovering and without opening a second surface. The selector has to
 // out-specify the `white-space: nowrap` the dropdown applies to every other action.
