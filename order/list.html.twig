@@ -361,17 +361,19 @@
         {% endif %}
 
         <div class="mt-3">
-            <div class="d-flex justify-content-end mb-2">
-                {#- The whole filter, not the page: a picking slip is what the warehouse asks for the day's orders. -#}
-                <form method="post" action="{{ picking_slip_filter_url }}" data-testid="order-picking-slip-filter-form">
-                    <input type="hidden" name="_token" value="{{ assignToken() }}">
-                    <input type="hidden" name="scope" value="filter">
-                    <button type="submit" class="btn btn-sm btn-outline-secondary" {{ total > 0 ? '' : 'disabled' }} data-testid="order-picking-slip-filter-submit">
-                        <i class="bi bi-clipboard-check" aria-hidden="true"></i>
-                        {{ 'Picking slip of the %count% orders matching the filters'|trans({'%count%': total}) }}
-                    </button>
-                </form>
-            </div>
+            {% if picking_slip_available %}
+                <div class="d-flex justify-content-end mb-2">
+                    {#- The whole filter, not the page: a picking slip is what the warehouse asks for the day's orders. -#}
+                    <form method="post" action="{{ picking_slip_filter_url }}" data-testid="order-picking-slip-filter-form">
+                        <input type="hidden" name="_token" value="{{ assignToken() }}">
+                        <input type="hidden" name="scope" value="filter">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary" {{ total > 0 ? '' : 'disabled' }} data-testid="order-picking-slip-filter-submit">
+                            <i class="bi bi-clipboard-check" aria-hidden="true"></i>
+                            {{ 'Picking slip of the %count% orders matching the filters'|trans({'%count%': total}) }}
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
 
             <div class="bo-bulk-toolbar card border-0 shadow-sm mb-3" data-bo-bulk-select-target="toolbar" hidden data-testid="order-bulk-toolbar">
                 <div class="card-body d-flex flex-wrap align-items-center gap-2 py-2">
@@ -401,12 +403,14 @@
                             </span>
                         </form>
                     {% endif %}
-                    <form method="post" action="{{ picking_slip_url }}" data-bo-bulk-select-target="form" data-testid="order-picking-slip-selection-form">
-                        <input type="hidden" name="_token" value="{{ assignToken() }}">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary" data-testid="order-picking-slip-selection-submit">
-                            <i class="bi bi-clipboard-check" aria-hidden="true"></i> {{ 'Picking slip of the selection'|trans }}
-                        </button>
-                    </form>
+                    {% if picking_slip_available %}
+                        <form method="post" action="{{ picking_slip_url }}" data-bo-bulk-select-target="form" data-testid="order-picking-slip-selection-form">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" data-testid="order-picking-slip-selection-submit">
+                                <i class="bi bi-clipboard-check" aria-hidden="true"></i> {{ 'Picking slip of the selection'|trans }}
+                            </button>
+                        </form>
+                    {% endif %}
                     <button type="button" class="btn btn-sm btn-link" data-action="bo-bulk-select#clear" data-testid="order-bulk-clear">{{ 'Clear selection'|trans }}</button>
                 </div>
             </div>

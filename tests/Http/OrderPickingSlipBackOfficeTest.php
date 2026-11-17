@@ -29,6 +29,7 @@ use Thelia\Model\SaleUnitQuery;
 use Thelia\Test\FixtureFactory;
 use Thelia\Test\WebIntegrationTestCase;
 use Thelia\Tests\Support\BackOffice\AdminSessionInjector;
+use Thelia\Tests\Support\Order\PickingSlipFixtureTheme;
 
 /**
  * The picking slip from the back office: the order sheet, the list row, the ticked orders and every
@@ -36,6 +37,8 @@ use Thelia\Tests\Support\BackOffice\AdminSessionInjector;
  */
 final class OrderPickingSlipBackOfficeTest extends WebIntegrationTestCase
 {
+    use PickingSlipFixtureTheme;
+
     private AdminSessionInjector $injector;
 
     private FixtureFactory $factory;
@@ -65,6 +68,7 @@ final class OrderPickingSlipBackOfficeTest extends WebIntegrationTestCase
 
     protected function tearDown(): void
     {
+        $this->removePickingSlipTheme();
         if (isset($this->injector)) {
             $this->getService(EventDispatcherInterface::class)->removeSubscriber($this->injector);
             $this->injector->clear();
@@ -91,6 +95,22 @@ final class OrderPickingSlipBackOfficeTest extends WebIntegrationTestCase
 
         $this->client->request('GET', '/admin/order/pdf/preparation/'.$order->getId().'/0');
         self::assertSame('attachment; filename="preparation-'.$order->getRef().'.pdf"', $this->client->getResponse()->headers->get('Content-Disposition'));
+    }
+
+    public function testAPdfThemeWithoutAPreparationDocumentOffersNoSlip(): void
+    {
+        $order = $this->orderOf($this->customer());
+        $this->installPickingSlipTheme(withPreparationTemplate: false);
+
+        $crawler = $this->client->request('GET', '/admin/order/update/'.$order->getId());
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertCount(0, $crawler->filter('[data-testid="order-picking-slip-link"]'));
+
+        $crawler = $this->client->request('GET', '/admin/orders?customer_id='.$order->getCustomerId());
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertCount(0, $crawler->filter('a.bo-action--picking-slip'));
+        self::assertCount(0, $crawler->filter('[data-testid="order-picking-slip-filter-form"]'));
+        self::assertCount(0, $crawler->filter('[data-testid="order-picking-slip-selection-form"]'));
     }
 
     public function testTheListOffersTheSlipOnEveryRow(): void

@@ -17,7 +17,6 @@ namespace BackOfficeDefaultTwigBundle\Service\Pdf;
 use Symfony\Component\HttpFoundation\Response;
 use Thelia\Domain\Order\Exception\PickingSlipException;
 use Thelia\Domain\Order\Service\PickingSlipPdfService;
-use Thelia\Model\ConfigQuery;
 
 /**
  * Serves the picking slip of the core as a response. The orders given have already been
@@ -35,9 +34,15 @@ final readonly class OrderPickingSlipRenderer
      */
     public function limit(): int
     {
-        $configured = (int) ConfigQuery::read(PickingSlipPdfService::CONFIG_MAX_ORDERS, (string) PickingSlipPdfService::DEFAULT_MAX_ORDERS);
+        return $this->pickingSlip->maxOrders();
+    }
 
-        return $configured > 0 ? $configured : PickingSlipPdfService::DEFAULT_MAX_ORDERS;
+    /**
+     * Whether the active PDF theme has a preparation document: without one, no button is shown.
+     */
+    public function isAvailable(): bool
+    {
+        return $this->pickingSlip->isAvailable();
     }
 
     /**

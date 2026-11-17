@@ -18,6 +18,7 @@ use BackOfficeDefaultTwigBundle\Repository\ModuleRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\Customer\CustomerCell;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
+use BackOfficeDefaultTwigBundle\Service\Pdf\OrderPickingSlipRenderer;
 use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -64,6 +65,7 @@ final readonly class OrderListRowPresenter
         private MoneyFormatter $money,
         private SecurityContext $securityContext,
         private CountryStateProvider $countries,
+        private OrderPickingSlipRenderer $pickingSlip,
     ) {
     }
 
@@ -452,15 +454,19 @@ final readonly class OrderListRowPresenter
                 grantedSubject: self::RESOURCE,
                 inMenu: true,
             ),
-            new RowAction(
+        ];
+
+        // A PDF theme without a preparation document has no slip to give: the action would only fail.
+        if ($this->pickingSlip->isAvailable()) {
+            $actions[] = new RowAction(
                 kind: 'picking-slip',
                 label: $this->translator->trans('Picking slip'),
                 href: $this->urls->generate(self::PICKING_SLIP_PDF_ROUTE, ['order_id' => $orderId, 'browser' => 1]),
                 grantedAttribute: AccessManager::VIEW,
                 grantedSubject: self::RESOURCE,
-                inlineFrom: 'md',
-            ),
-        ];
+                inMenu: true,
+            );
+        }
 
         if ($hasInvoice) {
             array_splice($actions, 1, 0, [new RowAction(
