@@ -14,13 +14,14 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Twig;
 
+use BackOfficeDefaultTwigBundle\Service\Report\CustomerReportsContext;
 use BackOfficeDefaultTwigBundle\Service\Report\SalesReportsContext;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
 /**
- * `sales_reports_available()`: whether the core carries the sales reports, to offer their
- * screen only then.
+ * `sales_reports_available()` and `customer_reports_available()`: whether the core carries the
+ * sales reports and the customer reports, to offer their screens only then.
  */
 final class SalesReportsExtension extends AbstractExtension
 {
@@ -28,6 +29,7 @@ final class SalesReportsExtension extends AbstractExtension
     {
         return [
             new TwigFunction('sales_reports_available', SalesReportsContext::coreHasSalesReports(...)),
+            new TwigFunction('customer_reports_available', CustomerReportsContext::coreHasCustomerReports(...)),
         ];
     }
 }

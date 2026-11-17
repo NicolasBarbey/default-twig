@@ -104,7 +104,8 @@
                 without the order one sees that report, and nothing else of the section. -#}
             {% set reads_orders = is_granted('VIEW', 'admin.order') %}
             {% set reads_sales_by_customer = sales_reports_available() and is_granted('VIEW', 'admin.customer') %}
-            {% if reads_orders or reads_sales_by_customer %}
+            {% set reads_customer_reports = customer_reports_available() and is_granted('VIEW', 'admin.customer') %}
+            {% if reads_orders or reads_sales_by_customer or reads_customer_reports %}
                 {% set active = nav.is_section(current_path, ['/admin/reports']) %}
                 <li class="nav-item" data-testid="bo-nav-reports">
                     <a href="#bo-nav-reports-collapse" data-bs-toggle="collapse" aria-expanded="{{ active ? 'true' : 'false' }}" class="nav-link bo-side-nav__toggle {{ active ? 'active' : '' }}">
@@ -118,6 +119,9 @@
                         {% endif %}
                         {% if sales_reports_available() and (reads_orders or reads_sales_by_customer) %}
                             <li><a class="nav-link" href="{{ path(reads_orders ? 'admin.reports.sales.category' : 'admin.reports.sales.customer') }}" data-testid="bo-nav-sales-report">{{ 'Sales report'|trans }}</a></li>
+                        {% endif %}
+                        {% if reads_customer_reports %}
+                            <li><a class="nav-link" href="{{ path('admin.reports.customers.cohorts') }}" data-testid="bo-nav-customer-report">{{ 'Customer loyalty'|trans }}</a></li>
                         {% endif %}
                         {% if reads_orders %}
                             {% for fragment in hook_block('main.top-menu-reports', { fields: 'id,class,url,title' }) %}

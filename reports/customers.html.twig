@@ -1,0 +1,283 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{#
+    Reports > Customer loyalty.
+
+    Expects `report`, a BackOfficeDefaultTwigBundle\DTO\Report\CustomerReport, or null on a core that
+    predates the customer reports, and `current_tab` ('cohorts', 'lifetime' or 'segments').
+#}
+
+{% block title %}{{ 'Customer loyalty'|trans }}{% endblock %}
+{% block body_testid %}reports-customers{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item">{{ 'Reports'|trans }}</li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Customer loyalty'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% macro cohort_shade(share) %}{% apply spaceless %}
+    {% if share >= 0.5 %}bg-primary bg-opacity-50{% elseif share >= 0.25 %}bg-primary bg-opacity-25{% elseif share > 0 %}bg-primary bg-opacity-10{% endif %}
+{% endapply %}{% endmacro %}
+
+{% block content %}
+    {% import _self as customers %}
+    <div class="container-fluid" data-testid="report-customers">
+        <h1 class="h3 mb-3">{{ 'Customer loyalty'|trans }}</h1>
+
+        {% if report is null %}
+            <div class="alert alert-warning d-flex align-items-start gap-2" data-testid="report-customers-unavailable">
+                <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                <span>{{ 'This screen needs a more recent version of Thelia.'|trans }}</span>
+            </div>
+        {% else %}
+            {% set currency = report.currencyCode %}
+            {% set elapsed_label = (report.unit == 'quarter' ? 'Q%number%' : 'M%number%')|trans %}
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                {% if current_tab == 'segments' %}
+                    <div class="d-flex flex-wrap gap-1" data-testid="report-period-options">
+                        {% for option in report.periodOptions %}
+                            <a href="{{ option.url }}" class="btn btn-sm {{ option.active ? 'btn-primary' : 'btn-outline-secondary' }}"
+                               data-testid="report-period-{{ option.value }}"{% if option.active %} aria-current="true"{% endif %}>{{ option.label }}</a>
+                        {% endfor %}
+                    </div>
+
+                    <form method="get" action="{{ report.formUrl }}" class="d-flex flex-wrap align-items-center gap-2" data-testid="report-custom-period">
+                        <input type="hidden" name="period" value="custom">
+                        {% for name, value in report.formFields %}
+                            <input type="hidden" name="{{ name }}" value="{{ value }}">
+                        {% endfor %}
+                        <label for="report-from" class="form-label small mb-0">{{ 'From'|trans }}</label>
+                        <input type="date" id="report-from" name="from" class="form-control form-control-sm w-auto" required
+                               max="{{ 'now'|date('Y-m-d') }}" value="{{ report.range.from|date('Y-m-d') }}" data-testid="report-from">
+                        <label for="report-to" class="form-label small mb-0">{{ 'to'|trans }}</label>
+                        <input type="date" id="report-to" name="to" class="form-control form-control-sm w-auto" required
+                               max="{{ 'now'|date('Y-m-d') }}" value="{{ report.range.to|date('Y-m-d') }}" data-testid="report-to">
+                        <button type="submit" class="btn btn-sm btn-outline-primary" data-testid="report-apply">{{ 'Apply'|trans }}</button>
+                    </form>
+                {% else %}
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'First orders since'|trans }}" data-testid="report-depth-options">
+                            {% for option in report.depthOptions %}
+                                <a href="{{ option.url }}" class="btn {{ option.active ? 'btn-primary' : 'btn-outline-secondary' }}"
+                                   data-testid="report-depth-{{ option.value }}"{% if option.active %} aria-current="true"{% endif %}>{{ option.label }}</a>
+                            {% endfor %}
+                        </div>
+                        <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'Unit of time'|trans }}" data-testid="report-unit-options">
+                            {% for option in report.unitOptions %}
+                                <a href="{{ option.url }}" class="btn {{ option.active ? 'btn-primary' : 'btn-outline-secondary' }}"
+                                   data-testid="report-unit-{{ option.value }}"{% if option.active %} aria-current="true"{% endif %}>{{ option.label }}</a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'Orders counted'|trans }}" data-testid="report-scope-options">
+                        {% for option in report.scopeOptions %}
+                            <a href="{{ option.url }}" class="btn {{ option.active ? 'btn-primary' : 'btn-outline-secondary' }}"
+                               data-testid="report-scope-{{ option.value }}"{% if option.active %} aria-current="true"{% endif %}>{{ option.label }}</a>
+                        {% endfor %}
+                    </div>
+                    <span class="text-muted small" data-testid="report-scope-label">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        {% if report.allOrders %}
+                            {{ 'Every order created is counted, whatever its status.'|trans }}
+                        {% else %}
+                            {{ 'Only the paid orders are counted: those paid, in processing or sent.'|trans }}
+                        {% endif %}
+                        {{ 'Amounts are revenue incl. tax, not margin.'|trans }}
+                    </span>
+                </div>
+
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <span class="text-muted small" data-testid="report-range">
+                        {{ report.from|format_date('medium') }} - {{ report.to|format_date('medium') }}
+                    </span>
+                    <span class="text-muted small" data-testid="report-computed-at">
+                        {{ 'Computed at %time%'|trans({ '%time%': report.computedAt|format_time('short') }) }}
+                        &middot;
+                        <a href="{{ report.refreshUrl }}" class="text-decoration-none" data-testid="report-refresh">{{ 'Compute again'|trans }}</a>
+                    </span>
+                    {% if report.export is not null %}
+                        <form method="post" action="{{ report.export.url }}" data-testid="report-export-form">
+                            <input type="hidden" name="_token" value="{{ assignToken() }}">
+                            <input type="hidden" name="serializer" value="thelia.csv">
+                            <input type="hidden" name="language" value="{{ report.export.languageId }}">
+                            <input type="hidden" name="range_start" value="{{ report.export.from }}">
+                            <input type="hidden" name="range_end" value="{{ report.export.to }}">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm" data-testid="report-export-button">
+                                <i class="bi bi-cloud-download" aria-hidden="true"></i>
+                                {{ 'Export'|trans }}
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="bo-tab-bar">
+                <ul class="nav nav-tabs" data-testid="report-customers-tabs">
+                    {% for tab in report.tabs %}
+                        <li class="nav-item">
+                            <a class="nav-link {{ tab.active ? 'active' : '' }}" href="{{ tab.url }}" data-testid="report-tab-{{ tab.key }}"{% if tab.active %} aria-current="page"{% endif %}>{{ tab.label }}</a>
+                        </li>
+                    {% endfor %}
+                    {% if report.topCustomersUrl is not null %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ report.topCustomersUrl }}" data-testid="report-tab-top-customers">
+                                {{ 'Top customers'|trans }} <i class="bi bi-box-arrow-up-right small" aria-hidden="true"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            {% if current_tab == 'cohorts' %}
+                <p class="text-muted small mt-3 mb-2" data-testid="report-cohorts-note">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    {{ 'A customer belongs to the cohort of their first order. Each cell gives the customers of the cohort who ordered in that period and their share of the cohort.'|trans }}
+                </p>
+                <div class="card shadow-sm border-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0 text-nowrap" data-testid="report-cohort-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">{{ 'Cohort'|trans }}</th>
+                                    <th scope="col" class="text-end">{{ 'Customers'|trans }}</th>
+                                    {% if report.table is not null %}
+                                        {% for elapsed in 0..(report.table.columnCount - 1) %}
+                                            <th scope="col" class="text-end">{{ elapsed_label|replace({ '%number%': elapsed }) }}</th>
+                                        {% endfor %}
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in report.table.rows ?? [] %}
+                                    <tr data-testid="report-cohort-row">
+                                        <th scope="row" class="fw-semibold">{{ row.label }}</th>
+                                        <td class="text-end">{{ row.size|number_format(0, ',', ' ') }}</td>
+                                        {% for cell in row.cells %}
+                                            {% if cell is null %}
+                                                <td></td>
+                                            {% else %}
+                                                <td class="text-end {{ customers.cohort_shade(cell.share) }}" data-testid="report-cohort-cell">
+                                                    <div>{{ (cell.share * 100)|number_format(1, ',', ' ') }} %</div>
+                                                    <div class="small text-muted">{{ cell.activeCustomers|number_format(0, ',', ' ') }}</div>
+                                                </td>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="3" class="text-muted" data-testid="report-empty">{{ 'No first order in this period.'|trans }}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% elseif current_tab == 'lifetime' %}
+                {% set summary = report.summary %}
+                <div class="card shadow-sm border-0 mt-3 mb-3">
+                    <div class="card-body d-flex flex-wrap align-items-center gap-5">
+                        <div>
+                            <div class="text-muted small">{{ 'Average lifetime value incl. tax'|trans }}</div>
+                            <div class="display-6 fw-semibold" data-testid="report-lifetime-value">{{ summary.averageLifetimeValue|format_currency(currency) }}</div>
+                        </div>
+                        <div>
+                            <div class="text-muted small">{{ 'Average lifespan'|trans }}</div>
+                            <div class="display-6 fw-semibold" data-testid="report-lifespan">{{ '%days% days'|trans({ '%days%': summary.averageLifespanDays|number_format(0, ',', ' ') }) }}</div>
+                        </div>
+                        <div>
+                            <div class="text-muted small">{{ 'Repeat rate'|trans }}</div>
+                            <div class="display-6 fw-semibold" data-testid="report-repeat-rate">{{ (summary.repeatRate * 100)|number_format(1, ',', ' ') }} %</div>
+                        </div>
+                        <div>
+                            <div class="text-muted small">{{ 'Customers'|trans }}</div>
+                            <div class="display-6 fw-semibold" data-testid="report-lifetime-customers">{{ summary.customerCount|number_format(0, ',', ' ') }}</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-muted small mb-2" data-testid="report-lifetime-note">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    {{ 'What the customers of a cohort spent from their first order to the end of each period, per customer. The repeat rate is the share of customers with more than one order.'|trans }}
+                </p>
+                <div class="card shadow-sm border-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0 text-nowrap" data-testid="report-lifetime-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">{{ 'Cohort'|trans }}</th>
+                                    <th scope="col" class="text-end">{{ 'Customers'|trans }}</th>
+                                    <th scope="col" class="text-end">{{ 'Lifetime value'|trans }}</th>
+                                    {% if report.table is not null %}
+                                        {% for elapsed in 0..(report.table.columnCount - 1) %}
+                                            <th scope="col" class="text-end">{{ elapsed_label|replace({ '%number%': elapsed }) }}</th>
+                                        {% endfor %}
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in report.table.rows ?? [] %}
+                                    <tr data-testid="report-lifetime-row">
+                                        <th scope="row" class="fw-semibold">{{ row.label }}</th>
+                                        <td class="text-end">{{ row.size|number_format(0, ',', ' ') }}</td>
+                                        <td class="text-end fw-semibold">{{ row.lifetimeValue|format_currency(currency) }}</td>
+                                        {% for cell in row.cells %}
+                                            <td class="text-end">{{ cell is null ? '' : cell.cumulativeValuePerCustomer|format_currency(currency) }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                {% else %}
+                                    <tr><td colspan="4" class="text-muted" data-testid="report-empty">{{ 'No first order in this period.'|trans }}</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% else %}
+                <p class="text-muted small mt-3 mb-2" data-testid="report-segments-note">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    {{ 'New: first order in the period. Returning: an order in the period and one before it. Dormant: no order for %days% days at the end of the period.'|trans({ '%days%': report.dormantAfterDays }) }}
+                    {% if report.dormancySettingUrl is not null %}
+                        <a href="{{ report.dormancySettingUrl }}" class="text-decoration-none" data-testid="report-dormancy-setting">{{ 'Change the threshold (customer_dormant_after_days)'|trans }}</a>
+                    {% endif %}
+                </p>
+                <div class="card shadow-sm border-0">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0 bo-table-wrap" data-testid="report-segment-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th scope="col">{{ 'Segment'|trans }}</th>
+                                    <th scope="col" class="text-end">{{ 'Customers'|trans }}</th>
+                                    <th scope="col" class="text-end text-wrap">{{ 'Revenue of the period incl. tax'|trans }}</th>
+                                    <th scope="col" class="text-end">{{ 'Share'|trans }}</th>
+                                    <th scope="col" class="text-end text-wrap d-none d-md-table-cell">{{ 'Revenue since the first order incl. tax'|trans }}</th>
+                                    <th scope="col" class="text-end d-none d-md-table-cell">{{ 'Share'|trans }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in report.segments %}
+                                    <tr data-testid="report-segment-{{ row.segment.value }}">
+                                        <th scope="row" class="fw-semibold">
+                                            {% if row.segment.value == 'new' %}{{ 'New customers'|trans }}{% elseif row.segment.value == 'returning' %}{{ 'Returning customers'|trans }}{% else %}{{ 'Dormant customers'|trans }}{% endif %}
+                                        </th>
+                                        <td class="text-end" data-testid="report-segment-customers">{{ row.customerCount|number_format(0, ',', ' ') }}</td>
+                                        <td class="text-end">{{ row.periodRevenue|format_currency(currency) }}</td>
+                                        <td class="text-end">{{ (row.periodShare * 100)|number_format(1, ',', ' ') }} %</td>
+                                        <td class="text-end d-none d-md-table-cell">{{ row.lifetimeRevenue|format_currency(currency) }}</td>
+                                        <td class="text-end d-none d-md-table-cell">{{ (row.lifetimeShare * 100)|number_format(1, ',', ' ') }} %</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+{% endblock %}

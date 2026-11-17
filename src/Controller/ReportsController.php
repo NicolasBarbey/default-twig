@@ -17,6 +17,8 @@ namespace BackOfficeDefaultTwigBundle\Controller;
 use BackOfficeDefaultTwigBundle\DTO\Dashboard\DateRange;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Report\ConversionReportProvider;
+use BackOfficeDefaultTwigBundle\Service\Report\CustomerReportProvider;
+use BackOfficeDefaultTwigBundle\Service\Report\CustomerReportsContext;
 use BackOfficeDefaultTwigBundle\Service\Report\SalesReportProvider;
 use BackOfficeDefaultTwigBundle\Service\Report\SalesReportsContext;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,6 +35,7 @@ final class ReportsController
     public function __construct(
         private readonly AdminAccessChecker $access,
         private readonly ConversionReportProvider $conversionReports,
+        private readonly CustomerReportProvider $customerReports,
         private readonly SalesReportProvider $salesReports,
         private readonly Environment $twig,
     ) {
@@ -105,6 +108,51 @@ final class ReportsController
         );
 
         return new Response($this->twig->render('@BackOfficeDefaultTwig/reports/sales.html.twig', [
+            'report' => $report,
+            'current_tab' => $tab,
+        ]));
+    }
+
+    #[Route('/admin/reports/customers/cohorts', name: CustomerReportProvider::ROUTE_COHORTS, methods: ['GET'])]
+    public function customerCohorts(Request $request): Response
+    {
+        return $this->customers(CustomerReportProvider::TAB_COHORTS, $request);
+    }
+
+    #[Route('/admin/reports/customers/lifetime', name: CustomerReportProvider::ROUTE_LIFETIME, methods: ['GET'])]
+    public function customerLifetime(Request $request): Response
+    {
+        return $this->customers(CustomerReportProvider::TAB_LIFETIME, $request);
+    }
+
+    #[Route('/admin/reports/customers/segments', name: CustomerReportProvider::ROUTE_SEGMENTS, methods: ['GET'])]
+    public function customerSegments(Request $request): Response
+    {
+        return $this->customers(CustomerReportProvider::TAB_SEGMENTS, $request);
+    }
+
+    private function customers(string $tab, Request $request): Response
+    {
+        // The customers are personal data: the three tabs follow the customer permission.
+        if ($denied = $this->access->check(AdminResources::CUSTOMER, [], AccessManager::VIEW)) {
+            return $denied;
+        }
+
+        if (!CustomerReportsContext::coreHasCustomerReports()) {
+            return new Response($this->twig->render('@BackOfficeDefaultTwig/reports/customers.html.twig', ['report' => null, 'current_tab' => $tab]));
+        }
+
+        $report = $this->customerReports->compute(
+            $tab,
+            CustomerReportProvider::depth($request->query->getInt('depth', CustomerReportProvider::DEFAULT_DEPTH)),
+            CustomerReportProvider::unit($request->query->getString('unit') ?: null),
+            'paid' !== $request->query->get('scope'),
+            DateRange::fromRequest($request),
+            $request->getLocale(),
+            $request->query->getBoolean('refresh'),
+        );
+
+        return new Response($this->twig->render('@BackOfficeDefaultTwig/reports/customers.html.twig', [
             'report' => $report,
             'current_tab' => $tab,
         ]));

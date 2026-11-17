@@ -17,6 +17,14 @@
     {{ safe_hook('variables.top') }}
 
     <div class="container-fluid" data-testid="variables-page">
+        {% if edit_forms[app.request.query.getInt('edit')] is defined and is_granted('UPDATE', 'admin.configuration.variable') %}
+            {# Opened from a screen that names one variable: it is shown in its edit dialog. #}
+            <div hidden
+                 data-controller="bo-auto-open-modal"
+                 data-bo-auto-open-modal-target-value="#variable-edit-modal-{{ app.request.query.getInt('edit') }}"
+                 data-testid="variable-edit-requested"></div>
+        {% endif %}
+
         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
             <h1 class="h3 mb-0">{{ 'System variables'|trans }}</h1>
             {% if is_granted('CREATE', 'admin.configuration.variable') %}
