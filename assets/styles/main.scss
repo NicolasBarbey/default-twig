@@ -922,8 +922,16 @@ td.bo-datatable__details-col {
     }
 }
 
-// Tabs - extra breathing room
+// Tabs - extra breathing room. The open tab is a box on the background of the page
+// (body.bg-body-secondary), open at the bottom onto its content: Bootstrap fills it
+// with --bs-body-bg, which here is the grey of the inputs, not the one of the page.
 .nav-tabs {
+    --bs-nav-tabs-border-color: #{$card-border-color};
+    // No bottom edge on hover: the line under the tabs already draws it
+    --bs-nav-tabs-link-hover-border-color: #{$gray-200} #{$gray-200} transparent;
+    --bs-nav-tabs-link-active-color: #{$link-color};
+    --bs-nav-tabs-link-active-bg: var(--bs-secondary-bg);
+    --bs-nav-tabs-link-active-border-color: #{$card-border-color} #{$card-border-color} var(--bs-secondary-bg);
     border-bottom-color: $card-border-color;
     margin-bottom: 1.5rem;
 
@@ -931,17 +939,24 @@ td.bo-datatable__details-col {
         font-weight: 500;
         padding: .65rem 1rem;
 
+        // An orange edge on top of the open tab, so it stands out from the others at a glance
         &.active {
-            border-bottom-color: var(--bs-primary);
-            box-shadow: inset 0 -3px 0 0 var(--bs-primary);
+            box-shadow: inset 0 2px 0 0 var(--bs-primary);
+        }
+
+        // The edge would hide Bootstrap's focus ring, and the keyboard always lands on the open
+        // tab (the arrows open the tab they reach): the open tab draws both.
+        &.active:focus-visible {
+            box-shadow: inset 0 2px 0 0 var(--bs-primary), 0 0 0 var(--bs-focus-ring-width) var(--bs-focus-ring-color);
         }
     }
 }
 
 // Tab bar hosting a trailing toolbar (e.g. the edit-language switcher) on the
 // same row as the tabs. The wrapper carries the bottom border so the line runs
-// full width; the inner nav-tabs drops its own border and nudges down 1px to
-// sit flush on it. On narrow screens the aside wraps below the tabs.
+// full width; the inner nav-tabs drops its own border, and Bootstrap's 1px pull
+// of each tab already lays the open one over it. The aside keeps its place: the
+// tabs that no longer fit go into the More menu of bo-tab-overflow.
 .bo-tab-bar {
     display: flex;
     flex-wrap: wrap;
@@ -951,15 +966,59 @@ td.bo-datatable__details-col {
     border-bottom: 1px solid $card-border-color;
     margin-bottom: 2rem;
 
+    // The tabs shrink before the aside wraps: bo-tab-overflow moves the ones that no longer fit into its More menu
     > .nav-tabs {
-        flex: 1 1 auto;
-        margin-bottom: -1px;
+        flex: 1 1 0;
+        min-width: 0;
+        margin-bottom: 0;
         border-bottom: 0;
+    }
+
+    // A tab keeps its label on one line and its width: the row clips or hands it to the More menu instead.
+    // Every tab takes the height of the tallest one (a count badge makes a tab taller), so that all of
+    // them reach the line under the row.
+    > .nav-tabs > .nav-item {
+        display: flex;
+        flex-shrink: 0;
+    }
+
+    > .nav-tabs .nav-link {
+        white-space: nowrap;
+    }
+
+    // Until bo-tab-overflow has laid the tabs out, they hold on one clipped row instead of wrapping for a frame
+    // (a pixel of padding, given back by the margin, keeps the open tab's overlap of the line unclipped)
+    &[data-controller~="bo-tab-overflow"]:not(.bo-tab-bar--ready) > .nav-tabs {
+        flex-wrap: nowrap;
+        overflow: hidden;
+        padding-bottom: 1px;
+        margin-bottom: -1px;
     }
 
     > .bo-tab-bar__aside {
         padding-bottom: .6rem;
     }
+
+    // The open tab starts with a save toolbar: half the gap keeps the buttons close to their tab
+    &:has(+ .tab-content > .tab-pane.active .bo-save-toolbar--top) {
+        margin-bottom: 1rem;
+    }
+}
+
+// Edit language toggle: centring the boxes leaves the capitals of the code above the middle
+// of the flag, the font keeping more room over its letters than under them. Both sit on the
+// baseline instead, the flag lowered so that its middle meets the middle of the capitals
+// (about .35em above the baseline), and it takes no height so the button keeps the one of
+// the other small buttons.
+.bo-language-switcher__flag,
+.bo-language-switcher__code {
+    align-self: baseline;
+}
+
+.bo-language-switcher__flag {
+    position: relative;
+    top: calc(7px - .35em);
+    margin-top: -14px;
 }
 
 // Alerts - slightly bolder edge
@@ -986,10 +1045,11 @@ td.bo-datatable__details-col {
     border-color: $card-border-color;
 }
 
+// The selected entry carries text: the brand surface made for a white label, not $primary
 .dropdown-item.active,
 .dropdown-item:active {
-    background-color: var(--bs-primary);
-    color: #fff;
+    background-color: $btn-brand-surface;
+    color: $btn-brand-label;
 }
 
 // Code-style mono fields
@@ -3546,6 +3606,10 @@ form[data-bo-unsaved-changes-dirty] .bo-combinations-savebar {
 
     .bo-tab-bar {
         margin-bottom: 1.25rem;
+
+        &:has(+ .tab-content > .tab-pane.active .bo-save-toolbar--top) {
+            margin-bottom: .625rem;
+        }
     }
 }
 

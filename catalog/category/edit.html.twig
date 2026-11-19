@@ -45,7 +45,7 @@
             </div>
         </div>
 
-        <div class="bo-tab-bar">
+        <div class="bo-tab-bar" data-controller="bo-tab-overflow" data-bo-tab-overflow-more-label-value="{{ 'More'|trans }}">
             <ul class="nav nav-tabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link {% if current_tab == 'general' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab-general" type="button" data-testid="category-tab-general">
@@ -100,6 +100,22 @@
                 {% form_theme form with bo_form_themes only %}
                 {{ form_start(form, { action: path('admin.categories.save', { category_id: category.id }), method: 'post', attr: { 'data-testid': 'category-edit-form' } }) }}
                     <input type="hidden" name="category_id" value="{{ category.id }}">
+                    {% set edit_toolbar = {
+                        closeUrl: path('admin.categories.default', { category_id: category.parent }),
+                        closeFirst: false,
+                        closeIcon: 'bi-x-lg',
+                        saveIcon: 'bi-check-lg',
+                        saveCloseIcon: 'bi-x-lg',
+                        saveVariant: 'success',
+                        saveCloseVariant: 'info',
+                        iconAfterLabel: true,
+                        align: 'end'
+                    } %}
+                    {% set edit_dates = 'Category created on %date_create. Last modification on %date_change'|trans({
+                        '%date_create': category.createdAt ? category.createdAt|format_datetime('medium', 'short') : '-',
+                        '%date_change': category.updatedAt ? category.updatedAt|format_datetime('medium', 'short') : '-',
+                    }) %}
+                    {{ component('BoSaveModeToolbar', edit_toolbar|merge({ atTop: true, wrapperClass: 'mb-3', testid: 'category-edit-top' })) }}
 
                     <div class="row">
                         <div class="col-md-8">
@@ -147,30 +163,13 @@
                                 {% do form.default_template_id.setRendered %}
                             </div>
                             {{ safe_hook('category.modification.form-right.bottom', { category_id: category.id }) }}
-                            {% set edit_toolbar = {
-                                closeUrl: path('admin.categories.default', { category_id: category.parent }),
-                                closeFirst: false,
-                                closeIcon: 'bi-x-lg',
-                                saveIcon: 'bi-check-lg',
-                                saveCloseIcon: 'bi-x-lg',
-                                saveVariant: 'success',
-                                saveCloseVariant: 'info',
-                                iconAfterLabel: true,
-                                align: 'start'
-                            } %}
-                            {% set edit_dates = 'Category created on %date_create. Last modification on %date_change'|trans({
-                                '%date_create': category.createdAt ? category.createdAt|format_datetime('medium', 'short') : '-',
-                                '%date_change': category.updatedAt ? category.updatedAt|format_datetime('medium', 'short') : '-',
-                            }) %}
-                            {{ component('BoSaveModeToolbar', edit_toolbar|merge({ wrapperClass: 'mb-2', testid: 'category-edit-top' })) }}
-                            <p class="small text-muted mb-3" data-testid="category-edit-dates-top">{{ edit_dates }}</p>
                         </div>
                     </div>
                     {{ form_widget(form.id) }}
                     {{ form_widget(form.locale) }}
                     {{ safe_hook('category.update-form', { category: category.id }) }}
                     {{ component('BoSaveModeToolbar', edit_toolbar|merge({ testid: 'category-edit' })) }}
-                    <p class="small text-muted mt-3 mb-0" data-testid="category-edit-dates">{{ edit_dates }}</p>
+                    <p class="small text-muted text-end mt-3 mb-0" data-testid="category-edit-dates">{{ edit_dates }}</p>
                 {{ form_widget(form._token) }}
                 {# module fields added through the legacy form bridge are rendered by the module hooks, not auto-dumped #}
                 {{ form_end(form, {render_rest: false}) }}

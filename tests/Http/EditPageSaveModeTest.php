@@ -24,7 +24,7 @@ use Thelia\Test\WebIntegrationTestCase;
 use Thelia\Tests\Support\BackOffice\AdminSessionInjector;
 
 /**
- * The general form of the product, category, folder and content sheets carries
+ * The general form of the product, category, folder, content and brand sheets carries
  * the Save / Save and close / Close toolbar at its top and its bottom. Save
  * brings the user back to the sheet, Save and close to the list the sheet
  * belongs to, the one the Close link points at.
@@ -96,6 +96,12 @@ final class EditPageSaveModeTest extends WebIntegrationTestCase
 
             return ['/admin/content/update/'.$content->getId(), '/admin/folders?folder_id='.$folder->getId()];
         }];
+
+        yield 'brand' => ['brand', static function (FixtureFactory $factory): array {
+            $brand = $factory->brand();
+
+            return ['/admin/brand/update/'.$brand->getId(), '/admin/brand'];
+        }];
     }
 
     /**
@@ -116,6 +122,26 @@ final class EditPageSaveModeTest extends WebIntegrationTestCase
             $closeUrl = (string) preg_replace('#^https?://[^/]+#', '', (string) $crawler->filter('[data-testid="'.$toolbar.'-cancel"]')->attr('href'));
             self::assertSame($listUrl, $closeUrl, $toolbar.': Close leads to the list of the sheet.');
         }
+    }
+
+    /**
+     * @param callable(FixtureFactory): array{string, string} $sheet
+     */
+    #[DataProvider('sheets')]
+    public function testTheTopToolbarOpensTheGeneralForm(string $name, callable $sheet): void
+    {
+        [$editUrl] = $sheet($this->factory);
+
+        $crawler = $this->client->request('GET', $editUrl);
+        self::assertResponseIsSuccessful();
+
+        $toolbars = $crawler->filter('[data-testid="'.$name.'-edit-form"] .bo-save-toolbar');
+        self::assertCount(2, $toolbars, 'One toolbar above the fields, one under them.');
+        self::assertSame($name.'-edit-top-save-stay', $toolbars->first()->filter('button')->first()->attr('data-testid'));
+        self::assertStringContainsString('bo-save-toolbar--top', (string) $toolbars->first()->attr('class'), 'The top toolbar halves the gap under the tab bar.');
+        self::assertStringNotContainsString('bo-save-toolbar--top', (string) $toolbars->last()->attr('class'));
+        self::assertCount(0, $crawler->filter('[data-testid="'.$name.'-edit-form"] .row .bo-save-toolbar'), 'No toolbar left inside the columns of the form.');
+        self::assertCount(0, $crawler->filter('[data-testid="'.$name.'-edit-dates-top"]'), 'The dates show under the bottom toolbar only.');
     }
 
     /**

@@ -18,7 +18,7 @@
     {{ safe_hook('order-return-reason-edit.top', { order_return_reason_id: reason.id }) }}
 
     <div class="container-fluid" data-testid="order-return-reason-edit-page">
-        <div class="bo-tab-bar">
+        <div class="bo-tab-bar" data-controller="bo-tab-overflow" data-bo-tab-overflow-more-label-value="{{ 'More'|trans }}">
             <h1 class="h3 mb-0">{{ 'Return reason'|trans }} <small class="text-muted">#{{ reason.id }}</small></h1>
             <div class="bo-tab-bar__aside">
                 {{ component('BoLanguageSwitcher', { currentLanguageId: edit_language_id }) }}

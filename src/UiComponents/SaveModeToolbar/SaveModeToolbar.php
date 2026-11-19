@@ -56,5 +56,8 @@ final class SaveModeToolbar
 
     public string $wrapperClass = 'mt-3';
 
+    /** The toolbar opens its form: the tab bar above it then leaves only half its usual gap. */
+    public bool $atTop = false;
+
     public ?string $testid = null;
 }

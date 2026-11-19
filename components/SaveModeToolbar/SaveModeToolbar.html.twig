@@ -23,6 +23,7 @@
         showSaveClose    render the Save and close button (default: true)
         align            start | center | end (default: end)
         wrapperClass     extra classes on the toolbar container (default: mt-3)
+        atTop            the toolbar opens its form, under a tab bar that then halves its gap (default: false)
         testid           base data-testid: appends -cancel / -save-stay / -save-close (default: none)
 #}
 {% macro labelled(label, icon, iconAfterLabel) %}
@@ -35,7 +36,7 @@
         <a href="{{ closeUrl }}" class="btn btn-{{ closeVariant }}"{% for name, value in closeAttributes %} {{ name|e('html_attr') }}="{{ value }}"{% endfor %}{% if testid %} data-testid="{{ testid }}-cancel"{% endif %}>{{ _self.labelled(closeLabel, closeIcon, iconAfterLabel) }}</a>
     {% endif %}
 {% endset %}
-<div class="d-flex flex-wrap justify-content-{{ align }} gap-2{% if wrapperClass %} {{ wrapperClass }}{% endif %}">
+<div class="bo-save-toolbar{% if atTop %} bo-save-toolbar--top{% endif %} d-flex flex-wrap justify-content-{{ align }} gap-2{% if wrapperClass %} {{ wrapperClass }}{% endif %}">
     {% if closeFirst %}{{ close_link }}{% endif %}
     {% if showSave %}
         <button type="submit" name="{{ saveModeField }}" value="stay" class="btn btn-{{ saveVariant }}"{% if testid %} data-testid="{{ testid }}-save-stay"{% endif %}>

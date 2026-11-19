@@ -19,7 +19,7 @@
         {{ safe_hook('profile-edit.top', { profile_id: profile.id }) }}
         <h1 class="h3 mb-3">{{ 'Edit profile'|trans }}: <span class="text-muted">{{ profile.code }}</span></h1>
 
-        <div class="bo-tab-bar">
+        <div class="bo-tab-bar" data-controller="bo-tab-overflow" data-bo-tab-overflow-more-label-value="{{ 'More'|trans }}">
             <ul class="nav nav-tabs" role="tablist" data-testid="profile-edit-tabs">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-general" type="button" role="tab" data-testid="profile-tab-general">{{ 'General'|trans }}</button>

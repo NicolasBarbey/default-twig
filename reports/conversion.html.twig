@@ -51,7 +51,7 @@
             {{ 'This funnel is rebuilt from the carts and the orders of the period. It does not count page views: for the visit funnel, plug in a web analytics tool, for instance with the GoogleTagManager module.'|trans }}
         </p>
 
-        <div class="bo-tab-bar">
+        <div class="bo-tab-bar" data-controller="bo-tab-overflow" data-bo-tab-overflow-more-label-value="{{ 'More'|trans }}">
             <ul class="nav nav-tabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link {% if current_tab == 'funnel' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab-funnel" type="button" role="tab" data-testid="report-tab-funnel">

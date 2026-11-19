@@ -22,7 +22,7 @@
     <div class="container-fluid" data-testid="order-status-edit-page">
         <h1 class="h3 mb-3">{{ 'Order status'|trans }} <small class="text-muted">#{{ status.id }}</small></h1>
 
-        <div class="bo-tab-bar">
+        <div class="bo-tab-bar" data-controller="bo-tab-overflow" data-bo-tab-overflow-more-label-value="{{ 'More'|trans }}">
             <ul class="nav nav-tabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link {% if current_tab|default('general') == 'general' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab-general" type="button" data-testid="order-status-tab-general">

@@ -42,7 +42,7 @@
             </div>
         </div>
 
-        <div class="bo-tab-bar">
+        <div class="bo-tab-bar" data-controller="bo-tab-overflow" data-bo-tab-overflow-more-label-value="{{ 'More'|trans }}">
             <ul class="nav nav-tabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link {% if current_tab == 'general' %}active{% endif %}" data-bs-toggle="tab" data-bs-target="#tab-general" type="button" role="tab" data-testid="brand-tab-general">
@@ -86,6 +86,18 @@
             <div class="tab-pane fade {% if current_tab == 'general' %}show active{% endif %}" id="tab-general" role="tabpanel">
                 {% form_theme form with bo_form_themes only %}
                 {{ form_start(form, { action: path('admin.brand.save', { brand_id: brand.id }), method: 'post', attr: { 'data-testid': 'brand-edit-form' } }) }}
+                    {% set edit_toolbar = {
+                        closeUrl: path('admin.brand.default'),
+                        closeFirst: false,
+                        closeIcon: 'bi-x-lg',
+                        saveIcon: 'bi-check-lg',
+                        saveCloseIcon: 'bi-x-lg',
+                        saveVariant: 'success',
+                        saveCloseVariant: 'info',
+                        iconAfterLabel: true,
+                        align: 'end'
+                    } %}
+                    {{ component('BoSaveModeToolbar', edit_toolbar|merge({ atTop: true, wrapperClass: 'mb-3', testid: 'brand-edit-top' })) }}
                     <div class="row">
                         <div class="col-md-8">
                             <div class="mb-3">
@@ -180,11 +192,7 @@
                     {{ form_widget(form.id) }}
                     {{ form_widget(form.locale) }}
                     {{ safe_hook('brand.update-form', { brand: brand.id }) }}
-                    <div class="mt-3">
-                        <button type="submit" class="btn btn-primary" data-testid="brand-edit-submit">
-                            <i class="bi bi-check2" aria-hidden="true"></i> {{ 'Save'|trans }}
-                        </button>
-                    </div>
+                    {{ component('BoSaveModeToolbar', edit_toolbar|merge({ testid: 'brand-edit' })) }}
                 {{ form_widget(form._token) }}
                 {# module fields added through the legacy form bridge are rendered by the module hooks, not auto-dumped #}
                 {{ form_end(form, {render_rest: false}) }}

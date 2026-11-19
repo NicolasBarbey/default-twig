@@ -3982,4 +3982,5 @@ return [
     'Reactivate' => 'Réactiver',
     'Delete this plan' => 'Supprimer ce plan',
     'Other currencies' => 'Autres devises',
+    'More' => 'Plus',
 ];

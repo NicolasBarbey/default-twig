@@ -141,8 +141,9 @@ final class BrandController
     }
 
     #[Route('/save/{brand_id}', name: 'save', methods: ['POST'], requirements: ['brand_id' => '\d+'])]
-    public function processUpdate(int $brand_id): Response
+    public function processUpdate(int $brand_id, Request $request): Response
     {
+        $closeAfterSave = $request->request->get('save_mode') === 'close';
         $form = $this->formFactory->createNamed('thelia_brand_modification', BrandType::class, null, [
             'include_id' => true,
             'include_description' => true,
@@ -155,8 +156,8 @@ final class BrandController
             eventName: TheliaEvents::BRAND_UPDATE,
             eventFactory: $this->updateEvent(...),
             actionLabel: 'Brand update',
-            successRoute: self::EDIT_ROUTE,
-            successParameters: ['brand_id' => $brand_id],
+            successRoute: $closeAfterSave ? self::LIST_ROUTE : self::EDIT_ROUTE,
+            successParameters: $closeAfterSave ? [] : ['brand_id' => $brand_id],
             renderError: fn (): RedirectResponse => new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['brand_id' => $brand_id])),
             describeForLog: $this->describeUpdated(...),
         );

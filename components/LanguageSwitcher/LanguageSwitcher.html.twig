@@ -1,5 +1,5 @@
 {#
-    BoLanguageSwitcher - flag buttons to edit an entity's i18n fields in another language.
+    BoLanguageSwitcher - dropdown of flags to edit an entity's i18n fields in another language.
 
     Reloads the current URL with ?edit_language_id=<id> (preserving the other query params, e.g.
     current_tab), mirroring the legacy inner-form-toolbar switcher. The controller reads the param
@@ -8,24 +8,35 @@
     Props:
         currentLanguageId  id of the language currently edited (required, marks the active flag)
         editParam          query parameter carrying the language id (default: edit_language_id)
-        label              leading label, |trans (default: Edit in)
+        label              heading of the menu, title and accessible name of the toggle, |trans (default: Edit in)
 #}
 {% set languages = bo_languages() %}
 {% if languages|length > 1 %}
-    <div class="d-flex align-items-center gap-2 flex-wrap" data-testid="bo-language-switcher">
-        <span class="text-body-secondary small">{{ label|trans }}</span>
-        <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'Edit language'|trans }}">
+    {% set current = languages|filter(lang => lang.id == currentLanguageId)|first|default(languages|first) %}
+    <div class="dropdown" data-testid="bo-language-switcher">
+        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle d-inline-flex align-items-center"
+                data-bs-toggle="dropdown" aria-expanded="false"
+                title="{{ label|trans }}"
+                aria-label="{{ label|trans }} {{ current.title }} ({{ current.code|upper }})"
+                data-testid="bo-language-switcher-toggle">
+            <img src="{{ asset('backoffice/img/svgFlags/' ~ current.code ~ '.svg') }}" alt="" width="20" height="14" class="bo-language-switcher__flag me-1">
+            <span class="bo-language-switcher__code">{{ current.code|upper }}</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+            <li><span class="dropdown-header">{{ label|trans }}</span></li>
             {% for lang in languages %}
-                {% set active = lang.id == currentLanguageId %}
-                <a class="btn {{ active ? 'btn-primary' : 'btn-outline-secondary' }} d-inline-flex align-items-center"
-                   href="{{ app.request.pathInfo }}?{{ app.request.query.all|merge({ (editParam): lang.id })|url_encode }}"
-                   title="{{ 'Edit information in %lang'|trans({ '%lang': lang.title }) }}"
-                   data-testid="bo-language-switcher-{{ lang.code }}"
-                   {{ active ? 'aria-current="true"' : '' }}>
-                    <img src="{{ asset('backoffice/img/svgFlags/' ~ lang.code ~ '.svg') }}" alt="{{ lang.title }}" width="20" height="14" class="me-1">
-                    <span>{{ lang.code|upper }}</span>
-                </a>
+                {% set active = lang.id == current.id %}
+                <li>
+                    <a class="dropdown-item d-flex align-items-center{{ active ? ' active' : '' }}"
+                       href="{{ app.request.pathInfo }}?{{ app.request.query.all|merge({ (editParam): lang.id })|url_encode }}"
+                       title="{{ 'Edit information in %lang'|trans({ '%lang': lang.title }) }}"
+                       data-testid="bo-language-switcher-{{ lang.code }}"
+                       {{ active ? 'aria-current="true"' : '' }}>
+                        <img src="{{ asset('backoffice/img/svgFlags/' ~ lang.code ~ '.svg') }}" alt="" width="20" height="14" class="me-2">
+                        {{ lang.title }}
+                    </a>
+                </li>
             {% endfor %}
-        </div>
+        </ul>
     </div>
 {% endif %}

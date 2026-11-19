@@ -21,7 +21,7 @@
     <div class="container-fluid" data-testid="tax-rule-edit-page">
         <h1 class="h3 mb-3">{{ 'Edit tax rule'|trans }}: <span class="text-muted" data-testid="tax-rule-edit-title">{{ tax_rule.title ?: ('#' ~ tax_rule.id) }}</span></h1>
 
-        <div class="bo-tab-bar">
+        <div class="bo-tab-bar" data-controller="bo-tab-overflow" data-bo-tab-overflow-more-label-value="{{ 'More'|trans }}">
             <ul class="nav nav-tabs" role="tablist" data-testid="tax-rule-edit-tabs">
             <li class="nav-item" role="presentation">
                 <button class="nav-link {{ active_tab == 'data' ? 'active' : '' }}" id="tax-rule-tab-data" data-bs-toggle="tab" data-bs-target="#tax-rule-pane-data" type="button" role="tab">
