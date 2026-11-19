@@ -2099,12 +2099,12 @@ main[data-testid="bo-main"] {
     text-align: start;
 }
 
-// The size of the number of lines under the total: secondary figures of the row.
+// Payment and delivery module of a row.
 .bo-order-module {
     display: inline-flex;
     align-items: center;
     color: var(--bs-body-color);
-    font-size: $small-font-size;
+    font-size: .9rem;
 }
 
 tr.bo-order-row--urgent {
