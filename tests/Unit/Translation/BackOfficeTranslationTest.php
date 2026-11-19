@@ -41,25 +41,25 @@ final class BackOfficeTranslationTest extends TestCase
 
     /** The texts each catalogue lacks, as measured when it was last changed. */
     private const KNOWN_GAPS = [
-        'ar_SA' => 2077,
-        'cs_CZ' => 1930,
-        'de_DE' => 1917,
-        'el_GR' => 2077,
-        'es_ES' => 1859,
-        'fa_IR' => 2077,
-        'he_IL' => 2077,
-        'hu_HU' => 2077,
-        'id_ID' => 2077,
-        'it_IT' => 1859,
-        'nl_NL' => 1930,
-        'pl_PL' => 2077,
-        'pt_BR' => 2077,
-        'pt_PT' => 2077,
-        'ru_RU' => 1930,
-        'sk_SK' => 2077,
-        'tr_TR' => 2077,
-        'uk_UA' => 2077,
-        'zh_CN' => 2077,
+        'ar_SA' => 2078,
+        'cs_CZ' => 1931,
+        'de_DE' => 1918,
+        'el_GR' => 2078,
+        'es_ES' => 1860,
+        'fa_IR' => 2078,
+        'he_IL' => 2078,
+        'hu_HU' => 2078,
+        'id_ID' => 2078,
+        'it_IT' => 1860,
+        'nl_NL' => 1931,
+        'pl_PL' => 2078,
+        'pt_BR' => 2078,
+        'pt_PT' => 2078,
+        'ru_RU' => 1931,
+        'sk_SK' => 2078,
+        'tr_TR' => 2078,
+        'uk_UA' => 2078,
+        'zh_CN' => 2078,
     ];
 
     #[DataProvider('catalogues')]
@@ -71,6 +71,25 @@ final class BackOfficeTranslationTest extends TestCase
         self::assertLessThanOrEqual($known, \count($missing), 'Missing from messages.'.$locale.'.php:'."\n".implode("\n", $missing));
         // A catalogue that got more complete keeps its gain: the count goes down with it.
         self::assertGreaterThanOrEqual($known, \count($missing), \sprintf('messages.%s.php now lacks %d texts: lower KNOWN_GAPS[\'%s\'] to it.', $locale, \count($missing), $locale));
+    }
+
+    /**
+     * A catalogue is a PHP array: a text written twice keeps its last translation without a
+     * word, so one screen shows the translation meant for another. Two meanings need two texts.
+     */
+    public function testNoCatalogueTranslatesATextTwice(): void
+    {
+        $twice = [];
+
+        foreach (glob(self::root().'/translations/messages.*.php') ?: [] as $catalogue) {
+            preg_match_all("/^\\s*'((?:[^'\\\\]|\\\\.)*)'\\s*=>/m", (string) file_get_contents($catalogue), $matches);
+
+            foreach (array_keys(array_filter(array_count_values($matches[1]), static fn (int $count): bool => $count > 1)) as $text) {
+                $twice[] = basename($catalogue).': '.$text;
+            }
+        }
+
+        self::assertSame([], $twice, 'Written twice, the first translation is lost.');
     }
 
     /**
