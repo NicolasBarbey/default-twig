@@ -1,0 +1,28 @@
+<div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}-title" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{{ action }}" enctype="multipart/form-data" data-testid="{{ testid }}-form">
+                <input type="hidden" name="_token" value="{{ assignToken() }}">
+                <input type="hidden" name="language_id" value="{{ language_id }}">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="{{ id }}-title">{{ 'Import from a CSV file'|trans }}</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'Close'|trans }}"></button>
+                </div>
+                <div class="modal-body">
+                    <p>{{ 'CSV file, UTF-8, separator ; (semicolon), 1 MB at most. The first line may be a header starting with "locale;term". A term already in the dictionary is updated.'|trans }}</p>
+                    <p class="mb-1">{{ 'One line per entry:'|trans }}</p>
+                    <pre class="mb-1 text-wrap text-break" data-testid="{{ testid }}-format"><code>{{ format }}</code></pre>
+                    <p class="text-body-secondary small">{{ 'Example:'|trans }} <code>{{ example }}</code></p>
+                    <label for="{{ id }}-file" class="form-label">{{ 'File'|trans }}</label>
+                    <input id="{{ id }}-file" type="file" name="file" accept=".csv,.txt,text/csv,text/plain" class="form-control" required data-testid="{{ testid }}-file">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ 'Cancel'|trans }}</button>
+                    <button type="submit" class="btn btn-primary" data-testid="{{ testid }}-submit">
+                        <i class="bi bi-upload" aria-hidden="true"></i> {{ 'Import'|trans }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,41 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Edit synonyms'|trans }} - {{ synonym.term }}{% endblock %}
+{% block body_testid %}search-synonym-edit{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="/admin/configuration">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="{{ path('admin.configuration.search_synonyms.default', { language_id: language_id }) }}">{{ 'Search synonyms'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ synonym.term }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="search-synonym-edit-page">
+        <h1 class="h3 mb-3">{{ 'Synonyms'|trans }} <small class="text-muted">#{{ synonym.id }}</small></h1>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-body">
+                        {% form_theme form with bo_form_themes only %}
+                        {{ form_start(form, { action: path('admin.configuration.search_synonyms.save'), method: 'post' }) }}
+                            {% include '@BackOfficeDefaultTwig/configuration/search_synonym/_fields.html.twig' with { form: form } only %}
+                            {{ form_widget(form.id) }}
+                            <div class="d-flex justify-content-end gap-2 mt-3">
+                                <a href="{{ path('admin.configuration.search_synonyms.default', { language_id: language_id }) }}" class="btn btn-outline-secondary">{{ 'Cancel'|trans }}</a>
+                                {% if is_granted('UPDATE', 'admin.configuration') %}
+                                    <button type="submit" class="btn btn-primary" data-testid="search-synonym-save"><i class="bi bi-check2"></i> {{ 'Save'|trans }}</button>
+                                {% endif %}
+                            </div>
+                        {{ form_end(form) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{{ component('BoConfirmDialog', {
+    id: 'search-redirect-delete-modal',
+    title: 'Delete redirection',
+    formAction: path('admin.configuration.search_redirects.delete'),
+    message: 'Do you really want to delete this redirection?',
+    testid: 'search-redirect-delete',
+    prefillTrigger: 'data-search-redirect-id',
+    prefillInput: 'search_redirect_id',
+}) }}

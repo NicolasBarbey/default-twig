@@ -1,0 +1,84 @@
+{% extends '@BackOfficeDefaultTwig/base.html.twig' %}
+
+{% block title %}{{ 'Search synonyms'|trans }}{% endblock %}
+{% block body_testid %}search-synonyms-list{% endblock %}
+
+{% block breadcrumb %}
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ path('admin.home') }}">{{ 'Home'|trans }}</a></li>
+            <li class="breadcrumb-item"><a href="/admin/configuration">{{ 'Configuration'|trans }}</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ 'Search synonyms'|trans }}</li>
+        </ol>
+    </nav>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid" data-testid="search-synonyms-page">
+        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
+            <h1 class="h3 mb-0">{{ 'Search synonyms'|trans }}</h1>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                {% include '@BackOfficeDefaultTwig/configuration/search_dictionary/_language_filter.html.twig' %}
+                {% if is_granted('CREATE', 'admin.configuration') %}
+                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#search-synonym-import-modal" data-testid="search-synonym-import-button">
+                        <i class="bi bi-upload" aria-hidden="true"></i> {{ 'Import'|trans }}
+                    </button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#search-synonym-create-modal" data-testid="search-synonym-create-button">
+                        <i class="bi bi-plus-lg" aria-hidden="true"></i> {{ 'Add a synonym'|trans }}
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+
+        {{ component('BoDataTable', {
+            id: 'search-synonyms',
+            columns: [
+                column('term', 'Term'|trans, 'start', 'term'),
+                column('synonyms', 'Equivalent terms'|trans, 'start', wrap: true),
+                column('direction', 'Direction'|trans, 'start', hideBelow: 'md'),
+                column_toggle('active', 'Active'|trans, 'toggle_url'),
+                column_actions('_actions', 'Actions'|trans),
+            ],
+            rows: rows,
+            emptyMessage: 'No synonym defined in this language.'|trans,
+            sortField: sort_field,
+            sortDirection: sort_direction,
+            sortKeepParams: { language_id: language_id },
+        }) }}
+
+        {% if last_page > 1 %}
+            {{ component('BoPagination', {
+                route: 'admin.configuration.search_synonyms.default',
+                currentPage: current_page,
+                lastPage: last_page,
+                routeParams: { language_id: language_id, order: sort_field, direction: sort_direction },
+                ariaLabel: 'Search synonyms pagination'|trans,
+                testid: 'search-synonyms-pagination',
+            }) }}
+        {% endif %}
+    </div>
+
+    {% if is_granted('CREATE', 'admin.configuration') %}
+        {% component 'BoCreateDialog' with {
+            id: 'search-synonym-create-modal',
+            title: 'New synonyms',
+            form: create_form,
+            formAction: path('admin.configuration.search_synonyms.create'),
+            submitLabel: 'Create',
+            testid: 'search-synonym-create',
+            fieldsTemplate: '@BackOfficeDefaultTwig/configuration/search_synonym/_fields.html.twig',
+        } %}
+        {% endcomponent %}
+
+        {% include '@BackOfficeDefaultTwig/configuration/search_dictionary/_import_modal.html.twig' with {
+            language_id: language_id,
+            id: 'search-synonym-import-modal',
+            action: path('admin.configuration.search_synonyms.import'),
+            testid: 'search-synonym-import',
+            format: 'locale;term;equivalent 1|equivalent 2;bidirectional (0 or 1)',
+            example: 'en_US;sweater;jumper|pullover;1',
+        } only %}
+    {% endif %}
+
+    {% include '@BackOfficeDefaultTwig/configuration/search_synonym/_delete_modal.html.twig' %}
+{% endblock %}

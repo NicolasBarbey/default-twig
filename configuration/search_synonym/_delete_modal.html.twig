@@ -1,0 +1,9 @@
+{{ component('BoConfirmDialog', {
+    id: 'search-synonym-delete-modal',
+    title: 'Delete synonyms',
+    formAction: path('admin.configuration.search_synonyms.delete'),
+    message: 'Do you really want to delete this entry?',
+    testid: 'search-synonym-delete',
+    prefillTrigger: 'data-search-synonym-id',
+    prefillInput: 'search_synonym_id',
+}) }}

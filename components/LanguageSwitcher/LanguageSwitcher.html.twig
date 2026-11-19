@@ -9,6 +9,7 @@
         currentLanguageId  id of the language currently edited (required, marks the active flag)
         editParam          query parameter carrying the language id (default: edit_language_id)
         label              heading of the menu, title and accessible name of the toggle, |trans (default: Edit in)
+        resetParams        query parameters dropped on a language change (default: none)
 #}
 {% set languages = bo_languages() %}
 {% if languages|length > 1 %}
@@ -28,7 +29,7 @@
                 {% set active = lang.id == current.id %}
                 <li>
                     <a class="dropdown-item d-flex align-items-center{{ active ? ' active' : '' }}"
-                       href="{{ app.request.pathInfo }}?{{ app.request.query.all|merge({ (editParam): lang.id })|url_encode }}"
+                       href="{{ app.request.pathInfo }}?{{ app.request.query.all|filter((value, key) => key not in resetParams)|merge({ (editParam): lang.id })|url_encode }}"
                        title="{{ 'Edit information in %lang'|trans({ '%lang': lang.title }) }}"
                        data-testid="bo-language-switcher-{{ lang.code }}"
                        {{ active ? 'aria-current="true"' : '' }}>

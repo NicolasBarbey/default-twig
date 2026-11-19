@@ -24,4 +24,7 @@ final class LanguageSwitcher
     public string $editParam = 'edit_language_id';
 
     public string $label = 'Edit in';
+
+    /** @var list<string> */
+    public array $resetParams = [];
 }
