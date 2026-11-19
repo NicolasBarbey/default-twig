@@ -59,6 +59,10 @@
     </div>
 
     {% if is_granted('CREATE', 'admin.configuration') %}
+        {% if reopen_create|default(false) %}
+            <div hidden data-controller="bo-auto-open-modal" data-bo-auto-open-modal-target-value="#search-synonym-create-modal" data-testid="search-synonym-create-reopen"></div>
+        {% endif %}
+
         {% component 'BoCreateDialog' with {
             id: 'search-synonym-create-modal',
             title: 'New synonyms',
@@ -75,7 +79,7 @@
             id: 'search-synonym-import-modal',
             action: path('admin.configuration.search_synonyms.import'),
             testid: 'search-synonym-import',
-            format: 'locale;term;equivalent 1|equivalent 2;bidirectional (0 or 1)',
+            format: 'locale;term;equivalent 1|equivalent 2;bidirectional (0 or 1)'|trans,
             example: 'en_US;sweater;jumper|pullover;1',
         } only %}
     {% endif %}

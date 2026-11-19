@@ -19,6 +19,7 @@ use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Domain\Search\Dictionary\SearchTermRedirectValidator;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\LangQuery;
 use Thelia\Model\SearchSynonym;
@@ -200,6 +201,34 @@ final class SearchDictionaryBackOfficeTest extends WebIntegrationTestCase
         $crawler = $this->client->followRedirect();
         self::assertCount(1, $crawler->filter('[data-testid="bo-flash-danger"]'), 'The refusal is shown as an error.');
         self::assertStringContainsString('path of the shop', $crawler->filter('[data-testid="bo-flash-danger"]')->text());
+        self::assertCount(1, $crawler->filter('[data-testid="search-redirect-create-reopen"]'), 'The creation dialog opens again.');
+        self::assertSame('b239evil', $crawler->filter('[data-testid="search-redirect-create-form"] input[name="thelia_search_redirect_create[term]"]')->attr('value'), 'The entry is kept.');
+        self::assertSame('https://evil.example/', $crawler->filter('[data-testid="search-redirect-create-form"] input[name="thelia_search_redirect_create[url]"]')->attr('value'));
+        self::assertStringContainsString('must be a path of the shop, starting with a single slash', $crawler->filter('[data-testid="search-redirect-create-form"]')->text(), 'The refusal is shown in the dialog.');
+
+        $crawler = $this->client->request('GET', self::REDIRECTS_URL.'?language_id='.$this->languageId);
+        self::assertCount(0, $crawler->filter('[data-testid="search-redirect-create-reopen"]'), 'The dialog opens again once only.');
+        self::assertSame('', (string) $crawler->filter('[data-testid="search-redirect-create-form"] input[name="thelia_search_redirect_create[term]"]')->attr('value'));
+    }
+
+    public function testARefusedSynonymOpensItsDialogAgainWithTheEntry(): void
+    {
+        $token = $this->formToken(self::SYNONYMS_URL.'?language_id='.$this->languageId, 'thelia_search_synonym_create');
+
+        $this->client->request('POST', self::SYNONYMS_URL.'/create', ['thelia_search_synonym_create' => [
+            'lang_id' => (string) $this->languageId,
+            'term' => 'b239same',
+            'synonyms' => 'B239SAME',
+            'active' => '1',
+            '_token' => $token,
+        ]]);
+
+        self::assertNull(SearchSynonymQuery::create()->findOneByTerm('b239same'), 'Nothing is created.');
+        $crawler = $this->client->followRedirect();
+
+        self::assertCount(1, $crawler->filter('[data-testid="search-synonym-create-reopen"]'), 'The creation dialog opens again.');
+        self::assertSame('b239same', $crawler->filter('[data-testid="search-synonym-create-form"] input[name="thelia_search_synonym_create[term]"]')->attr('value'));
+        self::assertStringContainsString('B239SAME', $crawler->filter('[data-testid="search-synonym-create-form"] textarea[name="thelia_search_synonym_create[synonyms]"]')->text());
     }
 
     public function testTheImportFormsKeepTheFilteredLanguage(): void
@@ -240,6 +269,38 @@ final class SearchDictionaryBackOfficeTest extends WebIntegrationTestCase
 
         $crawler = $this->client->followRedirect();
         self::assertStringContainsString('2 created', $crawler->filter('[data-testid="bo-flash-success"]')->text());
+    }
+
+    public function testTheImportOfRedirectionsWarnsAboutAWordManyProductsBear(): void
+    {
+        $locale = (string) LangQuery::create()->findPk($this->languageId)?->getLocale();
+        $category = $this->factory->category();
+        $taxRule = $this->factory->taxRule();
+        $currency = $this->factory->currency();
+
+        foreach (range(1, SearchTermRedirectValidator::COMMON_TERM_THRESHOLD + 1) as $index) {
+            $this->factory->product($category, $taxRule, $currency, ['title' => 'B239commonword chair '.$index, 'locale' => $locale]);
+        }
+
+        $token = $this->backOfficeToken(self::REDIRECTS_URL.'?language_id='.$this->languageId);
+        $path = tempnam(sys_get_temp_dir(), 'b239');
+        self::assertIsString($path);
+        file_put_contents($path, $locale.";b239commonword;url;/b239-common\n".$locale.";b239rareword;url;/b239-rare\n");
+
+        try {
+            $this->client->request('POST', self::REDIRECTS_URL.'/import', ['_token' => $token, 'language_id' => (string) $this->languageId], [
+                'file' => new UploadedFile($path, 'redirects.csv', 'text/csv', null, true),
+            ]);
+        } finally {
+            @unlink($path);
+        }
+
+        self::assertTrue($this->client->getResponse()->isRedirect(self::REDIRECTS_URL.'?language_id='.$this->languageId));
+        $warning = $this->client->followRedirect()->filter('[data-testid="bo-flash-warning"]');
+
+        self::assertGreaterThan(0, $warning->count(), 'The import warns about the common word.');
+        self::assertStringContainsString('b239commonword', $warning->text());
+        self::assertStringNotContainsString('b239rareword', $warning->text());
     }
 
     private function backOfficeToken(string $page): string

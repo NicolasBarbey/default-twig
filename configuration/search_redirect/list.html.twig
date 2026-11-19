@@ -58,6 +58,10 @@
     </div>
 
     {% if is_granted('CREATE', 'admin.configuration') %}
+        {% if reopen_create|default(false) %}
+            <div hidden data-controller="bo-auto-open-modal" data-bo-auto-open-modal-target-value="#search-redirect-create-modal" data-testid="search-redirect-create-reopen"></div>
+        {% endif %}
+
         {% component 'BoCreateDialog' with {
             id: 'search-redirect-create-modal',
             title: 'New redirection',
@@ -74,7 +78,7 @@
             id: 'search-redirect-import-modal',
             action: path('admin.configuration.search_redirects.import'),
             testid: 'search-redirect-import',
-            format: 'locale;term;type (product, category, content, folder, brand or url);identifier, or path for url',
+            format: 'locale;term;type (product, category, content, folder, brand or url);identifier, or path for url'|trans,
             example: 'en_US;sale;category;12',
         } only %}
     {% endif %}

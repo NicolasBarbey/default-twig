@@ -19,6 +19,7 @@ use BackOfficeDefaultTwigBundle\Repository\SearchTermRedirectRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFlash;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
+use BackOfficeDefaultTwigBundle\Service\SearchDictionary\RefusedCreationDraft;
 use BackOfficeDefaultTwigBundle\Service\SearchDictionary\SearchDictionaryImportAction;
 use BackOfficeDefaultTwigBundle\Service\SearchDictionary\SearchDictionaryLanguage;
 use BackOfficeDefaultTwigBundle\Service\SearchDictionary\SearchTermRedirectListPresenter;
@@ -62,6 +63,7 @@ final class SearchTermRedirectController
         private readonly SearchTermRedirectListPresenter $presenter,
         private readonly SearchDictionaryLanguage $languages,
         private readonly SearchDictionaryImportAction $importAction,
+        private readonly RefusedCreationDraft $drafts,
     ) {
     }
 
@@ -82,9 +84,16 @@ final class SearchTermRedirectController
             'active' => true,
         ]);
 
+        $draft = $this->drafts->take($request, self::CREATE_FORM);
+        if (null !== $draft) {
+            $createForm = $this->formFactory->createNamed(self::CREATE_FORM, SearchTermRedirectType::class, $draft['data']);
+            RefusedCreationDraft::showErrors($createForm, $draft['errors']);
+        }
+
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             'rows' => $this->presenter->rows($page['items'], (string) $language->getLocale(), $this->access->can(self::RESOURCE, AccessManager::UPDATE)),
             'create_form' => $createForm->createView(),
+            'reopen_create' => null !== $draft,
             'language_id' => (int) $language->getId(),
             'sort_field' => $sort->field,
             'sort_direction' => $sort->direction,
@@ -106,7 +115,7 @@ final class SearchTermRedirectController
             eventFactory: fn (FormInterface $validated): SearchTermRedirectWriteEvent => $this->writeEvent($validated, null),
             actionLabel: 'Search redirection creation',
             successRoute: self::LIST_ROUTE,
-            renderError: fn (): RedirectResponse => $this->backToList($this->postedLanguage($request, self::CREATE_FORM)),
+            renderError: fn (): RedirectResponse => $this->backToListWithDraft($request, $form),
             describeForLog: static fn (SearchTermRedirectWriteEvent $event): array => [\sprintf('Search redirection %s created', $event->getTerm()), $event->getRedirect()?->getId()],
             successParametersResolver: static fn (SearchTermRedirectWriteEvent $event): array => ['language_id' => (int) $event->getRedirect()?->getLangId()],
             afterDispatch: fn (SearchTermRedirectWriteEvent $event) => $this->warnAboutCommonTerm($request, $event),
@@ -247,6 +256,13 @@ final class SearchTermRedirectController
     private function postedLanguage(Request $request, string $formName): int
     {
         return (int) $this->languages->resolve($request->request->all($formName)['lang_id'] ?? null)->getId();
+    }
+
+    private function backToListWithDraft(Request $request, FormInterface $form): RedirectResponse
+    {
+        $this->drafts->keep($request, $form);
+
+        return $this->backToList($this->postedLanguage($request, self::CREATE_FORM));
     }
 
     private function backToList(int $languageId): RedirectResponse

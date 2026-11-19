@@ -131,6 +131,10 @@ final readonly class SearchDictionaryImportAction
     {
         $this->flash->add($request, 'success', $this->translator->trans('Import finished: %created% created, %updated% updated.', ['%created%' => $report->created, '%updated%' => $report->updated]));
 
+        if ([] !== $report->commonTerms) {
+            $this->flash->add($request, 'warning', $this->translator->trans('Many products bear these words, their redirection may leave the visitor without any result: %terms%.', ['%terms%' => implode(', ', $report->commonTerms)]));
+        }
+
         if ([] === $report->refused) {
             return;
         }

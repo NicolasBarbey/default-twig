@@ -18,6 +18,7 @@ use BackOfficeDefaultTwigBundle\Form\Configuration\SearchSynonymType;
 use BackOfficeDefaultTwigBundle\Repository\SearchSynonymRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
+use BackOfficeDefaultTwigBundle\Service\SearchDictionary\RefusedCreationDraft;
 use BackOfficeDefaultTwigBundle\Service\SearchDictionary\SearchDictionaryImportAction;
 use BackOfficeDefaultTwigBundle\Service\SearchDictionary\SearchDictionaryLanguage;
 use BackOfficeDefaultTwigBundle\Service\SearchDictionary\SearchSynonymListPresenter;
@@ -57,6 +58,7 @@ final class SearchSynonymController
         private readonly SearchSynonymListPresenter $presenter,
         private readonly SearchDictionaryLanguage $languages,
         private readonly SearchDictionaryImportAction $importAction,
+        private readonly RefusedCreationDraft $drafts,
     ) {
     }
 
@@ -77,9 +79,16 @@ final class SearchSynonymController
             'active' => true,
         ]);
 
+        $draft = $this->drafts->take($request, self::CREATE_FORM);
+        if (null !== $draft) {
+            $createForm = $this->formFactory->createNamed(self::CREATE_FORM, SearchSynonymType::class, $draft['data']);
+            RefusedCreationDraft::showErrors($createForm, $draft['errors']);
+        }
+
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
             'rows' => $this->presenter->rows($page['items'], $this->access->can(self::RESOURCE, AccessManager::UPDATE)),
             'create_form' => $createForm->createView(),
+            'reopen_create' => null !== $draft,
             'language_id' => (int) $language->getId(),
             'sort_field' => $sort->field,
             'sort_direction' => $sort->direction,
@@ -101,7 +110,7 @@ final class SearchSynonymController
             eventFactory: fn (FormInterface $validated): SearchSynonymWriteEvent => $this->writeEvent($validated, null),
             actionLabel: 'Search synonym creation',
             successRoute: self::LIST_ROUTE,
-            renderError: fn (): RedirectResponse => $this->backToList($this->postedLanguage($request, self::CREATE_FORM)),
+            renderError: fn (): RedirectResponse => $this->backToListWithDraft($request, $form),
             describeForLog: static fn (SearchSynonymWriteEvent $event): array => [\sprintf('Search synonym %s created', $event->getTerm()), $event->getSynonym()?->getId()],
             successParametersResolver: static fn (SearchSynonymWriteEvent $event): array => ['language_id' => (int) $event->getSynonym()?->getLangId()],
         );
@@ -233,6 +242,13 @@ final class SearchSynonymController
     private function postedLanguage(Request $request, string $formName): int
     {
         return (int) $this->languages->resolve($request->request->all($formName)['lang_id'] ?? null)->getId();
+    }
+
+    private function backToListWithDraft(Request $request, FormInterface $form): RedirectResponse
+    {
+        $this->drafts->keep($request, $form);
+
+        return $this->backToList($this->postedLanguage($request, self::CREATE_FORM));
     }
 
     private function backToList(int $languageId): RedirectResponse
