@@ -271,6 +271,93 @@ final class SearchDictionaryBackOfficeTest extends WebIntegrationTestCase
         self::assertStringContainsString('2 created', $crawler->filter('[data-testid="bo-flash-success"]')->text());
     }
 
+    public function testARedirectionOfACommonWordIsRefusedUntilTheMerchantConfirmsIt(): void
+    {
+        $this->commonWord('b239everywhere');
+        $token = $this->formToken(self::REDIRECTS_URL.'?language_id='.$this->languageId, 'thelia_search_redirect_create');
+        $fields = [
+            'lang_id' => (string) $this->languageId,
+            'term' => 'b239everywhere',
+            'target_type' => 'url',
+            'url' => '/b239-everywhere',
+            'active' => '1',
+            '_token' => $token,
+        ];
+
+        $this->client->request('POST', self::REDIRECTS_URL.'/create', ['thelia_search_redirect_create' => $fields]);
+
+        self::assertNull(SearchTermRedirectQuery::create()->findOneByTerm('b239everywhere'), 'Nothing is created before the confirmation.');
+        $crawler = $this->client->followRedirect();
+        self::assertStringContainsString('Tick the confirmation', $crawler->filter('[data-testid="bo-flash-danger"]')->text());
+        self::assertCount(1, $crawler->filter('[data-testid="search-redirect-create-form"] input[name="thelia_search_redirect_create[confirm_common_term]"]'), 'The dialog offers the confirmation.');
+
+        $fields['_token'] = $this->formToken(self::REDIRECTS_URL.'?language_id='.$this->languageId, 'thelia_search_redirect_create');
+        $this->client->request('POST', self::REDIRECTS_URL.'/create', ['thelia_search_redirect_create' => $fields + ['confirm_common_term' => '1']]);
+
+        self::assertSame(1, SearchTermRedirectQuery::create()->findOneByTerm('b239everywhere')?->getActive(), 'The confirmed redirection is created.');
+    }
+
+    public function testAnInactiveRedirectionOfACommonWordNeedsNoConfirmation(): void
+    {
+        $this->commonWord('b239dormant');
+        $token = $this->formToken(self::REDIRECTS_URL.'?language_id='.$this->languageId, 'thelia_search_redirect_create');
+
+        $this->client->request('POST', self::REDIRECTS_URL.'/create', ['thelia_search_redirect_create' => [
+            'lang_id' => (string) $this->languageId,
+            'term' => 'b239dormant',
+            'target_type' => 'url',
+            'url' => '/b239-dormant',
+            '_token' => $token,
+        ]]);
+
+        self::assertSame(0, SearchTermRedirectQuery::create()->findOneByTerm('b239dormant')?->getActive());
+    }
+
+    public function testARedirectionPostedWithoutItsTokenChangesNothing(): void
+    {
+        $redirect = (new SearchTermRedirect())->setLangId($this->languageId)->setTerm('b239kept')->setTargetType('url')->setUrl('/b239-kept')->setActive(1);
+        $redirect->save($this->getPropelConnection());
+        $fields = ['lang_id' => (string) $this->languageId, 'term' => 'b239notoken', 'target_type' => 'url', 'url' => '/b239-no-token', 'active' => '1'];
+
+        $this->client->request('POST', self::REDIRECTS_URL.'/create', ['thelia_search_redirect_create' => $fields]);
+        $this->client->request('POST', self::REDIRECTS_URL.'/save', ['thelia_search_redirect_update' => ['id' => (string) $redirect->getId()] + $fields]);
+        $this->client->request('POST', self::REDIRECTS_URL.'/toggle/'.$redirect->getId());
+        $this->client->request('POST', self::REDIRECTS_URL.'/delete', ['search_redirect_id' => (string) $redirect->getId()]);
+
+        self::assertNull(SearchTermRedirectQuery::create()->findOneByTerm('b239notoken'));
+        $kept = SearchTermRedirectQuery::create()->findPk($redirect->getId());
+        self::assertNotNull($kept, 'The redirection is not deleted.');
+        self::assertSame('b239kept', $kept->getTerm());
+        self::assertSame(1, $kept->getActive());
+    }
+
+    public function testAnAdministratorWithoutTheConfigurationRightCannotWriteARedirection(): void
+    {
+        $redirect = (new SearchTermRedirect())->setLangId($this->languageId)->setTerm('b239guarded')->setTargetType('url')->setUrl('/b239-guarded')->setActive(1);
+        $redirect->save($this->getPropelConnection());
+        $token = $this->backOfficeToken(self::SYNONYMS_URL.'?language_id='.$this->languageId);
+        $nobody = $this->factory->restrictedAdmin([AdminResources::CUSTOMER => [AccessManager::VIEW, AccessManager::CREATE, AccessManager::UPDATE, AccessManager::DELETE]]);
+        $nobody->eraseCredentials();
+        $this->injector->setAdmin($nobody);
+        $fields = ['lang_id' => (string) $this->languageId, 'term' => 'b239intruder', 'target_type' => 'url', 'url' => '/b239-intruder', 'active' => '1', '_token' => $token];
+
+        $this->client->request('POST', self::REDIRECTS_URL.'/create', ['thelia_search_redirect_create' => $fields]);
+        self::assertSame(403, $this->client->getResponse()->getStatusCode());
+        $this->client->request('POST', self::REDIRECTS_URL.'/save', ['thelia_search_redirect_update' => ['id' => (string) $redirect->getId()] + $fields]);
+        self::assertSame(403, $this->client->getResponse()->getStatusCode());
+        $this->client->request('POST', self::REDIRECTS_URL.'/toggle/'.$redirect->getId(), ['_token' => $token]);
+        self::assertSame(403, $this->client->getResponse()->getStatusCode());
+        $this->client->request('POST', self::REDIRECTS_URL.'/delete', ['search_redirect_id' => (string) $redirect->getId(), '_token' => $token]);
+        self::assertSame(403, $this->client->getResponse()->getStatusCode());
+        $this->client->request('POST', self::REDIRECTS_URL.'/import', ['_token' => $token, 'language_id' => (string) $this->languageId]);
+        self::assertSame(403, $this->client->getResponse()->getStatusCode());
+
+        self::assertNull(SearchTermRedirectQuery::create()->findOneByTerm('b239intruder'));
+        $kept = SearchTermRedirectQuery::create()->findPk($redirect->getId());
+        self::assertSame('b239guarded', $kept?->getTerm());
+        self::assertSame(1, $kept?->getActive());
+    }
+
     public function testTheImportOfRedirectionsWarnsAboutAWordManyProductsBear(): void
     {
         $locale = (string) LangQuery::create()->findPk($this->languageId)?->getLocale();
@@ -301,6 +388,18 @@ final class SearchDictionaryBackOfficeTest extends WebIntegrationTestCase
         self::assertGreaterThan(0, $warning->count(), 'The import warns about the common word.');
         self::assertStringContainsString('b239commonword', $warning->text());
         self::assertStringNotContainsString('b239rareword', $warning->text());
+    }
+
+    private function commonWord(string $word): void
+    {
+        $locale = (string) LangQuery::create()->findPk($this->languageId)?->getLocale();
+        $category = $this->factory->category();
+        $taxRule = $this->factory->taxRule();
+        $currency = $this->factory->currency();
+
+        foreach (range(1, SearchTermRedirectValidator::COMMON_TERM_THRESHOLD + 1) as $index) {
+            $this->factory->product($category, $taxRule, $currency, ['title' => $word.' chair '.$index, 'locale' => $locale]);
+        }
     }
 
     private function backOfficeToken(string $page): string

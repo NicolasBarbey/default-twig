@@ -22,18 +22,22 @@ use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\Callback;
 use Symfony\Component\Validator\Constraints\GreaterThan;
 use Symfony\Component\Validator\Constraints\Length;
 use Symfony\Component\Validator\Constraints\NotBlank;
 use Symfony\Component\Validator\Constraints\Positive;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Domain\Search\Dictionary\SearchRedirectTargetType;
+use Thelia\Domain\Search\Dictionary\SearchTermRedirectValidator;
 use Thelia\Model\LangQuery;
 
 final class SearchTermRedirectType extends AbstractType
 {
     public function __construct(
         private readonly TranslatorInterface $translator,
+        private readonly SearchTermRedirectValidator $redirectValidator,
     ) {
     }
 
@@ -83,6 +87,10 @@ final class SearchTermRedirectType extends AbstractType
             ->add('active', CheckboxType::class, [
                 'required' => false,
                 'label' => $this->translator->trans('Active'),
+            ])
+            ->add('confirm_common_term', CheckboxType::class, [
+                'required' => false,
+                'label' => $this->translator->trans('Redirect this term even if it appears in the title of many products'),
             ]);
 
         if ($options['include_id']) {
@@ -95,7 +103,31 @@ final class SearchTermRedirectType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver
-            ->setDefaults(['include_id' => false, 'csrf_token_id' => 'admin.search_redirect'])
+            ->setDefaults([
+                'include_id' => false,
+                'csrf_token_id' => 'admin.search_redirect',
+                'constraints' => [new Callback($this->refuseAnUnconfirmedCommonTerm(...))],
+            ])
             ->setAllowedTypes('include_id', 'bool');
+    }
+
+    /**
+     * @param array<string, mixed>|null $data
+     */
+    private function refuseAnUnconfirmedCommonTerm(?array $data, ExecutionContextInterface $context): void
+    {
+        $term = trim((string) ($data['term'] ?? ''));
+
+        if ('' === $term || true !== ($data['active'] ?? false) || true === ($data['confirm_common_term'] ?? false)) {
+            return;
+        }
+
+        $locale = LangQuery::create()->findPk((int) ($data['lang_id'] ?? 0))?->getLocale();
+
+        if (null !== $locale && $this->redirectValidator->isCommonTerm($term, (string) $locale)) {
+            $context->buildViolation($this->translator->trans('This term appears in the title of many products: the redirection will deprive visitors of their results. Tick the confirmation to redirect it anyway.'))
+                ->atPath('[confirm_common_term]')
+                ->addViolation();
+        }
     }
 }

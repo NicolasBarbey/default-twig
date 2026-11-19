@@ -17,7 +17,6 @@ namespace BackOfficeDefaultTwigBundle\Controller\Configuration;
 use BackOfficeDefaultTwigBundle\Form\Configuration\SearchTermRedirectType;
 use BackOfficeDefaultTwigBundle\Repository\SearchTermRedirectRepository;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
-use BackOfficeDefaultTwigBundle\Service\Admin\AdminFlash;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\SearchDictionary\RefusedCreationDraft;
 use BackOfficeDefaultTwigBundle\Service\SearchDictionary\SearchDictionaryImportAction;
@@ -31,7 +30,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
-use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
@@ -57,8 +55,6 @@ final class SearchTermRedirectController
         private readonly Environment $twig,
         private readonly FormFactoryInterface $formFactory,
         private readonly UrlGeneratorInterface $urls,
-        private readonly TranslatorInterface $translator,
-        private readonly AdminFlash $flash,
         private readonly SearchTermRedirectRepository $redirects,
         private readonly SearchTermRedirectListPresenter $presenter,
         private readonly SearchDictionaryLanguage $languages,
@@ -118,7 +114,6 @@ final class SearchTermRedirectController
             renderError: fn (): RedirectResponse => $this->backToListWithDraft($request, $form),
             describeForLog: static fn (SearchTermRedirectWriteEvent $event): array => [\sprintf('Search redirection %s created', $event->getTerm()), $event->getRedirect()?->getId()],
             successParametersResolver: static fn (SearchTermRedirectWriteEvent $event): array => ['language_id' => (int) $event->getRedirect()?->getLangId()],
-            afterDispatch: fn (SearchTermRedirectWriteEvent $event) => $this->warnAboutCommonTerm($request, $event),
         );
     }
 
@@ -173,7 +168,6 @@ final class SearchTermRedirectController
                 : new RedirectResponse($this->urls->generate(self::EDIT_ROUTE, ['search_redirect_id' => $redirectId])),
             describeForLog: static fn (SearchTermRedirectWriteEvent $event): array => [\sprintf('Search redirection %s modified', $event->getTerm()), $event->getRedirect()?->getId()],
             successParametersResolver: static fn (SearchTermRedirectWriteEvent $event): array => ['language_id' => (int) $event->getRedirect()?->getLangId()],
-            afterDispatch: fn (SearchTermRedirectWriteEvent $event) => $this->warnAboutCommonTerm($request, $event),
         );
     }
 
@@ -239,13 +233,6 @@ final class SearchTermRedirectController
             ->setTargetId(isset($data['target_id']) ? (int) $data['target_id'] : null)
             ->setUrl(isset($data['url']) ? (string) $data['url'] : null)
             ->setActive((bool) ($data['active'] ?? false));
-    }
-
-    private function warnAboutCommonTerm(Request $request, SearchTermRedirectWriteEvent $event): void
-    {
-        if ($event->isCommonTerm()) {
-            $this->flash->add($request, 'warning', $this->translator->trans('This term appears in the title of many products: the redirection will deprive visitors of their results.'));
-        }
     }
 
     private function findOrFail(int $id): SearchTermRedirect
