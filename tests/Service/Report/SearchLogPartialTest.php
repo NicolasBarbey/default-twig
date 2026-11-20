@@ -28,7 +28,7 @@ final class SearchLogPartialTest extends IntegrationTestCase
 {
     private const TEMPLATE = '@BackOfficeDefaultTwig/reports/_search_log.html.twig';
 
-    private const SYNONYMS_URL = '/admin/module/TntSearch/synonym';
+    private const SYNONYMS_URL = '/admin/configuration/search-synonyms';
 
     public function testEachUnreadableStateSaysWhyWithoutATableNorASynonymsLink(): void
     {

@@ -20,12 +20,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 final readonly class SearchLogReportBuilder
 {
-    /**
-     * The synonyms screen of the TntSearch module. Its route name is derived
-     * from the module's controller prefix and is not part of any contract, so
-     * the path is used instead; only the base URL of the shop is prepended.
-     */
-    private const SYNONYMS_PATH = '/admin/module/TntSearch/synonym';
+    private const SYNONYMS_ROUTE = 'admin.configuration.search_synonyms.default';
 
     public function __construct(
         private SearchLogReader $reader,
@@ -41,7 +36,7 @@ final readonly class SearchLogReportBuilder
             $availability,
             $this->reader->topZeroResultTerms($limit),
             $this->reader->topSearchedTerms($limit),
-            $availability->isReadable() ? $this->urlGenerator->getContext()->getBaseUrl().self::SYNONYMS_PATH : null,
+            $availability->isReadable() ? $this->urlGenerator->generate(self::SYNONYMS_ROUTE) : null,
         );
     }
 }

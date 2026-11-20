@@ -69,7 +69,7 @@ final class SearchLogReportBuilderTest extends IntegrationTestCase
         self::assertSame(7, $reader->limit);
         self::assertSame([$term], $report->zeroResultTerms);
         self::assertSame([$term, $term], $report->topTerms);
-        self::assertSame('/admin/module/TntSearch/synonym', $report->synonymsUrl);
+        self::assertSame('/admin/configuration/search-synonyms', $report->synonymsUrl);
     }
 
     private function builder(SearchLogReader $reader): SearchLogReportBuilder
