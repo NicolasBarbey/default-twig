@@ -16,7 +16,6 @@ namespace BackOfficeDefaultTwigBundle\Service\Report;
 
 use BackOfficeDefaultTwigBundle\DTO\Dashboard\DateRange;
 use BackOfficeDefaultTwigBundle\DTO\Report\CustomerReport;
-use BackOfficeDefaultTwigBundle\Repository\DataTransferRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\Dashboard\PeriodOptions;
 use Psr\Clock\ClockInterface;
@@ -24,14 +23,12 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 
 /**
  * The "Reports > Customer loyalty" screen: the cohort table, the lifetime value of the cohorts and
- * the new, returning and dormant customers of a period. The figures are the core's
+ * the new, returning, lapsing and dormant customers of a period. The figures are the core's
  * (Thelia\Domain\Report\Customer\CustomerLifetimeCalculator): the theme holds no SQL of a report.
  * The best customers of a period are the "By customer" tab of the sales report, linked from here.
  *
@@ -64,8 +61,6 @@ final readonly class CustomerReportProvider
     /** As the sales reports: kept 15 minutes, under a key that changes with the orders. */
     public const KEPT_SECONDS = 900;
 
-    private const SCOPE_PAID = 'paid';
-
     private const ROUTES = [
         self::TAB_COHORTS => self::ROUTE_COHORTS,
         self::TAB_LIFETIME => self::ROUTE_LIFETIME,
@@ -82,10 +77,9 @@ final readonly class CustomerReportProvider
         private AdminSaleUnitScope $saleUnitScope,
         private CacheInterface $cache,
         private ClockInterface $clock,
-        private DataTransferRepository $dataTransfers,
         private OrderRepository $orders,
         private PeriodOptions $periodOptions,
-        private SecurityContext $securityContext,
+        private ReportScreen $screen,
         private TranslatorInterface $translator,
         private UrlGeneratorInterface $urls,
     ) {
@@ -152,17 +146,17 @@ final readonly class CustomerReportProvider
             tab: $tab,
             tabs: $this->tabs($tab, $depth, $unit, $allOrders),
             topCustomersUrl: SalesReportsContext::coreHasSalesReports()
-                ? $this->urls->generate(SalesReportProvider::ROUTE_CUSTOMER, $this->topCustomersParameters($tab, $range, $from, $to) + $this->scopeParameters($allOrders))
+                ? $this->urls->generate(SalesReportProvider::ROUTE_CUSTOMER, $this->topCustomersParameters($tab, $range, $from, $to) + ReportScreen::scopeParameters(false))
                 : null,
             allOrders: $allOrders,
             scopeOptions: $this->scopeOptions($tab, $depth, $unit, $allOrders, $range),
             depthOptions: $this->depthOptions($tab, $depth, $unit, $allOrders),
             unitOptions: $this->unitOptions($tab, $depth, $unit, $allOrders),
             unit: $unit,
-            periodOptions: self::TAB_SEGMENTS === $tab ? $this->periodOptions->build($range, self::ROUTE_SEGMENTS, $this->scopeParameters($allOrders)) : [],
+            periodOptions: self::TAB_SEGMENTS === $tab ? $this->periodOptions->build($range, self::ROUTE_SEGMENTS, ReportScreen::scopeParameters($allOrders)) : [],
             range: self::TAB_SEGMENTS === $tab ? $range : null,
             formUrl: $this->urls->generate(self::ROUTES[$tab]),
-            formFields: $this->scopeParameters($allOrders),
+            formFields: ReportScreen::scopeParameters($allOrders),
             from: $from,
             to: $to,
             table: $figures['table'],
@@ -190,7 +184,7 @@ final readonly class CustomerReportProvider
 
         $tabs = [];
         foreach ($labels as $key => $label) {
-            $parameters = self::TAB_SEGMENTS === $key ? $this->scopeParameters($allOrders) : $this->cohortParameters($depth, $unit) + $this->scopeParameters($allOrders);
+            $parameters = self::TAB_SEGMENTS === $key ? ReportScreen::scopeParameters($allOrders) : $this->cohortParameters($depth, $unit) + ReportScreen::scopeParameters($allOrders);
 
             $tabs[] = [
                 'key' => $key,
@@ -209,7 +203,7 @@ final readonly class CustomerReportProvider
     private function scopeOptions(string $tab, int $depth, string $unit, bool $allOrders, DateRange $range): array
     {
         $options = [];
-        foreach (['all' => 'All orders', self::SCOPE_PAID => 'Paid orders'] as $value => $label) {
+        foreach (['all' => 'All orders', ReportScreen::SCOPE_PAID => 'Paid orders'] as $value => $label) {
             $all = 'all' === $value;
             $parameters = $this->keptParameters($tab, $depth, $unit, $all, $range);
 
@@ -239,7 +233,7 @@ final readonly class CustomerReportProvider
                 'value' => (string) $value,
                 'label' => $this->translator->trans('%count% months', ['%count%' => $value]),
                 'active' => $value === $depth,
-                'url' => $this->urls->generate(self::ROUTES[$tab], $this->cohortParameters($value, $unit) + $this->scopeParameters($allOrders)),
+                'url' => $this->urls->generate(self::ROUTES[$tab], $this->cohortParameters($value, $unit) + ReportScreen::scopeParameters($allOrders)),
             ];
         }
 
@@ -261,7 +255,7 @@ final readonly class CustomerReportProvider
                 'value' => $value,
                 'label' => $this->translator->trans($label),
                 'active' => $value === $unit,
-                'url' => $this->urls->generate(self::ROUTES[$tab], $this->cohortParameters($depth, $value) + $this->scopeParameters($allOrders)),
+                'url' => $this->urls->generate(self::ROUTES[$tab], $this->cohortParameters($depth, $value) + ReportScreen::scopeParameters($allOrders)),
             ];
         }
 
@@ -274,10 +268,10 @@ final readonly class CustomerReportProvider
     private function keptParameters(string $tab, int $depth, string $unit, bool $allOrders, DateRange $range): array
     {
         if (self::TAB_SEGMENTS === $tab) {
-            return $this->periodParameters($range) + $this->scopeParameters($allOrders);
+            return ReportScreen::periodParameters($range) + ReportScreen::scopeParameters($allOrders);
         }
 
-        return $this->cohortParameters($depth, $unit) + $this->scopeParameters($allOrders);
+        return $this->cohortParameters($depth, $unit) + ReportScreen::scopeParameters($allOrders);
     }
 
     /**
@@ -289,25 +283,17 @@ final readonly class CustomerReportProvider
     }
 
     /**
-     * Every order is counted unless the address asks for the paid ones only, as the sales reports count them.
-     *
-     * @return array<string, string>
-     */
-    private function scopeParameters(bool $allOrders): array
-    {
-        return $allOrders ? [] : ['scope' => self::SCOPE_PAID];
-    }
-
-    /**
      * The best customers over the days on screen: the period of the segments, or the window of the
      * cohorts (36 months at most, within the 1096 days a custom period of the sales report takes).
+     * The link always opens the paid orders: the sales report of every order counts the cancelled,
+     * refunded and unpaid orders, the total spent of the customer list does not.
      *
      * @return array<string, string>
      */
     private function topCustomersParameters(string $tab, DateRange $range, \DateTimeImmutable $from, \DateTimeImmutable $to): array
     {
         if (self::TAB_SEGMENTS === $tab) {
-            return $this->periodParameters($range);
+            return ReportScreen::periodParameters($range);
         }
 
         return ['period' => DateRange::PRESET_CUSTOM, 'from' => $from->format('Y-m-d'), 'to' => $to->format('Y-m-d')];
@@ -318,7 +304,7 @@ final readonly class CustomerReportProvider
      */
     private function dormancySettingUrl(): ?string
     {
-        if (!$this->canView(AdminResources::CONFIG)) {
+        if (!$this->screen->canView(AdminResources::CONFIG)) {
             return null;
         }
 
@@ -328,60 +314,16 @@ final readonly class CustomerReportProvider
     }
 
     /**
-     * @return array<string, string>
-     */
-    private function periodParameters(DateRange $range): array
-    {
-        if (DateRange::PRESET_CUSTOM === $range->preset) {
-            return ['period' => DateRange::PRESET_CUSTOM, 'from' => $range->from->format('Y-m-d'), 'to' => $range->to->format('Y-m-d')];
-        }
-
-        return ['period' => $range->preset];
-    }
-
-    /**
      * The export of the tab over the days on screen, in the unit and on the orders on screen.
      *
      * @return array{url: string, from: string, to: string, languageId: int}|null
      */
     private function export(string $tab, string $unit, bool $allOrders, \DateTimeImmutable $from, \DateTimeImmutable $to, string $locale): ?array
     {
-        if (!$this->canView(AdminResources::EXPORT)) {
-            return null;
-        }
-
         $ref = self::EXPORT_REFS[$tab]
             .(self::TAB_SEGMENTS !== $tab && self::UNIT_QUARTER === $unit ? '_quarter' : '')
-            .($allOrders ? '' : '_'.self::SCOPE_PAID);
+            .($allOrders ? '' : '_'.ReportScreen::SCOPE_PAID);
 
-        $exportId = $this->dataTransfers->findExportIdByRef($ref);
-        if (null === $exportId) {
-            return null;
-        }
-
-        $languages = $this->dataTransfers->languages();
-        $language = null;
-        foreach ($languages as $candidate) {
-            if ($candidate->getLocale() === $locale) {
-                $language = $candidate;
-                break;
-            }
-        }
-        $language ??= $languages[0] ?? null;
-        if (null === $language) {
-            return null;
-        }
-
-        return [
-            'url' => $this->urls->generate('export.process', ['id' => $exportId]),
-            'from' => $from->format('Y-m-d'),
-            'to' => $to->format('Y-m-d'),
-            'languageId' => (int) $language->getId(),
-        ];
-    }
-
-    private function canView(string $resource): bool
-    {
-        return $this->securityContext->isGranted(['ADMIN'], [$resource], [], [AccessManager::VIEW]);
+        return $this->screen->export($ref, $from, $to, $locale);
     }
 }

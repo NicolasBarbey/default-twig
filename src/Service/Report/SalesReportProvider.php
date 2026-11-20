@@ -16,7 +16,6 @@ namespace BackOfficeDefaultTwigBundle\Service\Report;
 
 use BackOfficeDefaultTwigBundle\DTO\Dashboard\DateRange;
 use BackOfficeDefaultTwigBundle\DTO\Report\SalesReport;
-use BackOfficeDefaultTwigBundle\Repository\DataTransferRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
 use BackOfficeDefaultTwigBundle\Service\Dashboard\PeriodOptions;
 use Psr\Clock\ClockInterface;
@@ -24,9 +23,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
-use Thelia\Core\Security\SecurityContext;
 use Thelia\Domain\SaleUnit\Access\AdminSaleUnitScope;
 
 /**
@@ -62,8 +59,6 @@ final readonly class SalesReportProvider
 
     private const SCOPE_ALL = 'all';
 
-    private const SCOPE_PAID = 'paid';
-
     private const SORT_DEFAULT = 'total';
 
     private const ROUTES = [
@@ -86,10 +81,9 @@ final readonly class SalesReportProvider
         private AdminSaleUnitScope $saleUnitScope,
         private CacheInterface $cache,
         private ClockInterface $clock,
-        private DataTransferRepository $dataTransfers,
         private OrderRepository $orders,
         private PeriodOptions $periodOptions,
-        private SecurityContext $securityContext,
+        private ReportScreen $screen,
         private TranslatorInterface $translator,
         private UrlGeneratorInterface $urls,
     ) {
@@ -174,7 +168,7 @@ final readonly class SalesReportProvider
             periodOptions: $this->periodOptions->build($range, self::ROUTES[$tab], $this->keptParameters($allOrders, $tab, $sort, $descending)),
             scopeOptions: $this->scopeOptions($tab, $range, $allOrders, $sort, $descending),
             formUrl: $this->urls->generate(self::ROUTES[$tab]),
-            formFields: ['scope' => $allOrders ? self::SCOPE_ALL : self::SCOPE_PAID],
+            formFields: ['scope' => $allOrders ? self::SCOPE_ALL : ReportScreen::SCOPE_PAID],
             revenue: $current->revenue,
             previousRevenue: $before->revenue,
             revenueVariation: self::variation($current->revenue, $before->revenue),
@@ -189,9 +183,9 @@ final readonly class SalesReportProvider
             direction: $descending ? 'desc' : 'asc',
             sortUrls: self::TAB_CUSTOMER === $tab ? $this->sortUrls($range, $allOrders, $sort, $descending) : [],
             currencyCode: (string) \Thelia\Model\Currency::getDefaultCurrency()->getCode(),
-            export: $this->export($tab, $range, $allOrders, $locale),
+            export: $this->screen->export(self::EXPORT_REFS[$tab].($allOrders ? '' : self::PAID_EXPORT_SUFFIX), $range->from, $range->to, $locale),
             computedAt: $figures['computedAt'],
-            refreshUrl: $this->urls->generate(self::ROUTES[$tab], $this->periodParameters($range) + $this->keptParameters($allOrders, $tab, $sort, $descending) + ($page > 1 ? ['page' => (string) $page] : []) + ['refresh' => '1']),
+            refreshUrl: $this->urls->generate(self::ROUTES[$tab], ReportScreen::periodParameters($range) + $this->keptParameters($allOrders, $tab, $sort, $descending) + ($page > 1 ? ['page' => (string) $page] : []) + ['refresh' => '1']),
         );
     }
 
@@ -263,14 +257,14 @@ final readonly class SalesReportProvider
 
         $tabs = [];
         foreach ($labels as $key => $label) {
-            if (!$this->canView(self::resourceOf($key))) {
+            if (!$this->screen->canView(self::resourceOf($key))) {
                 continue;
             }
 
             $tabs[] = [
                 'key' => $key,
                 'label' => $label,
-                'url' => $this->urls->generate(self::ROUTES[$key], $this->periodParameters($range) + $this->scopeParameters($allOrders)),
+                'url' => $this->urls->generate(self::ROUTES[$key], ReportScreen::periodParameters($range) + ReportScreen::scopeParameters($allOrders)),
                 'active' => $key === $current,
             ];
         }
@@ -284,8 +278,8 @@ final readonly class SalesReportProvider
     private function scopeOptions(string $tab, DateRange $range, bool $allOrders, string $sort, bool $descending): array
     {
         $options = [];
-        foreach ([self::SCOPE_ALL => 'All orders', self::SCOPE_PAID => 'Paid orders'] as $value => $label) {
-            $parameters = $this->periodParameters($range) + $this->sortParameters($tab, $sort, $descending) + $this->scopeParameters(self::SCOPE_ALL === $value);
+        foreach ([self::SCOPE_ALL => 'All orders', ReportScreen::SCOPE_PAID => 'Paid orders'] as $value => $label) {
+            $parameters = ReportScreen::periodParameters($range) + $this->sortParameters($tab, $sort, $descending) + ReportScreen::scopeParameters(self::SCOPE_ALL === $value);
 
             $options[] = [
                 'value' => $value,
@@ -309,7 +303,7 @@ final readonly class SalesReportProvider
             $nextDescending = $column === $sort ? !$descending : 'name' !== $column;
             $urls[$column] = $this->urls->generate(
                 self::ROUTE_CUSTOMER,
-                $this->periodParameters($range) + $this->scopeParameters($allOrders) + ['sort' => $column, 'dir' => $nextDescending ? 'desc' : 'asc'],
+                ReportScreen::periodParameters($range) + ReportScreen::scopeParameters($allOrders) + ['sort' => $column, 'dir' => $nextDescending ? 'desc' : 'asc'],
             );
         }
 
@@ -325,7 +319,7 @@ final readonly class SalesReportProvider
     {
         return [
             'route' => self::ROUTES[$tab],
-            'params' => $this->periodParameters($range) + $this->scopeParameters($allOrders) + $this->sortParameters($tab, $sort, $descending),
+            'params' => ReportScreen::periodParameters($range) + ReportScreen::scopeParameters($allOrders) + $this->sortParameters($tab, $sort, $descending),
             'current' => $result->page,
             'last' => $result->pageCount(),
             'total' => $result->totalRows,
@@ -339,17 +333,7 @@ final readonly class SalesReportProvider
      */
     private function keptParameters(bool $allOrders, string $tab, string $sort, bool $descending): array
     {
-        return $this->scopeParameters($allOrders) + $this->sortParameters($tab, $sort, $descending);
-    }
-
-    /**
-     * Every order is counted unless the address asks for the paid ones only, as the dashboard counts them.
-     *
-     * @return array<string, string>
-     */
-    private function scopeParameters(bool $allOrders): array
-    {
-        return $allOrders ? [] : ['scope' => self::SCOPE_PAID];
+        return ReportScreen::scopeParameters($allOrders) + $this->sortParameters($tab, $sort, $descending);
     }
 
     /**
@@ -360,63 +344,8 @@ final readonly class SalesReportProvider
         return self::TAB_CUSTOMER === $tab ? ['sort' => $sort, 'dir' => $descending ? 'desc' : 'asc'] : [];
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private function periodParameters(DateRange $range): array
-    {
-        if (DateRange::PRESET_CUSTOM === $range->preset) {
-            return ['period' => DateRange::PRESET_CUSTOM, 'from' => $range->from->format('Y-m-d'), 'to' => $range->to->format('Y-m-d')];
-        }
-
-        return ['period' => $range->preset];
-    }
-
-    /**
-     * The export of the tab, over the exact days and the orders on screen: the paid orders have
-     * an export of their own, so that the scheduled reports can count them too.
-     *
-     * @return array<string, mixed>|null
-     */
-    private function export(string $tab, DateRange $range, bool $allOrders, string $locale): ?array
-    {
-        if (!$this->canView(AdminResources::EXPORT)) {
-            return null;
-        }
-
-        $exportId = $this->dataTransfers->findExportIdByRef(self::EXPORT_REFS[$tab].($allOrders ? '' : self::PAID_EXPORT_SUFFIX));
-        if (null === $exportId) {
-            return null;
-        }
-
-        $languages = $this->dataTransfers->languages();
-        $language = null;
-        foreach ($languages as $candidate) {
-            if ($candidate->getLocale() === $locale) {
-                $language = $candidate;
-                break;
-            }
-        }
-        $language ??= $languages[0] ?? null;
-        if (null === $language) {
-            return null;
-        }
-
-        return [
-            'url' => $this->urls->generate('export.process', ['id' => $exportId]),
-            'from' => $range->from->format('Y-m-d'),
-            'to' => $range->to->format('Y-m-d'),
-            'languageId' => (int) $language->getId(),
-        ];
-    }
-
     private static function variation(float|int $current, float|int $previous): ?float
     {
         return 0.0 === (float) $previous ? null : ($current - $previous) / $previous * 100;
-    }
-
-    private function canView(string $resource): bool
-    {
-        return $this->securityContext->isGranted(['ADMIN'], [$resource], [], [AccessManager::VIEW]);
     }
 }

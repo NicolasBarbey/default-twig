@@ -89,7 +89,7 @@
                     <span class="text-muted small" data-testid="report-scope-label">
                         <i class="bi bi-info-circle" aria-hidden="true"></i>
                         {% if report.allOrders %}
-                            {{ 'Every order created is counted, whatever its status.'|trans }}
+                            {{ 'Every order is counted except the cancelled and refunded ones, which the sales report counts.'|trans }}
                         {% else %}
                             {{ 'Only the paid orders are counted: those paid, in processing or sent.'|trans }}
                         {% endif %}
@@ -131,7 +131,7 @@
                     {% endfor %}
                     {% if report.topCustomersUrl is not null %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ report.topCustomersUrl }}" data-testid="report-tab-top-customers">
+                            <a class="nav-link" href="{{ report.topCustomersUrl }}" data-testid="report-tab-top-customers" title="{{ 'Paid orders, as the total spent of the customer list'|trans }}">
                                 {{ 'Top customers'|trans }} <i class="bi bi-box-arrow-up-right small" aria-hidden="true"></i>
                             </a>
                         </li>
@@ -242,7 +242,7 @@
             {% else %}
                 <p class="text-muted small mt-3 mb-2" data-testid="report-segments-note">
                     <i class="bi bi-info-circle" aria-hidden="true"></i>
-                    {{ 'New: first order in the period. Returning: an order in the period and one before it. Dormant: no order for %days% days at the end of the period.'|trans({ '%days%': report.dormantAfterDays }) }}
+                    {{ 'Each customer is in one segment. New: first order in the period. Returning: an order in the period and one before it. Without an order in the period: dormant after %days% days at the end of the period, lapsing before.'|trans({ '%days%': report.dormantAfterDays }) }}
                     {% if report.dormancySettingUrl is not null %}
                         <a href="{{ report.dormancySettingUrl }}" class="text-decoration-none" data-testid="report-dormancy-setting">{{ 'Change the threshold (customer_dormant_after_days)'|trans }}</a>
                     {% endif %}
@@ -264,7 +264,7 @@
                                 {% for row in report.segments %}
                                     <tr data-testid="report-segment-{{ row.segment.value }}">
                                         <th scope="row" class="fw-semibold">
-                                            {% if row.segment.value == 'new' %}{{ 'New customers'|trans }}{% elseif row.segment.value == 'returning' %}{{ 'Returning customers'|trans }}{% else %}{{ 'Dormant customers'|trans }}{% endif %}
+                                            {% if row.segment.value == 'new' %}{{ 'New customers'|trans }}{% elseif row.segment.value == 'returning' %}{{ 'Returning customers'|trans }}{% elseif row.segment.value == 'lapsing' %}{{ 'Lapsing customers'|trans }}{% else %}{{ 'Dormant customers'|trans }}{% endif %}
                                         </th>
                                         <td class="text-end" data-testid="report-segment-customers">{{ row.customerCount|number_format(0, ',', ' ') }}</td>
                                         <td class="text-end">{{ row.periodRevenue|format_currency(currency) }}</td>

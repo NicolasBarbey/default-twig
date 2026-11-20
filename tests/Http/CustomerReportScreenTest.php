@@ -88,6 +88,7 @@ final class CustomerReportScreenTest extends WebIntegrationTestCase
         self::assertSame((new \DateTimeImmutable())->format('Y-m'), $current->filter('th')->text());
         self::assertStringContainsString('100,0 %', $current->filter('[data-testid="report-cohort-cell"]')->first()->text());
         self::assertStringContainsString('not margin', $crawler->filter('[data-testid="report-scope-label"]')->text());
+        self::assertStringContainsString('except the cancelled and refunded ones', $crawler->filter('[data-testid="report-scope-label"]')->text());
         self::assertStringEndsWith(self::COHORTS_URL, (string) $crawler->filter('[data-testid="bo-nav-customer-report"]')->attr('href'));
     }
 
@@ -130,13 +131,14 @@ final class CustomerReportScreenTest extends WebIntegrationTestCase
 
             $crawler = $this->client->getCrawler();
             self::assertStringContainsString('btn-primary', (string) $crawler->filter('[data-testid="report-period-7days"]')->attr('class'));
-            foreach (['new', 'returning', 'dormant'] as $segment) {
+            foreach (['new', 'returning', 'lapsing', 'dormant'] as $segment) {
                 self::assertCount(1, $crawler->filter('[data-testid="report-segment-'.$segment.'"]'), $segment);
             }
             self::assertGreaterThanOrEqual(1, (int) $crawler->filter('[data-testid="report-segment-new"] [data-testid="report-segment-customers"]')->text());
             self::assertStringContainsString('90 days', $crawler->filter('[data-testid="report-segments-note"]')->text());
             self::assertSame('thelia.export.customer_segments', $this->exportRef());
             self::assertStringContainsString('period=7days', (string) $crawler->filter('[data-testid="report-tab-top-customers"]')->attr('href'), 'The best customers of the same period.');
+            self::assertStringContainsString('scope=paid', (string) $crawler->filter('[data-testid="report-tab-top-customers"]')->attr('href'), 'Every order on screen, yet the best customers on the paid orders, as the customer list totals them.');
 
             $variableId = (int) ConfigQuery::create()->findOneByName('customer_dormant_after_days')?->getId();
             $setting = (string) $crawler->filter('[data-testid="report-dormancy-setting"]')->attr('href');
