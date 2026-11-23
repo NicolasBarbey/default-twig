@@ -183,9 +183,12 @@ final class AiUsageSettingsScreenTest extends WebIntegrationTestCase
 
     public function testAChoiceThatIsNotProposedIsRefused(): void
     {
+        // A module may ship settings of its own usages (TheliaCMS 2.42 does): count what this test adds.
+        $settings = AiUsageSettingQuery::create()->count();
+
         $this->client->request('POST', self::URL, ['enabled' => '1', 'sections' => ['guardrails'], 'guardrail' => ['topic' => 'ignore'], '_token' => $this->getService(TokenProvider::class)->assignToken()]);
 
-        self::assertSame(0, AiUsageSettingQuery::create()->count());
+        self::assertSame($settings, AiUsageSettingQuery::create()->count());
     }
 
     /**

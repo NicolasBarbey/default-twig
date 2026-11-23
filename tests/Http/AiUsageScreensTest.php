@@ -192,17 +192,23 @@ final class AiUsageScreensTest extends WebIntegrationTestCase
 
     public function testARangeThatIsNotOneIsRefusedAndNothingIsWritten(): void
     {
+        // A module may ship settings of its own usages (TheliaCMS 2.42 does): count what this test adds.
+        $settings = AiUsageSettingQuery::create()->count();
+
         $token = $this->getService(TokenProvider::class)->assignToken();
         $this->client->request('POST', '/admin/configuration/ai/usages/'.self::USAGE, ['enabled' => '1', 'sections' => ['general'], 'tier' => 'turbo', '_token' => $token]);
 
-        self::assertSame(0, AiUsageSettingQuery::create()->count());
+        self::assertSame($settings, AiUsageSettingQuery::create()->count());
     }
 
     public function testAUsageFormWithoutItsTokenWritesNothing(): void
     {
+        // A module may ship settings of its own usages (TheliaCMS 2.42 does): count what this test adds.
+        $settings = AiUsageSettingQuery::create()->count();
+
         $this->client->request('POST', '/admin/configuration/ai/usages/'.self::USAGE, ['enabled' => '1', 'monthly_budget' => '99']);
 
-        self::assertSame(0, AiUsageSettingQuery::create()->count());
+        self::assertSame($settings, AiUsageSettingQuery::create()->count());
     }
 
     public function testTheGlobalSettingsAreWrittenWithTheirTokenOnly(): void
@@ -278,6 +284,9 @@ final class AiUsageScreensTest extends WebIntegrationTestCase
 
     public function testAReadOnlyAdministratorSeesNoButtonAndCannotWrite(): void
     {
+        // A module may ship settings of its own usages (TheliaCMS 2.42 does): count what this test adds.
+        $settings = AiUsageSettingQuery::create()->count();
+
         $reader = (new FixtureFactory($this->getPropelConnection()))->restrictedAdmin([AdminResources::AI => [AccessManager::VIEW]]);
         $reader->eraseCredentials();
         $this->injector?->setAdmin($reader);
@@ -291,7 +300,7 @@ final class AiUsageScreensTest extends WebIntegrationTestCase
 
         $token = $this->getService(TokenProvider::class)->assignToken();
         $this->client->request('POST', '/admin/configuration/ai/usages/'.self::USAGE, ['enabled' => '1', 'tier' => 'advanced', 'monthly_budget' => '5', '_token' => $token]);
-        self::assertSame(0, AiUsageSettingQuery::create()->count());
+        self::assertSame($settings, AiUsageSettingQuery::create()->count());
 
         $this->client->request('POST', '/admin/configuration/ai/consumption/settings', ['monthly_cap' => '5', 'ai_enabled' => '1', '_token' => $token]);
         self::assertSame('0', ConfigQuery::read('ai_monthly_cap', '0'));

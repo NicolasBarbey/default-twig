@@ -148,15 +148,18 @@ final class AiSetupScreenTest extends WebIntegrationTestCase
 
     public function testABudgetThatIsNotAnAmountAboveZeroIsRefusedAndNothingIsWritten(): void
     {
+        // A module may ship settings of its own usages (TheliaCMS 2.42 does): count what this test adds.
+        $settings = AiUsageSettingQuery::create()->count();
+
         $this->connectAndAssignEveryRange();
 
         foreach (['0', '0.00', 'abc', '-5', ''] as $budget) {
             $this->client->request('POST', self::PAGE.'/budget', ['usage_id' => self::USAGE, 'monthly_budget' => $budget, '_token' => $this->token()]);
-            self::assertSame(0, AiUsageSettingQuery::create()->count(), 'refused: '.$budget);
+            self::assertSame($settings, AiUsageSettingQuery::create()->count(), 'refused: '.$budget);
         }
 
         $this->client->request('POST', self::PAGE.'/budget', ['usage_id' => self::USAGE, 'monthly_budget' => '10']);
-        self::assertSame(0, AiUsageSettingQuery::create()->count(), 'a form without its token writes nothing');
+        self::assertSame($settings, AiUsageSettingQuery::create()->count(), 'a form without its token writes nothing');
     }
 
     public function testEverythingReadyGivesThreeStepsAndNoWarningOnTheOtherTabs(): void
