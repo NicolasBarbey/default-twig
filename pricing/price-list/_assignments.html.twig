@@ -25,7 +25,7 @@
         </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="price-list-assigned-customers">
         <div class="card-header"><h2 class="h5 mb-0">{{ 'Customers'|trans }}</h2></div>
         <div class="card-body">
             <p class="text-body-secondary small" data-testid="price-list-customers-total">{{ '%count% customer(s) assigned'|trans({'%count%': assigned_customers_total}) }}</p>
@@ -54,6 +54,7 @@
                     currentPage: assigned_page,
                     lastPage: assigned_last_page,
                     pageParam: 'assigned_page',
+                    fragment: 'price-list-assigned-customers',
                     routeParams: { price_list_id: price_list.id, tab: 'assignments' },
                     ariaLabel: 'Assigned customers pagination'|trans,
                     testid: 'price-list-customers-pagination',

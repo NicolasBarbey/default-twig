@@ -250,6 +250,12 @@ final class OrderHistoryBackOfficeTest extends WebIntegrationTestCase
             'The eleventh entry back does not fit on the first page.',
         );
         self::assertStringContainsString('data-testid="order-history"', $firstPage, 'The block paginates.');
+        self::assertStringContainsString('id="order-history"', $firstPage);
+        self::assertStringContainsString(
+            'history_page=2#order-history"',
+            $firstPage,
+            'Paging through the history brings the reader back to the block, not to the top of the sheet.',
+        );
 
         $this->assertPageRenders($this->sheetUrl($order).'?history_page=2');
         $secondPage = $this->html();

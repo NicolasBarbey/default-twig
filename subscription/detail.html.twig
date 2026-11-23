@@ -104,7 +104,7 @@
             </div>
         </div>
 
-        <h2 class="h5">{{ 'Installments'|trans }} <span class="badge rounded-pill text-bg-light border">{{ installments_total }}</span></h2>
+        <h2 class="h5" id="subscription-installments">{{ 'Installments'|trans }} <span class="badge rounded-pill text-bg-light border">{{ installments_total }}</span></h2>
         {{ component('BoDataTable', {
             id: 'subscription-installments',
             columns: [
@@ -124,6 +124,7 @@
             route: 'admin.subscription.view',
             routeParams: { subscription_id: subscription.id },
             pageParam: 'installments_page',
+            fragment: 'subscription-installments',
             currentPage: installments_page,
             lastPage: installments_last_page,
             ariaLabel: 'Installment pagination',

@@ -38,6 +38,8 @@ final class Pagination
 
     public ?string $testid = null;
 
+    public ?string $fragment = null;
+
     /**
      * Page numbers to display, with null marking an ellipsis. Always keeps the first and last page.
      *
@@ -99,6 +101,7 @@ final class Pagination
 
     /**
      * Route parameters for a given page, dropping empty filters so the URL stays clean.
+     * The fragment, when set, brings the browser back to the paginated block after the reload.
      *
      * @return array<string, scalar>
      */
@@ -110,6 +113,10 @@ final class Pagination
         );
 
         $params[$this->pageParam] = $page;
+
+        if (null !== $this->fragment && '' !== $this->fragment) {
+            $params['_fragment'] = $this->fragment;
+        }
 
         return $params;
     }

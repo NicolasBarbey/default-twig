@@ -14,7 +14,7 @@
 {% set is_open = open ?? true %}
 {% set lazy = lazy_url ?? null %}
 {% set badge = count ?? null %}
-<section class="mb-4" data-testid="{{ testid }}"
+<section id="customer-section-{{ id }}" class="mb-4" data-testid="{{ testid }}"
     {%- if lazy %} data-controller="bo-lazy-collapse" data-bo-lazy-collapse-url-value="{{ lazy }}" data-bo-lazy-collapse-error-message-value="{{ 'Unable to load this section.'|trans }}"{% endif %}>
     <h2 class="h5 mb-0 border-bottom">
         <button type="button"
