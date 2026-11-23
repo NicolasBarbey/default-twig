@@ -285,7 +285,7 @@ final class ConfigStoreType extends AbstractType
             ])
             ->add('favicon_file', FileType::class, [
                 'required' => false,
-                'constraints' => [new Image(mimeTypes: ['image/png', 'image/x-icon'])],
+                'constraints' => [new Image(mimeTypes: ['image/png', 'image/x-icon', 'image/vnd.microsoft.icon'])],
                 'label' => $this->translator->trans('Favicon image'),
                 'help' => $this->translator->trans('Icon of the website. Only PNG and ICO files are allowed.'),
             ])
