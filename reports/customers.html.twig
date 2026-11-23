@@ -242,7 +242,7 @@
             {% else %}
                 <p class="text-muted small mt-3 mb-2" data-testid="report-segments-note">
                     <i class="bi bi-info-circle" aria-hidden="true"></i>
-                    {{ 'Each customer is in one segment. New: first order in the period. Returning: an order in the period and one before it. Without an order in the period: dormant after %days% days at the end of the period, lapsing before.'|trans({ '%days%': report.dormantAfterDays }) }}
+                    {{ 'Each customer is in one segment. Dormant: no order for %days% days at the end of the period, even after an order in it. Otherwise, new: first order in the period; returning: an order in the period and one before it; lapsing: no order in the period.'|trans({ '%days%': report.dormantAfterDays }) }}
                     {% if report.dormancySettingUrl is not null %}
                         <a href="{{ report.dormancySettingUrl }}" class="text-decoration-none" data-testid="report-dormancy-setting">{{ 'Change the threshold (customer_dormant_after_days)'|trans }}</a>
                     {% endif %}
