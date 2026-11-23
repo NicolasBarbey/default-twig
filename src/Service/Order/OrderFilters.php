@@ -487,8 +487,8 @@ final readonly class OrderFilters
     {
         // A core that writes the order amounts in SQL is read: its pivots are written in the
         // expression, which the order list hands to Propel criteria with positional parameters.
-        if (OrderRoundingRule::coreTotalsOrders()) {
-            return OrderAmountSql::withRoundingPivotsInlined(OrderAmountSql::itemsTaxedTotal('`'.OrderTableMap::TABLE_NAME.'`'));
+        if (OrderRoundingRule::coreHasTheRule()) {
+            return self::withRoundingPivotsInlined(OrderAmountSql::itemsTaxedTotal('`'.OrderTableMap::TABLE_NAME.'`'));
         }
 
         $textPromoPricePivot = (int) ConfigQuery::read('last_text_promo_price_order_id', 0);
@@ -535,6 +535,20 @@ final readonly class OrderFilters
         return [] === $frozenBranches
             ? $currentRule
             : 'CASE '.implode(' ', $frozenBranches).' ELSE '.$currentRule.' END';
+    }
+
+    /**
+     * The order ids the rounding rules turn on, written in place of the named parameters of
+     * OrderAmountSql: they are integers read from the configuration.
+     */
+    private static function withRoundingPivotsInlined(string $sql): string
+    {
+        return strtr($sql, [
+            ':'.OrderAmountSql::LEGACY_ROUNDING_PIVOT => (string) OrderRoundingRule::legacyPivot(),
+            ':'.OrderAmountSql::SUM_OF_ROUNDINGS_PIVOT => (string) OrderRoundingRule::sumOfRoundingsPivot(),
+            ':'.OrderAmountSql::TEXT_PROMO_PRICE_PIVOT => (string) (int) ConfigQuery::read('last_text_promo_price_order_id', 0),
+            ':'.OrderAmountSql::FLOAT_LINE_ROUNDING_PIVOT => (string) OrderRoundingRule::floatLineRoundingPivot(),
+        ]);
     }
 
     /**

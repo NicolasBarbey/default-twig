@@ -209,6 +209,42 @@ final class OrderListTotalsTest extends IntegrationTestCase
     }
 
     /**
+     * Under the sum of roundings, the default mode, a line sold by measure is not rounded:
+     * the order rounds the sum of its lines. 1.25 kg at 14.82 is 18.525, charged 18.53. The
+     * amount filter, the revenue and the customer totals sum the same SQL total, which has to
+     * be the charged one before any ROUND() a caller would add.
+     */
+    public function testTheAmountFilterKeepsALineSoldByMeasureUnderTheSumOfRoundings(): void
+    {
+        $this->givenConfig(self::ROUNDING_MODE, '1');
+
+        $order = $this->orderWith([['price' => '14.820000', 'tax' => '0.000000', 'quantity' => 1.25]], '0', '0');
+        $orderId = (int) $order->getId();
+
+        self::assertSame(18.53, $order->getTotalAmount());
+        self::assertSame(18.53, $this->unroundedSqlTotalOf($orderId));
+        self::assertContains($orderId, $this->orderIdsOfAtLeast(18.53), 'A minimum of 18.53 has to keep an order charged 18.53.');
+        self::assertNotContains($orderId, $this->orderIdsOfAtMost(18.52), 'A maximum of 18.52 has to leave out an order charged 18.53.');
+    }
+
+    /**
+     * The order rounds the sum of its lines, not each line: two lines of 18.525 are charged
+     * 37.05, where rounding each line would give 37.06.
+     */
+    public function testTheLinesOfAnOrderAreRoundedTogetherUnderTheSumOfRoundings(): void
+    {
+        $this->givenConfig(self::ROUNDING_MODE, '1');
+
+        $line = ['price' => '14.820000', 'tax' => '0.000000', 'quantity' => 1.25];
+        $order = $this->orderWith([$line, $line], '0', '0');
+        $orderId = (int) $order->getId();
+
+        self::assertSame(37.05, $order->getTotalAmount());
+        self::assertSame(37.05, $this->unroundedSqlTotalOf($orderId));
+        self::assertNotContains($orderId, $this->orderIdsOfAtLeast(37.06));
+    }
+
+    /**
      * The orders placed before the 3.4 upgrade were invoiced on the floating point
      * figure, and Order::getTotalAmount() keeps reading them that way: 18.52.
      */
@@ -383,6 +419,26 @@ final class OrderListTotalsTest extends IntegrationTestCase
         $statement->execute([$orderId]);
 
         return number_format((float) $statement->fetchColumn(), 2, '.', '');
+    }
+
+    private function unroundedSqlTotalOf(int $orderId): float
+    {
+        $statement = $this->getPropelConnection()->prepare(
+            'SELECT '.OrderFilters::totalAmountSqlExpression().' FROM `order` WHERE '.OrderTableMap::COL_ID.' = ?',
+        );
+        $statement->execute([$orderId]);
+
+        return (float) $statement->fetchColumn();
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function orderIdsOfAtMost(float $amount): array
+    {
+        $query = (new OrderFilters(maxAmount: $amount))->applyTo(OrderQuery::create());
+
+        return array_map('intval', $query->select([OrderTableMap::COL_ID])->find($this->getPropelConnection())->getData());
     }
 
     /**

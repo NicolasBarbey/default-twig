@@ -14,7 +14,6 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Order;
 
-use Thelia\Domain\Order\Sql\OrderAmountSql;
 use Thelia\Domain\Pricing\OrderLineRounding;
 use Thelia\Model\ConfigQuery;
 
@@ -117,22 +116,13 @@ enum OrderRoundingRule
 
     /**
      * Whether the core holds the rounding rule of an order line (Thelia\Domain\Pricing\OrderLineRounding),
-     * which the order total, the export, the sales journal and the refunds of the core share.
-     * The template then reads it; on an older core it keeps its own copy.
+     * which the order total, the export, the sales journal and the refunds of the core share,
+     * the same rule as Thelia\Domain\Order\Sql\OrderAmountSql writes in SQL: both agree from the
+     * same core on. The template then reads them; on an older core it keeps its own copy.
      */
     public static function coreHasTheRule(): bool
     {
         return class_exists(OrderLineRounding::class);
-    }
-
-    /**
-     * Whether the core writes the amounts of an order in SQL for the queries that total many
-     * orders (Thelia\Domain\Order\Sql\OrderAmountSql), in a form that takes no parameter.
-     * The order list then reads it; on an older core it keeps its own copy.
-     */
-    public static function coreTotalsOrders(): bool
-    {
-        return method_exists(OrderAmountSql::class, 'withRoundingPivotsInlined');
     }
 
     /**
