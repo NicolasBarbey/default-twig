@@ -14,22 +14,22 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Order;
 
-use Thelia\Model\OrderStatus;
-use Thelia\Core\Security\SecurityContext;
-use Thelia\Core\Security\Resource\AdminResources;
 use BackOfficeDefaultTwigBundle\Repository\ModuleRepository;
 use BackOfficeDefaultTwigBundle\Repository\OrderRepository;
-use BackOfficeDefaultTwigBundle\Service\I18n\CountryFlag;
+use BackOfficeDefaultTwigBundle\Service\Customer\CustomerCell;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
+use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Core\Security\SecurityContext;
 use Thelia\Domain\Order\Service\OrderStatusTransitionGuard;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\Module;
 use Thelia\Model\Order;
+use Thelia\Model\OrderStatus;
 use Thelia\Model\OrderStatusQuery;
 
 /**
@@ -234,20 +234,17 @@ final readonly class OrderListRowPresenter
             return '<span class="text-muted fst-italic">'.htmlspecialchars($this->translator->trans('Anonymous')).'</span>';
         }
 
-        $firstname = htmlspecialchars((string) $customer->getFirstname());
-        $lastname = htmlspecialchars((string) $customer->getLastname());
-        $email = htmlspecialchars((string) $customer->getEmail());
         // The countries are read once per request, titles included, instead of once per row.
         $country = $this->countries->countriesById($locale)[(int) $order->getOrderAddressRelatedByDeliveryOrderAddressId()?->getCountryId()] ?? null;
-        $flag = CountryFlag::named($country['iso'] ?? null, $country['title'] ?? '');
 
-        return \sprintf(
-            '<div class="bo-order-customer bo-order-customer--compact"><div class="fw-semibold">%s%s %s</div><div class="text-muted small text-truncate" title="%s">%s</div></div>',
-            $flag,
-            $firstname,
-            $lastname,
-            $email,
-            $email,
+        return CustomerCell::html(
+            null,
+            (string) $customer->getFirstname(),
+            (string) $customer->getLastname(),
+            (string) $customer->getEmail(),
+            $country['iso'] ?? null,
+            $country['title'] ?? '',
+            compact: true,
         );
     }
 

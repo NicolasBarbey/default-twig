@@ -15,7 +15,7 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Service\OrderReturn;
 
 use BackOfficeDefaultTwigBundle\Repository\OrderReturnRepository;
-use BackOfficeDefaultTwigBundle\Service\I18n\CountryFlag;
+use BackOfficeDefaultTwigBundle\Service\Customer\CustomerCell;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
@@ -167,13 +167,14 @@ final readonly class OrderReturnListRowPresenter
         // customer_id is a required column behind a RESTRICT foreign key.
         $customer = $orderReturn->getCustomer();
 
-        return \sprintf(
-            '<div class="bo-order-customer bo-order-customer--compact"><div class="fw-semibold">%s%s %s</div><div class="text-muted small text-truncate" title="%s">%s</div></div>',
-            CountryFlag::named($country['iso'] ?? null, $country['title'] ?? ''),
-            htmlspecialchars((string) $customer->getFirstname(), \ENT_QUOTES | \ENT_HTML5),
-            htmlspecialchars((string) $customer->getLastname(), \ENT_QUOTES | \ENT_HTML5),
-            htmlspecialchars((string) $customer->getEmail(), \ENT_QUOTES | \ENT_HTML5),
-            htmlspecialchars((string) $customer->getEmail(), \ENT_QUOTES | \ENT_HTML5),
+        return CustomerCell::html(
+            null,
+            (string) $customer->getFirstname(),
+            (string) $customer->getLastname(),
+            (string) $customer->getEmail(),
+            $country['iso'] ?? null,
+            $country['title'] ?? '',
+            compact: true,
         );
     }
 

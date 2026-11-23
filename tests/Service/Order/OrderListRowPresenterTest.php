@@ -164,7 +164,7 @@ final class OrderListRowPresenterTest extends IntegrationTestCase
 
         $customer = $presenter->presentAll([$order], 'en_US')[0]['customer_html'];
 
-        self::assertStringContainsString('bo-order-customer--compact', $customer);
+        self::assertStringContainsString('bo-customer-cell--compact', $customer);
         self::assertStringContainsString('title="a.very.long.address@an-example-shop.test"', $customer);
     }
 

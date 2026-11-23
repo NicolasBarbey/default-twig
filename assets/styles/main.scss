@@ -874,7 +874,7 @@ td.bo-datatable__details-col {
         max-width: none;
     }
 
-    .bo-order-customer--compact .text-truncate {
+    .bo-customer-cell .text-truncate {
         max-width: none;
         white-space: normal;
         overflow: visible;
@@ -887,9 +887,19 @@ td.bo-datatable__details-col {
     white-space: normal;
 }
 
-// The e-mail under the customer name in the order list and the return queue gives way
-// first when the table is short of room; the full address stays in its title.
-.bo-order-customer--compact .text-truncate {
+// The customer cell of the lists (CustomerCell): the e-mail under the name gives way first
+// when the table is short of room, the full address stays in its title. The order list and
+// the return queue, where other columns need the room, cut it shorter.
+.bo-customer-cell {
+    line-height: 1.3;
+    min-width: 0;
+
+    .text-truncate {
+        max-width: 16rem;
+    }
+}
+
+.bo-customer-cell--compact .text-truncate {
     max-width: 11rem;
 }
 
@@ -2141,11 +2151,6 @@ main[data-testid="bo-main"] {
 
 // ---------- Order list ----------
 
-.bo-order-customer {
-    line-height: 1.3;
-    min-width: 0;
-}
-
 .bo-order-items {
     &[data-bs-toggle="tooltip"] {
         cursor: help;
@@ -2464,13 +2469,6 @@ tr.bo-order-row--urgent {
 
     &:hover {
         color: var(--bs-danger);
-    }
-}
-
-// Inline customer cells.
-.bo-customer-name {
-    .text-truncate {
-        max-width: 16rem;
     }
 }
 

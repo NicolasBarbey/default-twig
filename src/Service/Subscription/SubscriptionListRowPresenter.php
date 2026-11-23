@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 namespace BackOfficeDefaultTwigBundle\Service\Subscription;
 
+use BackOfficeDefaultTwigBundle\Service\Customer\CustomerCell;
 use BackOfficeDefaultTwigBundle\Service\I18n\MoneyFormatter;
 use BackOfficeDefaultTwigBundle\UiComponents\DataTable\RowAction;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -100,12 +101,11 @@ final readonly class SubscriptionListRowPresenter
      */
     private function customerHtml(array $subscription): string
     {
-        return \sprintf(
-            '<div class="bo-order-customer"><a href="%s" class="fw-semibold text-decoration-none">%s %s</a><div class="text-muted small text-truncate">%s</div></div>',
-            $this->escape($this->urls->generate(self::CUSTOMER_ROUTE, ['customer_id' => (int) $subscription['customer_id']])),
-            $this->escape((string) $subscription['firstname']),
-            $this->escape((string) $subscription['lastname']),
-            $this->escape((string) $subscription['email']),
+        return CustomerCell::html(
+            $this->urls->generate(self::CUSTOMER_ROUTE, ['customer_id' => (int) $subscription['customer_id']]),
+            (string) $subscription['firstname'],
+            (string) $subscription['lastname'],
+            (string) $subscription['email'],
         );
     }
 
