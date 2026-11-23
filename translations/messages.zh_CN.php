@@ -966,7 +966,6 @@ return [
     'On sale' => '促销中',
     'Online' => '上线',
     'Only non-visible documents are listed.' => '仅列出不可见的文档。',
-    'Open' => '打开',
     'Optional' => '可选',
     'optional' => '可选',
     'Options' => '选项',

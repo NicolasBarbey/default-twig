@@ -376,6 +376,31 @@ final class OrderReturnBackOfficeTest extends WebIntegrationTestCase
         self::assertStringContainsString('A returnable product', $crawler->filter('[data-testid="datatable-order-returns-cell-products_html"]')->text());
     }
 
+    public function testTheCustomerLinksToTheirSheetOnlyForAnAdministratorWhoMayOpenIt(): void
+    {
+        [$return] = $this->requestedReturn();
+        $sheet = '/admin/customer/update?customer_id='.$return->getCustomerId();
+        $queueLink = '[data-testid="datatable-order-returns-row"][data-row-id="'.$return->getId().'"] [data-testid="bo-customer-name-link"]';
+        $sheetUrl = '/admin/return/'.$return->getId();
+
+        $this->loginFullAdmin();
+        $crawler = $this->client->request('GET', '/admin/returns');
+        self::assertSame($sheet, $crawler->filter($queueLink)->attr('href'), 'The name in the queue opens the customer sheet.');
+        $crawler = $this->client->request('GET', $sheetUrl);
+        self::assertSame($sheet, $crawler->filter('[data-testid="order-return-customer-link"]')->attr('href'), 'The name on the return sheet opens the customer sheet.');
+
+        $admin = $this->factory->restrictedAdmin([AdminResources::ORDER_RETURN => [AccessManager::VIEW]]);
+        $admin->eraseCredentials();
+        $this->injector->setAdmin($admin);
+        $crawler = $this->client->request('GET', '/admin/returns');
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertCount(0, $crawler->filter($queueLink), 'Without the customers permission, the name is not a link to a sheet that would refuse it.');
+        $crawler = $this->client->request('GET', $sheetUrl);
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertCount(0, $crawler->filter('[data-testid="order-return-customer-link"]'));
+        self::assertCount(1, $crawler->filter('[data-testid="order-return-customer-name"]'), 'The name still reads on the sheet.');
+    }
+
     public function testAResolutionOutsideTheKnownOnesLeavesItsCellEmpty(): void
     {
         $this->loginFullAdmin();

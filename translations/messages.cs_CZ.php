@@ -966,7 +966,6 @@ return [
     'On sale' => 'Ve slevě',
     'Online' => 'Online',
     'Only non-visible documents are listed.' => 'Jsou zobrazeny pouze skryté dokumenty.',
-    'Open' => 'Otevřít',
     'Optional' => 'Volitelné',
     'optional' => 'volitelné',
     'Options' => 'Možnosti',

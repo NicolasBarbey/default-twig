@@ -966,7 +966,6 @@ return [
     'On sale' => 'در حال حراج',
     'Online' => 'آنلاین',
     'Only non-visible documents are listed.' => 'فقط اسناد غیرقابل مشاهده فهرست شده‌اند.',
-    'Open' => 'باز کردن',
     'Optional' => 'اختیاری',
     'optional' => 'اختیاری',
     'Options' => 'گزینه‌ها',

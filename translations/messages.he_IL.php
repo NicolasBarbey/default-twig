@@ -966,7 +966,6 @@ return [
     'On sale' => 'במבצע',
     'Online' => 'מקוון',
     'Only non-visible documents are listed.' => 'מוצגים רק מסמכים שאינם גלויים.',
-    'Open' => 'פתח',
     'Optional' => 'אופציונלי',
     'optional' => 'אופציונלי',
     'Options' => 'אפשרויות',

@@ -41,6 +41,7 @@ final readonly class OrderListRowPresenter
 {
     private const RESOURCE = 'admin.order';
     private const DETAIL_ROUTE = 'admin.order.update.view';
+    private const CUSTOMER_ROUTE = 'admin.customer.update.view';
     private const INVOICE_PDF_ROUTE = 'admin.order.pdf.invoice';
     private const DELIVERY_PDF_ROUTE = 'admin.order.pdf.delivery';
     private const CANCEL_FROM_LIST_ROUTE = 'admin.order.list.cancel';
@@ -72,10 +73,11 @@ final readonly class OrderListRowPresenter
      * distinct module on top of the page itself.
      *
      * @param iterable<Order> $orders
+     * @param bool            $linkCustomers false when the administrator may not open the customer sheets
      *
      * @return list<array<string, mixed>>
      */
-    public function presentAll(iterable $orders, string $locale): array
+    public function presentAll(iterable $orders, string $locale, bool $linkCustomers = true): array
     {
         $page = [];
         $orderIds = [];
@@ -98,7 +100,7 @@ final readonly class OrderListRowPresenter
 
         $rows = [];
         foreach ($page as $order) {
-            $rows[] = $this->present($order, $locale, $itemCounts, $totals, $moduleTitles, $saleUnitTitles, $preorderOrderIds, $itemLines);
+            $rows[] = $this->present($order, $locale, $itemCounts, $totals, $moduleTitles, $saleUnitTitles, $preorderOrderIds, $itemLines, $linkCustomers);
         }
 
         return $rows;
@@ -111,10 +113,11 @@ final readonly class OrderListRowPresenter
      * @param array<int, string>                                                                                             $saleUnitTitles   sale unit titles per sale unit id, when the caller has them
      * @param list<int>                                                                                                      $preorderOrderIds the orders of the page that hold a preorder line
      * @param array<int, list<array{ref: string, title: string, attributes: list<array{attribute: string, value: string}>}>> $itemLines        lines per order id, when the caller has them
+     * @param bool                                                                                                           $linkCustomer     false when the administrator may not open the customer sheet
      *
      * @return array<string, mixed>
      */
-    public function present(Order $order, string $locale, array $itemCounts = [], array $totals = [], array $moduleTitles = [], array $saleUnitTitles = [], array $preorderOrderIds = [], array $itemLines = []): array
+    public function present(Order $order, string $locale, array $itemCounts = [], array $totals = [], array $moduleTitles = [], array $saleUnitTitles = [], array $preorderOrderIds = [], array $itemLines = [], bool $linkCustomer = true): array
     {
         $orderId = (int) $order->getId();
         $status = OrderStatusQuery::create()->findPk((int) $order->getStatusId());
@@ -164,7 +167,7 @@ final readonly class OrderListRowPresenter
             'status_id' => (int) $order->getStatusId(),
             'status_code' => (string) ($status?->getCode() ?? ''),
             'status_color' => (string) ($status?->getColor() ?: self::FALLBACK_STATUS_COLOR),
-            'customer_html' => $this->renderCustomer($order, $locale),
+            'customer_html' => $this->renderCustomer($order, $locale, $linkCustomer),
             'items_html' => $items,
             'payment_delivery_html' => $this->renderModule($paymentTitle, 'bi-credit-card')
                 .'<div class="mt-1">'.$this->renderDelivery($order, $deliveryTitle).'</div>',
@@ -227,7 +230,7 @@ final readonly class OrderListRowPresenter
         ).$date;
     }
 
-    private function renderCustomer(Order $order, string $locale): string
+    private function renderCustomer(Order $order, string $locale, bool $linkCustomer): string
     {
         $customer = $order->getCustomer();
         if ($customer === null) {
@@ -237,8 +240,10 @@ final readonly class OrderListRowPresenter
         // The countries are read once per request, titles included, instead of once per row.
         $country = $this->countries->countriesById($locale)[(int) $order->getOrderAddressRelatedByDeliveryOrderAddressId()?->getCountryId()] ?? null;
 
+        // The name opens the customer sheet, as in the Smarty list, for an administrator allowed to read it:
+        // the controller checks the right once, a check per row would read the permissions of a profile on each one.
         return CustomerCell::html(
-            null,
+            $linkCustomer ? $this->urls->generate(self::CUSTOMER_ROUTE, ['customer_id' => (int) $customer->getId()]) : null,
             (string) $customer->getFirstname(),
             (string) $customer->getLastname(),
             (string) $customer->getEmail(),

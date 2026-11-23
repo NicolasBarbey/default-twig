@@ -390,6 +390,24 @@ final class SubscriptionBackOfficeTest extends WebIntegrationTestCase
         self::assertSame('1', trim($crawler->filter('[data-testid="customer-subscriptions-section-count"]')->text()));
     }
 
+    public function testTheCustomerOfTheListLinksToTheirSheetOnlyForAnAdministratorWhoMayOpenIt(): void
+    {
+        [$product, $plan] = $this->aProductWithAPlan();
+        $customer = $this->aCustomer('Yann', 'Linked');
+        $subscription = $this->aSubscriptionRow($customer, $product, $plan);
+        $link = '[data-testid="datatable-subscriptions-row"] [data-testid="bo-customer-name-link"]';
+
+        $this->asSuperAdministrator();
+        $crawler = $this->client->request('GET', '/admin/subscriptions?q='.$subscription->getRef());
+        self::assertSame('/admin/customer/update?customer_id='.$customer->getId(), $crawler->filter($link)->attr('href'));
+
+        $this->asRestrictedAdministrator([AccessManager::VIEW]);
+        $crawler = $this->client->request('GET', '/admin/subscriptions?q='.$subscription->getRef());
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter($link), 'Without the customers permission, the name is not a link to a sheet that would refuse it.');
+        self::assertStringContainsString('Yann Linked', $crawler->filter('[data-testid="datatable-subscriptions-row"]')->text());
+    }
+
     public function testTheCustomerSheetOfAViewerWithoutTheRightHasNoSection(): void
     {
         $this->asRestrictedAdministrator([], [\Thelia\Core\Security\Resource\AdminResources::CUSTOMER => [AccessManager::VIEW]]);

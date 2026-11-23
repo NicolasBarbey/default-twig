@@ -15,6 +15,8 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Tests\Http;
 
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Thelia\Core\Security\AccessManager;
+use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\OrderStatus;
 use Thelia\Test\FixtureFactory;
@@ -70,6 +72,37 @@ final class OrderListLayoutTest extends WebIntegrationTestCase
         self::assertSame(['Order', 'Customer', 'Total', 'Status', 'Payment / Delivery', 'Actions'], $headers);
         $actions = $crawler->filter('[data-testid="datatable-orders-table"] thead th.datatable-sticky-actions');
         self::assertSame('Actions', trim($actions->filter('.visually-hidden')->text('')), 'The title of the actions is read out, out of sight: the single button of the column speaks for itself.');
+    }
+
+    public function testTheCustomerOpensTheirSheetFromTheListAndFromTheOrderSheet(): void
+    {
+        $order = $this->factory->order($this->factory->customer($this->factory->customerTitle()));
+        $sheet = '/admin/customer/update?customer_id='.$order->getCustomerId();
+
+        $crawler = $this->client->request('GET', '/admin/orders');
+        self::assertSame($sheet, $crawler->filter('[data-testid="datatable-orders-row"][data-row-id="'.$order->getId().'"] [data-testid="bo-customer-name-link"]')->attr('href'), 'The name in the list opens the customer sheet, as in the Smarty list.');
+
+        $crawler = $this->client->request('GET', '/admin/order/update/'.$order->getId());
+        self::assertSame($sheet, $crawler->filter('[data-testid="order-customer-name-link"]')->attr('href'), 'The name on the order sheet opens the customer sheet.');
+        self::assertCount(1, $crawler->filter('[data-testid="order-customer"] a[href="'.$sheet.'"]'), 'The name is the only way to the sheet: no button repeats it.');
+        self::assertCount(1, $crawler->filter('[data-testid="order-customer"] .bo-country-flag'), 'The flag of the delivery country stands before the name, as in the list.');
+    }
+
+    public function testWithoutTheCustomersPermissionTheNameIsNoLink(): void
+    {
+        $order = $this->factory->order($this->factory->customer($this->factory->customerTitle()));
+        $admin = $this->factory->restrictedAdmin([AdminResources::ORDER => [AccessManager::VIEW]]);
+        $admin->eraseCredentials();
+        $this->injector->setAdmin($admin);
+
+        $crawler = $this->client->request('GET', '/admin/orders');
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('[data-testid="datatable-orders-row"][data-row-id="'.$order->getId().'"] [data-testid="bo-customer-name-link"]'), 'The name is not a link to a sheet that would refuse it.');
+
+        $crawler = $this->client->request('GET', '/admin/order/update/'.$order->getId());
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('[data-testid="order-customer-name-link"]'));
+        self::assertCount(1, $crawler->filter('[data-testid="order-customer"]'), 'The customer card still reads.');
     }
 
     public function testTheTotalOffersNoSortAndALinkAskingForItFallsBackOnTheDefaultOne(): void

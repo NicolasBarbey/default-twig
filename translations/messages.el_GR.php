@@ -966,7 +966,6 @@ return [
     'On sale' => 'Σε προσφορά',
     'Online' => 'Σε σύνδεση',
     'Only non-visible documents are listed.' => 'Εμφανίζονται μόνο μη ορατά έγγραφα.',
-    'Open' => 'Άνοιγμα',
     'Optional' => 'Προαιρετικό',
     'optional' => 'προαιρετικό',
     'Options' => 'Επιλογές',

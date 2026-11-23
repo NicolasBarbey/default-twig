@@ -15,9 +15,13 @@ declare(strict_types=1);
 namespace BackOfficeDefaultTwigBundle\Tests\Service\Order;
 
 use BackOfficeDefaultTwigBundle\Service\Order\OrderListRowPresenter;
+use BackOfficeDefaultTwigBundle\Tests\Support\QueryCounter;
 use Propel\Runtime\Connection\ConnectionWrapper;
 use Propel\Runtime\Propel;
 use Psr\Log\AbstractLogger;
+use Thelia\Core\Security\AccessManager;
+use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Core\Security\SecurityContext;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\CountryQuery;
 use Thelia\Model\OrderProduct;
@@ -166,6 +170,32 @@ final class OrderListRowPresenterTest extends IntegrationTestCase
 
         self::assertStringContainsString('bo-customer-cell--compact', $customer);
         self::assertStringContainsString('title="a.very.long.address@an-example-shop.test"', $customer);
+    }
+
+    public function testTheRightOnCustomersCostsNoQueryPerRow(): void
+    {
+        $customer = $this->factory->customer($this->factory->customerTitle());
+        $orders = [$this->factory->order($customer), $this->factory->order($customer), $this->factory->order($customer)];
+        $presenter = static::getContainer()->get(OrderListRowPresenter::class);
+        $security = static::getContainer()->get(SecurityContext::class);
+
+        // The permissions of an administrator with a profile are read from the database on each check.
+        $budget = static function () use ($presenter, $orders): int {
+            $presenter->presentAll($orders, 'en_US');
+
+            return QueryCounter::count(static function () use ($presenter, $orders): void {
+                $presenter->presentAll($orders, 'en_US');
+            });
+        };
+
+        $security->setAdminUser($this->factory->admin());
+        $superAdministrator = $budget();
+        $security->setAdminUser($this->factory->restrictedAdmin([
+            AdminResources::ORDER => [AccessManager::VIEW],
+            AdminResources::CUSTOMER => [AccessManager::VIEW],
+        ]));
+
+        self::assertSame($superAdministrator, $budget(), 'The list of an administrator with a profile costs the same queries: the right is checked once by the controller, not on each row.');
     }
 
     public function testTheActionsOfARowSitBehindASingleButton(): void

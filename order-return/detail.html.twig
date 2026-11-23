@@ -187,7 +187,7 @@
                     <div class="card mb-3" data-testid="order-return-customer">
                         <div class="card-header">{{ 'Customer'|trans }}</div>
                         <div class="card-body small">
-                            <p class="mb-1 fw-semibold" data-testid="order-return-customer-name">{{ customer_flag_html|raw }}{{ return.customer.firstname }} {{ return.customer.lastname }}</p>
+                            <p class="mb-1 fw-semibold" data-testid="order-return-customer-name">{{ customer_flag_html|raw }}{% if customer_url|default(null) %}<a href="{{ customer_url }}" class="text-decoration-none" data-testid="order-return-customer-link">{{ return.customer.firstname }} {{ return.customer.lastname }}</a>{% else %}{{ return.customer.firstname }} {{ return.customer.lastname }}{% endif %}</p>
                             <p class="mb-0 text-muted text-break">{{ return.customer.email }}</p>
                         </div>
                     </div>

@@ -971,7 +971,6 @@ return [
     'On sale' => 'Im Angebot',
     'Online' => 'Online',
     'Only non-visible documents are listed.' => 'Es werden nur nicht sichtbare Dokumente aufgelistet.',
-    'Open' => 'Öffnen',
     'Opened by the merchant' => 'Vom Händler eröffnet',
     'Optional' => 'Optional',
     'optional' => 'optional',

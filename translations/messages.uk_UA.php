@@ -966,7 +966,6 @@ return [
     'On sale' => 'Розпродаж',
     'Online' => 'Онлайн',
     'Only non-visible documents are listed.' => 'Відображаються лише приховані документи.',
-    'Open' => 'Відкрити',
     'Optional' => 'Необов\'язково',
     'optional' => 'необов\'язково',
     'Options' => 'Параметри',

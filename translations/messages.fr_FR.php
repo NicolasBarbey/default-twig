@@ -1621,7 +1621,6 @@ return [
     'One rule for the whole postage' => 'Une seule règle pour tout le port',
     'Online' => 'En ligne',
     'Only non-visible documents are listed.' => 'Seuls les documents non visibles sont listés.',
-    'Open' => 'Parcourir',
     'Open source, made in France' => 'Open source, conçu en France',
     'Optional' => 'Optionnel',
     'optional' => 'facultatif',

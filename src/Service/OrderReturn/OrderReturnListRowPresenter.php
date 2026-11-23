@@ -33,6 +33,7 @@ use Thelia\Model\OrderReturnStatus;
 final readonly class OrderReturnListRowPresenter
 {
     private const DETAIL_ROUTE = 'admin.order-return.detail';
+    private const CUSTOMER_ROUTE = 'admin.customer.update.view';
     private const RECEPTION_ROUTE = 'admin.order-return.reception.view';
     private const ORDER_ROUTE = 'admin.order.update.view';
     private const PRODUCT_ROUTE = 'admin.products.update';
@@ -56,12 +57,13 @@ final readonly class OrderReturnListRowPresenter
      * trust their ids.
      *
      * @param iterable<OrderReturn> $returns
-     * @param bool                  $withCustomer false when the page shows no customer column: the delivery countries are not read
-     * @param bool                  $linkProducts false when the administrator may not open the product sheets
+     * @param bool                  $withCustomer  false when the page shows no customer column: the delivery countries are not read
+     * @param bool                  $linkProducts  false when the administrator may not open the product sheets
+     * @param bool                  $linkCustomers false when the administrator may not open the customer sheets
      *
      * @return list<array<string, mixed>>
      */
-    public function presentAll(iterable $returns, string $locale, bool $withCustomer = true, bool $linkProducts = true): array
+    public function presentAll(iterable $returns, string $locale, bool $withCustomer = true, bool $linkProducts = true, bool $linkCustomers = true): array
     {
         $page = [];
         $returnIds = [];
@@ -84,7 +86,7 @@ final readonly class OrderReturnListRowPresenter
 
         $rows = [];
         foreach ($page as $orderReturn) {
-            $rows[] = $this->present($orderReturn, $locale, $lines, $reasonTitles, $statusTitles, $currencyCodes, $countryIds, $linkProducts);
+            $rows[] = $this->present($orderReturn, $locale, $lines, $reasonTitles, $statusTitles, $currencyCodes, $countryIds, $linkProducts, $linkCustomers);
         }
 
         return $rows;
@@ -102,7 +104,7 @@ final readonly class OrderReturnListRowPresenter
      *
      * @return array<string, mixed>
      */
-    private function present(OrderReturn $orderReturn, string $locale, array $lines, array $reasonTitles, array $statusTitles, array $currencyCodes, ?array $countryIds, bool $linkProducts): array
+    private function present(OrderReturn $orderReturn, string $locale, array $lines, array $reasonTitles, array $statusTitles, array $currencyCodes, ?array $countryIds, bool $linkProducts, bool $linkCustomers): array
     {
         $returnId = (int) $orderReturn->getId();
         // status_id is a required column behind a RESTRICT foreign key: a return
@@ -115,7 +117,7 @@ final readonly class OrderReturnListRowPresenter
             'id' => $returnId,
             'ref' => (string) $orderReturn->getRef(),
             'order_html' => $this->renderOrder($orderReturn, $returnId),
-            'customer_html' => $countryIds === null ? '' : $this->renderCustomer($orderReturn, $this->countries->countriesById($locale)[$countryIds[(int) $orderReturn->getOrderId()] ?? 0] ?? null),
+            'customer_html' => $countryIds === null ? '' : $this->renderCustomer($orderReturn, $this->countries->countriesById($locale)[$countryIds[(int) $orderReturn->getOrderId()] ?? 0] ?? null, $linkCustomers),
             'products_html' => $this->renderProducts($lines[$returnId] ?? [], $locale, $linkProducts),
             'reason' => $this->reason($orderReturn, $reasonTitles),
             'resolution_html' => $this->renderResolution($orderReturn),
@@ -158,17 +160,17 @@ final readonly class OrderReturnListRowPresenter
 
     /**
      * The customer as the order list shows them: the flag of the delivery country before
-     * the name, the e-mail underneath.
+     * the name, the e-mail underneath, the name opening the customer sheet when allowed.
      *
      * @param array{title: string, iso: string}|null $country
      */
-    private function renderCustomer(OrderReturn $orderReturn, ?array $country): string
+    private function renderCustomer(OrderReturn $orderReturn, ?array $country, bool $linkCustomers): string
     {
         // customer_id is a required column behind a RESTRICT foreign key.
         $customer = $orderReturn->getCustomer();
 
         return CustomerCell::html(
-            null,
+            $linkCustomers ? $this->urls->generate(self::CUSTOMER_ROUTE, ['customer_id' => (int) $customer->getId()]) : null,
             (string) $customer->getFirstname(),
             (string) $customer->getLastname(),
             (string) $customer->getEmail(),

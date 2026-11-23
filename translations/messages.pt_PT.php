@@ -966,7 +966,6 @@ return [
     'On sale' => 'Em promoção',
     'Online' => 'Online',
     'Only non-visible documents are listed.' => 'Apenas os documentos não visíveis estão listados.',
-    'Open' => 'Abrir',
     'Optional' => 'Opcional',
     'optional' => 'opcional',
     'Options' => 'Opções',

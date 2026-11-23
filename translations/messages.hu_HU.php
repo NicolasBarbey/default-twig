@@ -966,7 +966,6 @@ return [
     'On sale' => 'Akcióban',
     'Online' => 'Online',
     'Only non-visible documents are listed.' => 'Csak a nem látható dokumentumok jelennek meg.',
-    'Open' => 'Megnyit',
     'Optional' => 'Opcionális',
     'optional' => 'opcionális',
     'Options' => 'Beállítások',

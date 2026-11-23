@@ -966,7 +966,6 @@ return [
     'On sale' => 'İndirimde',
     'Online' => 'Çevrimiçi',
     'Only non-visible documents are listed.' => 'Yalnızca görünmez belgeler listeleniyor.',
-    'Open' => 'Açık',
     'Optional' => 'İsteğe bağlı',
     'optional' => 'isteğe bağlı',
     'Options' => 'Seçenekler',

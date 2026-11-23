@@ -19,6 +19,7 @@ use BackOfficeDefaultTwigBundle\Service\Admin\AdminAccessChecker;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminFormAction;
 use BackOfficeDefaultTwigBundle\Service\Admin\AdminLogger;
 use BackOfficeDefaultTwigBundle\Service\Bundle\BundleCore;
+use BackOfficeDefaultTwigBundle\Service\I18n\CountryFlag;
 use BackOfficeDefaultTwigBundle\Service\I18n\CountryStateProvider;
 use BackOfficeDefaultTwigBundle\Service\Order\ForcedStatusChangeLog;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderAccess;
@@ -30,11 +31,11 @@ use BackOfficeDefaultTwigBundle\Service\Order\OrderFilters;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderHistoryContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderListRowPresenter;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderPaymentContextBuilder;
-use BackOfficeDefaultTwigBundle\Service\Order\PaymentActionAmount;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderRoundingRule;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderSaleUnits;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderShipmentContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Order\OrderStatusChangeContextBuilder;
+use BackOfficeDefaultTwigBundle\Service\Order\PaymentActionAmount;
 use BackOfficeDefaultTwigBundle\Service\OrderReturn\OrderReturnContextBuilder;
 use BackOfficeDefaultTwigBundle\Service\Pdf\OrderPdfRenderer;
 use Propel\Runtime\ActiveQuery\Criteria;
@@ -54,13 +55,13 @@ use Thelia\Core\Event\Order\OrderPaymentSettlementEvent;
 use Thelia\Core\Event\TheliaEvents;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Exception\TokenAuthenticationException;
+use Thelia\Core\Security\Resource\AdminResources;
+use Thelia\Domain\Order\Service\OrderStatusTransitionGuard;
 use Thelia\Domain\Payment\Enum\PaymentTransactionState;
 use Thelia\Domain\Payment\Exception\CancellationNeedsCaptureRightException;
 use Thelia\Domain\Payment\Exception\CancellationWaitsForCaptureException;
 use Thelia\Domain\Payment\Exception\PaymentException;
 use Thelia\Domain\Payment\Service\PaymentAmount;
-use Thelia\Core\Security\Resource\AdminResources;
-use Thelia\Domain\Order\Service\OrderStatusTransitionGuard;
 use Thelia\Log\Tlog;
 use Thelia\Messenger\JobFailureMessage;
 use Thelia\Model\CountryQuery;
@@ -131,7 +132,7 @@ final class OrderController
         $paginated = $this->orderRepository->findPaginated($filters, $page, self::PAGE_SIZE);
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
-            'rows' => $this->rowPresenter->presentAll($paginated['rows'], $locale),
+            'rows' => $this->rowPresenter->presentAll($paginated['rows'], $locale, linkCustomers: $this->access->canView(AdminResources::CUSTOMER)),
             'currency_code' => (string) Currency::getDefaultCurrency()->getCode(),
             'bulk_statuses' => $this->bulkStatusPlanner->targets($locale),
             'bulk_status_url' => $this->urls->generate('admin.order.list.update.status'),
@@ -179,6 +180,9 @@ final class OrderController
                 'items_page' => $itemsPage,
                 'items_last_page' => $itemsLastPage,
                 'order_addresses' => $this->orderAddresses($order, $locale),
+                // The customer card links to the customer sheet only for an administrator allowed to read it.
+                'can_view_customer' => $this->access->canView(AdminResources::CUSTOMER),
+                'customer_flag_html' => $this->customerFlag($order, $locale),
                 ...$this->statusChangeContext->build($order, $locale),
                 'customer_titles' => $this->customerTitleChoices($locale),
                 'countries' => $this->countryChoices($locale),
@@ -194,6 +198,18 @@ final class OrderController
                 'next_url' => $navigation['next'] !== null ? $this->urls->generate('admin.order.update.view', ['order_id' => $navigation['next']]) : null,
             ],
         )));
+    }
+
+    /**
+     * The flag of the delivery country, with its name on hover, before the customer name as in
+     * the order list and on the return sheet.
+     */
+    private function customerFlag(Order $order, string $locale): string
+    {
+        // delivery_order_address_id and country_id are required columns behind foreign keys.
+        $country = $this->countryStates->countriesById($locale)[(int) $order->getOrderAddressRelatedByDeliveryOrderAddressId()->getCountryId()] ?? null;
+
+        return CountryFlag::named($country['iso'] ?? null, $country['title'] ?? '');
     }
 
     #[Route('/admin/order/update/status', name: 'admin.order.list.update.status', methods: ['POST'])]

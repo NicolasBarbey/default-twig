@@ -545,14 +545,9 @@
 
                 {% if customer %}
                     <div class="card mb-3" data-testid="order-customer">
-                        <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-                            <span>{{ 'Customer'|trans }}</span>
-                            <a href="{{ customer.edit_url }}" class="btn btn-sm btn-outline-secondary" data-testid="order-customer-edit">
-                                <i class="bi bi-pencil-square" aria-hidden="true"></i> {{ 'Open'|trans }}
-                            </a>
-                        </div>
+                        <div class="card-header">{{ 'Customer'|trans }}</div>
                         <div class="card-body small">
-                            <p class="mb-1"><strong>{{ customer.firstname }} {{ customer.lastname }}</strong>{% if customer.ref %} <span class="text-muted">({{ customer.ref }})</span>{% endif %}</p>
+                            <p class="mb-1"><strong>{{ customer_flag_html|default('')|raw }}{% if can_view_customer|default(false) %}<a href="{{ customer.edit_url }}" class="text-decoration-none" data-testid="order-customer-name-link">{{ customer.firstname }} {{ customer.lastname }}</a>{% else %}{{ customer.firstname }} {{ customer.lastname }}{% endif %}</strong>{% if customer.ref %} <span class="text-muted">({{ customer.ref }})</span>{% endif %}</p>
                             {% if customer.email %}
                                 <p class="mb-0"><a href="mailto:{{ customer.email }}" data-testid="order-customer-email">{{ customer.email }}</a></p>
                             {% endif %}

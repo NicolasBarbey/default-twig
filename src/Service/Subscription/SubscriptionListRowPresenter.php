@@ -41,12 +41,13 @@ final readonly class SubscriptionListRowPresenter
 
     /**
      * @param list<array<string, mixed>> $subscriptions the rows of SubscriptionRepository
+     * @param bool                       $linkCustomers false when the administrator may not open the customer sheets
      *
      * @return list<array<string, mixed>>
      */
-    public function presentAll(array $subscriptions, string $locale): array
+    public function presentAll(array $subscriptions, string $locale, bool $linkCustomers = true): array
     {
-        return array_map(fn (array $subscription): array => $this->present($subscription, $locale), $subscriptions);
+        return array_map(fn (array $subscription): array => $this->present($subscription, $locale, $linkCustomers), $subscriptions);
     }
 
     /**
@@ -54,7 +55,7 @@ final readonly class SubscriptionListRowPresenter
      *
      * @return array<string, mixed>
      */
-    public function present(array $subscription, string $locale): array
+    public function present(array $subscription, string $locale, bool $linkCustomers = true): array
     {
         $id = (int) $subscription['id'];
         $status = (string) $subscription['status'];
@@ -68,7 +69,7 @@ final readonly class SubscriptionListRowPresenter
                 $this->escape($detailUrl),
                 $this->escape((string) $subscription['ref']),
             ),
-            'customer_html' => $this->customerHtml($subscription),
+            'customer_html' => $this->customerHtml($subscription, $linkCustomers),
             'product_html' => $this->productHtml($subscription),
             'plan' => $this->labels->period((string) $subscription['period_unit'], (int) $subscription['period_count']),
             'amount' => $this->amount($subscription, $locale),
@@ -99,10 +100,10 @@ final readonly class SubscriptionListRowPresenter
     /**
      * @param array<string, mixed> $subscription
      */
-    private function customerHtml(array $subscription): string
+    private function customerHtml(array $subscription, bool $linkCustomers): string
     {
         return CustomerCell::html(
-            $this->urls->generate(self::CUSTOMER_ROUTE, ['customer_id' => (int) $subscription['customer_id']]),
+            $linkCustomers ? $this->urls->generate(self::CUSTOMER_ROUTE, ['customer_id' => (int) $subscription['customer_id']]) : null,
             (string) $subscription['firstname'],
             (string) $subscription['lastname'],
             (string) $subscription['email'],

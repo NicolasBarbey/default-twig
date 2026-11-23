@@ -966,7 +966,6 @@ return [
     'On sale' => 'V akcii',
     'Online' => 'Online',
     'Only non-visible documents are listed.' => 'Zobrazujú sa iba neviditeľné dokumenty.',
-    'Open' => 'Otvoriť',
     'Optional' => 'Voliteľné',
     'optional' => 'voliteľné',
     'Options' => 'Možnosti',

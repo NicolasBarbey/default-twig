@@ -34,6 +34,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Exception\TokenAuthenticationException;
+use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Model\SubscriptionQuery;
 use Thelia\Tools\TokenProvider;
 use Twig\Environment;
@@ -87,7 +88,7 @@ final class SubscriptionController
         $paginated = $this->subscriptions->findPaginated($filters, $locale, $page, self::PAGE_SIZE);
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
-            'rows' => $this->rowPresenter->presentAll($paginated['rows'], $locale),
+            'rows' => $this->rowPresenter->presentAll($paginated['rows'], $locale, linkCustomers: $this->access->canView(AdminResources::CUSTOMER)),
             'total' => $paginated['total'],
             'pages' => $paginated['lastPage'],
             'current_page' => min($page, $paginated['lastPage']),

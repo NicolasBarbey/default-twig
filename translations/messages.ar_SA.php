@@ -966,7 +966,6 @@ return [
     'On sale' => 'في التخفيضات',
     'Online' => 'متصل',
     'Only non-visible documents are listed.' => 'يتم عرض المستندات غير المرئية فقط.',
-    'Open' => 'فتح',
     'Optional' => 'اختياري',
     'optional' => 'اختياري',
     'Options' => 'خيارات',

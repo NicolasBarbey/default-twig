@@ -966,7 +966,6 @@ return [
     'On sale' => 'Dalam promosi',
     'Online' => 'Online',
     'Only non-visible documents are listed.' => 'Hanya dokumen yang tidak terlihat yang ditampilkan.',
-    'Open' => 'Buka',
     'Optional' => 'Opsional',
     'optional' => 'opsional',
     'Options' => 'Opsi',

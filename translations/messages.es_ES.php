@@ -1013,7 +1013,6 @@ return [
     'On sale' => 'En oferta',
     'Online' => 'En línea',
     'Only non-visible documents are listed.' => 'Solo se muestran los documentos no visibles.',
-    'Open' => 'Abrir',
     'Optional' => 'Opcional',
     'optional' => 'opcional',
     'Options' => 'Opciones',

@@ -92,7 +92,12 @@ final class OrderReturnController
         $paginated = $this->returns->findPaginated($filters, $page, self::PAGE_SIZE);
 
         return new Response($this->twig->render(self::LIST_TEMPLATE, [
-            'rows' => $this->rowPresenter->presentAll($paginated['rows'], $locale, linkProducts: $this->access->canView(AdminResources::PRODUCT)),
+            'rows' => $this->rowPresenter->presentAll(
+                $paginated['rows'],
+                $locale,
+                linkProducts: $this->access->canView(AdminResources::PRODUCT),
+                linkCustomers: $this->access->canView(AdminResources::CUSTOMER),
+            ),
             'total' => $paginated['total'],
             'pages' => $paginated['lastPage'],
             'current_page' => min($page, $paginated['lastPage']),
@@ -125,6 +130,9 @@ final class OrderReturnController
             [
                 'token' => $this->tokens->assignToken(),
                 'reception_url' => $this->urls->generate('admin.order-return.reception.view', ['order_return_id' => $order_return_id]),
+                'customer_url' => $orderReturn->getCustomerId() !== null && $this->access->canView(AdminResources::CUSTOMER)
+                    ? $this->urls->generate('admin.customer.update.view', ['customer_id' => (int) $orderReturn->getCustomerId()])
+                    : null,
                 'order_url' => $orderReturn->getOrderId() !== null
                     ? $this->urls->generate(self::ORDER_DETAIL_ROUTE, ['order_id' => (int) $orderReturn->getOrderId()])
                     : null,
