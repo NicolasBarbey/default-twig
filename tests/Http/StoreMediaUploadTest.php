@@ -123,6 +123,17 @@ final class StoreMediaUploadTest extends WebIntegrationTestCase
         self::assertSame($png, file_get_contents($this->storedPath('logo_file')));
     }
 
+    public function testAnIcoFaviconIsStoredAsItIs(): void
+    {
+        // A real .ico file is detected as image/vnd.microsoft.icon, not image/x-icon (thelia/thelia#4348).
+        $ico = $this->ico();
+
+        $this->saveStoreMedia(['favicon_file' => $this->file('favicon.ico', $ico)]);
+
+        self::assertSame(302, $this->client->getResponse()->getStatusCode(), 'A real ICO file is a favicon.');
+        self::assertSame($ico, file_get_contents($this->storedPath('favicon_file')));
+    }
+
     public function testALogoOfAnotherImageTypeIsRefused(): void
     {
         $bmp = sys_get_temp_dir().\DIRECTORY_SEPARATOR.uniqid('thelia_test_store_').'.bmp';
@@ -278,6 +289,14 @@ final class StoreMediaUploadTest extends WebIntegrationTestCase
         imagepng(imagecreatetruecolor(2, 2));
 
         return (string) ob_get_clean();
+    }
+
+    /** An icon file holding one PNG image, as icon tools export it. */
+    private function ico(): string
+    {
+        $png = $this->png();
+
+        return pack('vvv', 0, 1, 1).pack('CCCCvvVV', 2, 2, 0, 0, 1, 32, \strlen($png), 22).$png;
     }
 
     private function storeDirectory(): string
