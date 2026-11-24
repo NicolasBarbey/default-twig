@@ -210,18 +210,46 @@
                     {% endset %}
                     {# The components of a bundle are part of what the bundle line sold: they carry no price. #}
                     {% set priced = not item.is_bundle_component %}
+                    {# What has left over what was ordered (0 / 4, 1 / 3, 2 / 2), in a column of its own, on a
+                       light red (grey when the order does not wait to be shipped), orange or green ground.
+                       Only parcels that left count: a draft parcel is not shipped yet. A line no parcel can
+                       take (virtual product, the line of a bundle) says nothing. The tolerance is the one
+                       of the core (ShippedQuantityCalculator::TOLERANCE). #}
+                    {% set shipped = shipped_by_line[item.id]|default(0) %}
+                    {% set shippable = left_by_line[item.id] is defined %}
+                    {% set all_shipped = shippable and shipped > 0 and item.quantity - shipped <= 0.0001 %}
+                    {% set shipping_tone = all_shipped ? 'success' : (shipped > 0 ? 'warning' : (awaiting_shipment|default(false) ? 'danger' : 'secondary')) %}
+                    {% set quantity_html %}
+                        <span class="fw-semibold" dir="ltr" data-testid="order-item-quantity">{{ item.quantity|format_quantity(item.quantity_decimals, item.unit_code) }}</span>
+                    {% endset %}
+                    {% set shipping_html %}
+                        {% if shippable %}
+                            <span class="badge rounded-pill bg-{{ shipping_tone }}-subtle text-{{ shipping_tone }}-emphasis" data-testid="order-item-shipped" data-tone="{{ shipping_tone }}"><span dir="ltr">{{ shipped|format_quantity(item.quantity_decimals, null) }} / {{ item.quantity|format_quantity(item.quantity_decimals, item.unit_code) }}</span>{% if all_shipped %}<span class="visually-hidden"> {{ 'All shipped'|trans }}</span>{% endif %}</span>
+                        {% endif %}
+                    {% endset %}
+                    {% set unit_html %}
+                        {% if priced %}
+                            {% if item.was_in_promo %}
+                                <div class="small" data-testid="order-item-promo">
+                                    <span class="badge text-bg-warning">{{ 'Promo'|trans }}</span>
+                                    <del class="text-muted" title="{{ 'Price before the promotion'|trans }}"><span dir="ltr">{{ (amounts_taxed ? item.list_taxed_price : item.list_price)|format_currency(currency.code) }}</span></del>
+                                </div>
+                            {% endif %}
+                            {{ include('@BackOfficeDefaultTwig/order/_amount_breakdown.html.twig', { ht: item.price, tax: item.tax, ttc: item.unit_taxed_price, currency: currency.code, taxed: amounts_taxed, tax_title: item.tax_rule_title, testid: 'order-item-unit' }, with_context = false) }}
+                        {% endif %}
+                    {% endset %}
+                    {% set line_html %}
+                        {% if priced %}
+                            {{ include('@BackOfficeDefaultTwig/order/_amount_breakdown.html.twig', { ht: item.line_ht, tax: item.line_tax, ttc: item.line_ttc, currency: currency.code, taxed: amounts_taxed, tax_title: item.tax_rule_title, testid: 'order-item-line' }, with_context = false) }}
+                        {% endif %}
+                    {% endset %}
                     {% set order_rows = order_rows|merge([{
                         'id': item.id,
                         'product_html': product_html,
-                        'price': priced ? item.price|format_currency(currency.code) : '',
-                        'tax': priced ? item.tax|format_currency(currency.code) : '',
-                        'unit_taxed_price': priced ? item.unit_taxed_price|format_currency(currency.code) : '',
-                        'quantity': item.quantity|format_quantity(item.quantity_decimals, item.unit_code),
-                        'shipped': shipped_by_line[item.id]|default(0)|format_quantity(item.quantity_decimals, item.unit_code),
-                        'left': left_by_line[item.id] is defined ? left_by_line[item.id]|format_quantity(item.quantity_decimals, item.unit_code) : '',
-                        'line_ht': priced ? item.line_ht|format_currency(currency.code) : '',
-                        'line_tax': priced ? item.line_tax|format_currency(currency.code) : '',
-                        'line_ttc': priced ? '<span class="fw-semibold" dir="ltr">' ~ item.line_ttc|format_currency(currency.code) ~ '</span>' : '',
+                        'quantity_html': quantity_html,
+                        'shipping_html': shipping_html,
+                        'unit_html': unit_html,
+                        'line_html': line_html,
                         '_row_class': priced ? '' : 'table-light',
                         '_attrs': { 'data-order-product-id': item.id, 'data-testid': item.is_bundle_component ? 'order-item-bundle-component-row' : 'order-item-row' },
                     }]) %}
@@ -230,18 +258,13 @@
                 {{ safe_hook('order-edit.before-order-product-list', { order_id: order.id, location: 'before-order-product-list' }) }}
                 {{ component('BoDataTable', {
                     id: 'order-items',
-                    caption: 'Order items'|trans ~ ' — ' ~ 'Prices in %currency'|trans({'%currency': currency.symbol}),
+                    caption: 'Order items'|trans,
                     columns: [
                         column_html('product_html', 'Product'|trans),
-                        column('quantity', 'Quantity'|trans, 'end'),
-                        column('shipped', 'Shipped'|trans, 'end', leftToRight: true),
-                        column('left', 'Left to ship'|trans, 'end', leftToRight: true),
-                        column('price', 'Unit price (excl. tax)'|trans, 'end', hideBelow: 'lg', leftToRight: true),
-                        column('tax', 'Tax'|trans, 'end', hideBelow: 'xl', leftToRight: true),
-                        column('unit_taxed_price', 'Unit price (incl. tax)'|trans, 'end', hideBelow: 'lg', leftToRight: true),
-                        column('line_ht', 'Line total (excl. tax)'|trans, 'end', hideBelow: 'xl', leftToRight: true),
-                        column('line_tax', 'Line tax'|trans, 'end', hideBelow: 'xl', leftToRight: true),
-                        column_html('line_ttc', 'Line total (incl. tax)'|trans, 'end'),
+                        column_html('quantity_html', 'Qty'|trans),
+                        column_html('shipping_html', 'Shipment'|trans),
+                        column_html('unit_html', 'Unit price'|trans, 'end'),
+                        column_html('line_html', 'Total'|trans, 'end'),
                     ],
                     rows: order_rows,
                     emptyMessage: 'No item.'|trans,
@@ -253,44 +276,20 @@
                 }) }}
                 {{ safe_hook('order-edit.after-order-product-list', { order_id: order.id, location: 'after-order-product-list' }) }}
 
-                {% if order_items|length > 0 %}
-                    <div class="card mb-3">
-                        <div class="card-body py-2 d-flex justify-content-end">
-                            <span class="fw-bold me-3">{{ 'Items subtotal (incl. tax)'|trans }}</span>
-                            <span dir="ltr" class="fw-bold" data-testid="order-items-subtotal">{{ totals.subtotal_ttc|format_currency(currency.code) }}</span>
-                        </div>
-                        {% if items_last_page|default(1) > 1 %}
-                            <div class="card-footer">
-                                {{ component('BoPagination', {
-                                    route: 'admin.order.update.view',
-                                    currentPage: items_page,
-                                    lastPage: items_last_page,
-                                    routeParams: { order_id: order.id, history_page: history_page },
-                                    pageParam: 'items_page',
-                                    fragment: 'tab-cart',
-                                    ariaLabel: 'Order items pagination'|trans,
-                                    testid: 'order-items',
-                                    spacing: '',
-                                }) }}
-                            </div>
-                        {% endif %}
-                    </div>
-                {% elseif items_last_page|default(1) > 1 %}
-                    <div class="card mb-3">
-                        <div class="card-footer">
-                            {{ component('BoPagination', {
-                                route: 'admin.order.update.view',
-                                currentPage: items_page,
-                                lastPage: items_last_page,
-                                routeParams: { order_id: order.id, history_page: history_page },
-                                pageParam: 'items_page',
-                                fragment: 'tab-cart',
-                                ariaLabel: 'Order items pagination'|trans,
-                                testid: 'order-items',
-                                spacing: '',
-                            }) }}
-                        </div>
-                    </div>
+                {# The totals of the order read in the Totals card: under a table paged by 25 lines, a
+                   subtotal would read as the total of the page. #}
+                {% if items_last_page|default(1) > 1 %}
+                    {{ component('BoPagination', {
+                        route: 'admin.order.update.view',
+                        currentPage: items_page,
+                        lastPage: items_last_page,
+                        routeParams: { order_id: order.id, history_page: history_page },
+                        pageParam: 'items_page',
+                        fragment: 'tab-cart',
+                        ariaLabel: 'Order items pagination'|trans,
+                        testid: 'order-items',
+                        spacing: 'mt-3 mb-3',
+                    }) }}
                 {% endif %}
 
                     </div>

@@ -80,8 +80,12 @@ final class OrderShipmentBackOfficeTest extends WebIntegrationTestCase
 
         // The table writes its own data-testid on the row before the one the sheet asks for; the line id is what singles the row out.
         $row = $crawler->filter('tr[data-order-product-id="'.$first->getId().'"]');
-        self::assertStringContainsString('1', $this->cellOf($row, 'shipped'), 'One unit of the first line left.');
-        self::assertStringContainsString('2', $this->cellOf($row, 'left'), 'Two units of the first line are still to ship.');
+        self::assertSame('3', $this->quantityOf($row), 'The quantity ordered heads the cell.');
+        self::assertSame('1 / 3', $this->shippedOf($row), 'One unit of three has left.');
+        self::assertSame('warning', $row->filter('[data-testid="order-item-shipped"]')->attr('data-tone'));
+        $untouched = $crawler->filter('tr[data-order-product-id="'.$second->getId().'"]');
+        self::assertSame('0 / 2', $this->shippedOf($untouched), 'A line no parcel has taken from reads as nothing shipped yet.');
+        self::assertSame('danger', $untouched->filter('[data-testid="order-item-shipped"]')->attr('data-tone'));
 
         self::assertCount(1, $crawler->filter('[data-testid^="order-shipment-row-"]'));
         self::assertStringContainsString('FIRST-PARCEL', $crawler->filter('[data-testid="order-shipments-card"]')->text());
@@ -89,6 +93,67 @@ final class OrderShipmentBackOfficeTest extends WebIntegrationTestCase
         self::assertCount(1, $crawler->filter('[data-testid="order-shipment-line-'.$second->getId().'"]'));
         self::assertSame('2', $crawler->filter('#shipment-line-'.$first->getId())->attr('value'), 'The form proposes what is left.');
         self::assertStringContainsString('active', (string) $crawler->filter('#tab-shipments-toggle')->attr('class'), 'The tab asked for is the one opened.');
+    }
+
+    public function testALineWhollyShippedSaysSoUnderItsQuantity(): void
+    {
+        $this->loginFullAdmin();
+        [$order, , $second] = $this->paidOrderOfTwoLines();
+        $this->shipped($order, $second, 2.0, 'WHOLE-PARCEL');
+
+        $crawler = $this->client->request('GET', '/admin/order/update/'.$order->getId());
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $row = $crawler->filter('tr[data-order-product-id="'.$second->getId().'"]');
+        self::assertSame('2', $this->quantityOf($row));
+        self::assertSame('2 / 2', $this->shippedOf($row));
+        self::assertSame('success', $row->filter('[data-testid="order-item-shipped"]')->attr('data-tone'), 'Nothing is left: the line reads as shipped.');
+    }
+
+    public function testWhatWaitsInADraftParcelIsNotShippedYet(): void
+    {
+        $this->loginFullAdmin();
+        [$order, $first, $second] = $this->paidOrderOfTwoLines();
+        $this->shipped($order, $first, 1.0, 'FIRST-PARCEL');
+        $manager = $this->getService(OrderShipmentManager::class);
+        $manager->open($order, [new ShipmentLine((int) $first->getId(), 2.0), new ShipmentLine((int) $second->getId(), 2.0)]);
+
+        $crawler = $this->client->request('GET', '/admin/order/update/'.$order->getId());
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $partly = $crawler->filter('tr[data-order-product-id="'.$first->getId().'"]');
+        self::assertSame('1 / 3', $this->shippedOf($partly), 'One unit left, the two others wait in a draft: nothing is left to put in a parcel, yet the line is not shipped.');
+        self::assertSame('warning', $partly->filter('[data-testid="order-item-shipped"]')->attr('data-tone'));
+
+        $drafted = $crawler->filter('tr[data-order-product-id="'.$second->getId().'"]');
+        self::assertSame('0 / 2', $this->shippedOf($drafted), 'A line wholly in a draft has not left yet: it does not read as shipped.');
+        self::assertSame('danger', $drafted->filter('[data-testid="order-item-shipped"]')->attr('data-tone'));
+    }
+
+    public function testNothingShippedOnAnOrderThatDoesNotWaitToBeShippedReadsInGrey(): void
+    {
+        $this->loginFullAdmin();
+        $order = $this->factory->order(null, ['statusCode' => OrderStatus::CODE_CANCELED]);
+        $line = $this->factory->orderProduct($order, ['quantity' => 2.0, 'title' => 'Cancelled widget']);
+
+        $crawler = $this->client->request('GET', '/admin/order/update/'.$order->getId());
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        $row = $crawler->filter('tr[data-order-product-id="'.$line->getId().'"]');
+        self::assertSame('0 / 2', $this->shippedOf($row));
+        self::assertSame('secondary', $row->filter('[data-testid="order-item-shipped"]')->attr('data-tone'), 'A cancelled order waits for no parcel: no warning.');
+    }
+
+    public function testAVirtualLineNoParcelCanTakeSaysNothingAboutShipping(): void
+    {
+        $this->loginFullAdmin();
+        $order = $this->factory->order(null, ['statusCode' => OrderStatus::CODE_PAID]);
+        $download = $this->factory->orderProduct($order, ['quantity' => 1.0, 'title' => 'Downloadable guide', 'virtual' => 1]);
+
+        $crawler = $this->client->request('GET', '/admin/order/update/'.$order->getId());
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+
+        self::assertCount(0, $crawler->filter('tr[data-order-product-id="'.$download->getId().'"] [data-testid="order-item-shipped"]'));
     }
 
     public function testAParcelLineShowsItsQuantityWithTheDecimalsAndTheUnitOfTheOrderLine(): void
@@ -122,8 +187,7 @@ final class OrderShipmentBackOfficeTest extends WebIntegrationTestCase
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
 
         $row = $crawler->filter('tr[data-order-product-id="'.$line->getId().'"]');
-        self::assertMatchesRegularExpression('/^1[.,]25\s*kg$/u', $this->cellOf($row, 'shipped'));
-        self::assertMatchesRegularExpression('/^1[.,]75\s*kg$/u', $this->cellOf($row, 'left'));
+        self::assertMatchesRegularExpression('/^1[.,]25\s*\/\s*3[.,]00\s*kg$/u', $this->shippedOf($row));
 
         $composed = $crawler->filter('[data-testid="order-shipment-line-'.$line->getId().'"]');
         self::assertMatchesRegularExpression('/^1[.,]75\s*kg$/u', trim($composed->filter('td')->eq(1)->text()), 'The parcel form reads what is left like the order line.');
@@ -144,8 +208,7 @@ final class OrderShipmentBackOfficeTest extends WebIntegrationTestCase
         $crawler = $this->client->request('GET', '/admin/order/update/'.$order->getId().'?tab=shipments');
 
         $row = $crawler->filter('tr[data-order-product-id="'.$line->getId().'"]');
-        self::assertSame('2', $this->cellOf($row, 'shipped'));
-        self::assertSame('4', $this->cellOf($row, 'left'), 'A bottle sold by the piece is counted, not measured.');
+        self::assertSame('2 / 6', $this->shippedOf($row), 'A bottle sold by the piece is counted, not measured.');
         self::assertSame('4', trim($crawler->filter('[data-testid="order-shipment-line-'.$line->getId().'"] td')->eq(1)->text()));
     }
 
@@ -340,14 +403,25 @@ final class OrderShipmentBackOfficeTest extends WebIntegrationTestCase
     }
 
     /**
-     * The text of the data table cell of the given column key in the given row.
+     * The quantity ordered, at the head of the quantity cell of the row.
      */
-    private function cellOf(Crawler $row, string $column): string
+    private function quantityOf(Crawler $row): string
     {
-        $cell = $row->filter('[data-testid="datatable-order-items-cell-'.$column.'"]');
-        self::assertGreaterThan(0, $cell->count(), \sprintf('The items table has no "%s" cell.', $column));
+        $quantity = $row->filter('[data-testid="datatable-order-items-cell-quantity_html"] [data-testid="order-item-quantity"]');
+        self::assertCount(1, $quantity, 'The quantity cell shows the quantity ordered.');
 
-        return trim($cell->text());
+        return trim($quantity->text());
+    }
+
+    /**
+     * What has left over what was ordered, in the shipping cell of the row.
+     */
+    private function shippedOf(Crawler $row): string
+    {
+        $shipped = $row->filter('[data-testid="datatable-order-items-cell-shipping_html"] [data-testid="order-item-shipped"] span[dir="ltr"]');
+        self::assertCount(1, $shipped, 'The shipping cell says what has left over what was ordered.');
+
+        return trim(preg_replace('/\s+/u', ' ', $shipped->text()));
     }
 
     /**

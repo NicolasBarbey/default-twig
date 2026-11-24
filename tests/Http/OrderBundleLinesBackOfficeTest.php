@@ -83,6 +83,8 @@ final class OrderBundleLinesBackOfficeTest extends WebIntegrationTestCase
         $componentCells = $rows->eq(1)->filter('td')->each(static fn ($cell): string => trim($cell->text()));
         self::assertStringNotContainsString('0.00', implode(' ', \array_slice($componentCells, 1)), 'A component shows no price.');
         self::assertStringContainsString('600.00', $rows->eq(0)->text(), 'The bundle line keeps the price it was sold at.');
+        self::assertCount(0, $rows->eq(0)->filter('[data-testid="order-item-shipped"]'), 'The bundle line leaves through its components: it says nothing about shipping.');
+        self::assertSame('0 / 2', trim(preg_replace('/\s+/u', ' ', $rows->eq(1)->filter('[data-testid="order-item-shipped"] span[dir="ltr"]')->text())), 'A component is what a parcel takes.');
         self::assertNotNull($simple);
     }
 

@@ -1,0 +1,20 @@
+{#
+    An amount of the order items as an addition: the amount excluding tax, the tax, the amount
+    including tax. The one the customer saw is bold: including tax, unless the customer group of
+    the order showed its prices excluding tax.
+
+    Props:
+      ht, tax, ttc  amounts of the breakdown
+      currency      ISO code of the order currency
+      taxed         true when the customer saw prices including tax
+      tax_title     name of the tax rule, on hover of the tax (optional)
+      testid        data-testid prefix (optional)
+#}
+{%- set testid = testid|default('order-amount') -%}
+<div data-testid="{{ testid }}">
+    <div class="{{ taxed ? 'text-muted small' : 'fw-semibold' }}" data-testid="{{ testid }}-ht"><span dir="ltr">{{ ht|format_currency(currency) }}</span> {{ 'excl. tax'|trans }}</div>
+    {# The tooltip sits on the text, not on the line: a line takes the width of the cell, and the
+       tooltip would centre on the column instead of on the amount. #}
+    <div class="text-muted small" data-testid="{{ testid }}-tax"><span{% if tax_title|default('') is not empty %} data-bs-toggle="tooltip" title="{{ tax_title }}"{% endif %}>+ <span dir="ltr">{{ tax|format_currency(currency) }}</span> {{ 'Tax'|trans|lower }}</span></div>
+    <div class="{{ taxed ? 'fw-semibold' : 'text-muted small' }}" data-testid="{{ testid }}-ttc"><span dir="ltr">{{ ttc|format_currency(currency) }}</span> {{ 'incl. tax'|trans }}</div>
+</div>

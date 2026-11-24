@@ -71,6 +71,7 @@ use Thelia\Model\CustomerTitleQuery;
 use Thelia\Model\Order;
 use Thelia\Model\OrderAddressQuery;
 use Thelia\Model\OrderPaymentTransactionQuery;
+use Thelia\Model\OrderStatus;
 use Thelia\Model\OrderStatusQuery;
 use Thelia\Model\ProductQuery;
 use Thelia\Model\StateQuery;
@@ -186,6 +187,12 @@ final class OrderController
                 // The customer card links to the customer sheet only for an administrator allowed to read it.
                 'can_view_customer' => $this->access->canView(AdminResources::CUSTOMER),
                 'customer_flag_html' => $this->customerFlag($order, $locale),
+                // The amounts of the items put in bold the one the customer saw: including tax,
+                // unless the customer group of the order showed its prices excluding tax.
+                'amounts_taxed' => 0 !== $order->getCustomerGroupDisplayTaxedPrice(),
+                // A line with nothing shipped only reads as a warning while the order waits to be
+                // shipped: not before it is paid, nor once it is sent, cancelled or refunded.
+                'awaiting_shipment' => \in_array($order->getOrderStatus()->getCode(), [OrderStatus::CODE_PAID, OrderStatus::CODE_PROCESSING, OrderStatus::CODE_PARTIALLY_SHIPPED], true),
                 ...$this->statusChangeContext->build($order, $locale),
                 'customer_titles' => $this->customerTitleChoices($locale),
                 'countries' => $this->countryChoices($locale),
@@ -697,8 +704,8 @@ final class OrderController
             $quantity = (float) $product->getQuantity();
 
             // The line has to be totalled with the rule its order was invoiced with,
-            // otherwise the lines shown here do not add up to the items subtotal in
-            // the footer, which comes straight from Order::getTotalAmount().
+            // otherwise the lines shown here do not add up to the totals of the Totals
+            // card, which come straight from Order::getTotalAmount().
             $lineTotals = OrderRoundingRule::lineTotalsOfOrder((int) $product->getOrderId(), $unitPriceHt, $unitTaxes, $quantity);
 
             // Resolve the catalog product by reference so the row can link back to
@@ -707,6 +714,13 @@ final class OrderController
             $productId = $productRef !== ''
                 ? ProductQuery::create()->filterByRef($productRef)->findOne()?->getId()
                 : null;
+
+            // The price the line would have been sold at without the promotion, shown struck
+            // through beside the price it was sold at.
+            $listTax = 0.0;
+            foreach ($product->getOrderProductTaxes() as $orderProductTax) {
+                $listTax += (float) $orderProductTax->getAmount();
+            }
 
             $combinations = [];
             foreach ($product->getOrderProductAttributeCombinations() as $combination) {
@@ -733,6 +747,9 @@ final class OrderController
                 'price' => $unitPriceHt,
                 'tax' => $unitTax,
                 'unit_taxed_price' => $unitPriceHt + $unitTax,
+                'was_in_promo' => $wasInPromo,
+                'list_price' => (float) $product->getPrice(),
+                'list_taxed_price' => (float) $product->getPrice() + $listTax,
                 'line_ht' => $lineTotals['ht'],
                 'line_tax' => $lineTotals['tax'],
                 'line_ttc' => $lineTotals['ttc'],
