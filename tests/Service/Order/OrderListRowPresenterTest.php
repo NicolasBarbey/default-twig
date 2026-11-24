@@ -22,6 +22,7 @@ use Psr\Log\AbstractLogger;
 use Thelia\Core\Security\AccessManager;
 use Thelia\Core\Security\Resource\AdminResources;
 use Thelia\Core\Security\SecurityContext;
+use Thelia\Domain\Order\Service\PickingSlipPdfService;
 use Thelia\Model\ConfigQuery;
 use Thelia\Model\CountryQuery;
 use Thelia\Model\OrderProduct;
@@ -205,7 +206,12 @@ final class OrderListRowPresenterTest extends IntegrationTestCase
 
         $actions = $presenter->presentAll([$order], 'en_US')[0]['_actions'];
 
-        self::assertSame(['view', 'invoice', 'delivery-slip', 'cancel'], array_map(static fn ($action): string => $action->kind, $actions));
+        // The picking slip is offered only when the active PDF theme has its document.
+        $expected = static::getContainer()->get(PickingSlipPdfService::class)->isAvailable()
+            ? ['view', 'invoice', 'delivery-slip', 'picking-slip', 'cancel']
+            : ['view', 'invoice', 'delivery-slip', 'cancel'];
+
+        self::assertSame($expected, array_map(static fn ($action): string => $action->kind, $actions));
         foreach ($actions as $action) {
             self::assertTrue($action->inMenu, $action->kind.' sits in the menu of the row.');
         }
