@@ -426,8 +426,10 @@
                 column_html('payment_delivery_html', ('Payment'|trans) ~ ' / ' ~ ('Delivery'|trans), visibleFrom: 'xl'),
                 column_actions('_actions', 'Actions'|trans, labelHidden: true),
             ] %}
-            {#- Selecting needs no right to change orders: a viewer prints the picking slip of a selection. -#}
-            {% set order_columns = [column_select('_select', 'Select this order'|trans, 'id', 'ref', stateKey: 'status_id')]|merge(order_columns) %}
+            {#- A selection serves to change the status, or to print the picking slip, which a viewer may do. -#}
+            {% if is_granted('UPDATE', 'admin.order') or picking_slip_available %}
+                {% set order_columns = [column_select('_select', 'Select this order'|trans, 'id', 'ref', stateKey: 'status_id')]|merge(order_columns) %}
+            {% endif %}
 
             {{ component('BoDataTable', {
                 id: 'orders',

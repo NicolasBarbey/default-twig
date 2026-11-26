@@ -266,12 +266,24 @@ final class OrderPickingSlipBackOfficeTest extends WebIntegrationTestCase
         self::assertSame(200, $this->client->getResponse()->getStatusCode());
         self::assertCount(1, $crawler->filter('[data-testid="order-picking-slip-selection-form"]'));
         self::assertCount(0, $crawler->filter('[data-testid="order-bulk-status-form"]'), 'No status change without the update right.');
+        self::assertCount(1, $crawler->filter('[data-testid="datatable-select-'.$order->getId().'"]'), 'The viewer ticks the orders to print.');
 
         $this->client->request('POST', '/admin/orders/picking-slip', [
             '_token' => $crawler->filter('input[name="_token"]')->first()->attr('value'),
             'order_ids' => [(string) $order->getId()],
         ]);
         self::assertSame('application/pdf', $this->client->getResponse()->headers->get('Content-Type'));
+    }
+
+    public function testAViewerHasNothingToTickWhenThePdfThemeHasNoSlip(): void
+    {
+        $order = $this->orderOf($this->customer());
+        $this->installPickingSlipTheme(withPreparationTemplate: false);
+        $this->actAs($this->restricted([AdminResources::ORDER => [AccessManager::VIEW]], []));
+
+        $crawler = $this->client->request('GET', '/admin/orders?customer_id='.$order->getCustomerId());
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertCount(0, $crawler->filter('[data-testid="datatable-select-'.$order->getId().'"]'), 'Neither a status to change nor a slip to print: no selection.');
     }
 
     public function testAnOrderOutOfTheReachOfTheAdministratorDoesNotExistForTheSlip(): void
