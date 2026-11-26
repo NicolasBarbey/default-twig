@@ -824,7 +824,7 @@ return [
     'Combinations' => 'Combinaisons',
     'combinations will be generated.' => 'combinaisons seront générées.',
     'Comma-separated templates this binding is limited to. Leave empty to apply everywhere.' => 'Gabarits concernés par cette liaison, séparés par des virgules. Laisser vide pour appliquer partout.',
-    'Company' => 'Entreprise',
+    'Company' => 'Société',
     'Compiled assets' => 'Assets compilés',
     'Compress the output' => 'Compresser la sortie',
     'Conclusion' => 'Conclusion',
